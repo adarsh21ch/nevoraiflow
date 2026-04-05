@@ -1,36 +1,89 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Layers, Video, BarChart3 } from "lucide-react";
+import { Users, Layers, Video, BarChart3, IndianRupee, Shield, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const AdminDashboard = () => {
   const { data: profiles = [] } = useQuery({
     queryKey: ["admin-profiles"],
-    queryFn: async () => { const { data } = await supabase.from("profiles").select("*"); return data || []; },
+    queryFn: async () => { const { data } = await supabase.from("profiles").select("id, full_name, email, created_at, kyc_status"); return data || []; },
   });
+
+  const { data: funnels = [] } = useQuery({
+    queryKey: ["admin-funnels-count"],
+    queryFn: async () => { const { data } = await supabase.from("funnels").select("id, total_views, total_leads, total_payments"); return data || []; },
+  });
+
+  const { data: videos = [] } = useQuery({
+    queryKey: ["admin-videos-count"],
+    queryFn: async () => { const { data } = await supabase.from("video_assets").select("id"); return data || []; },
+  });
+
+  const { data: subs = [] } = useQuery({
+    queryKey: ["admin-subs"],
+    queryFn: async () => { const { data } = await supabase.from("user_subscriptions").select("amount_paid, tier, status"); return data || []; },
+  });
+
+  const { data: kycPending = [] } = useQuery({
+    queryKey: ["admin-kyc-pending"],
+    queryFn: async () => { const { data } = await supabase.from("user_kyc_submissions").select("id").eq("status", "pending"); return data || []; },
+  });
+
+  const mrr = subs.filter((s) => s.status === "active" && s.tier !== "free").reduce((a, s) => a + (s.amount_paid || 0), 0);
+  const totalViews = funnels.reduce((a, f) => a + ((f as any).total_views || 0), 0);
+  const totalLeads = funnels.reduce((a, f) => a + ((f as any).total_leads || 0), 0);
+
+  const kpis = [
+    { icon: Users, label: "Total Users", value: String(profiles.length), color: "text-primary" },
+    { icon: Layers, label: "Total Funnels", value: String(funnels.length), color: "text-primary" },
+    { icon: Video, label: "Total Videos", value: String(videos.length), color: "text-primary" },
+    { icon: BarChart3, label: "Total Views", value: totalViews.toLocaleString("en-IN"), color: "text-primary" },
+    { icon: Users, label: "Total Leads", value: totalLeads.toLocaleString("en-IN"), color: "text-success" },
+    { icon: IndianRupee, label: "Total Revenue", value: `₹${mrr.toLocaleString("en-IN")}`, color: "text-warning" },
+    { icon: Shield, label: "KYC Pending", value: String(kycPending.length), color: "text-destructive" },
+  ];
+
+  const adminLinks = [
+    { label: "Manage Users", path: "/admin/users", icon: Users },
+    { label: "Manage Videos", path: "/admin/videos", icon: Video },
+    { label: "KYC Review", path: "/admin/kyc", icon: Shield },
+    { label: "Subscriptions", path: "/admin/subscriptions", icon: IndianRupee },
+    { label: "Platform Settings", path: "/admin/settings", icon: BarChart3 },
+  ];
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <h1 className="text-2xl font-heading font-bold">Admin Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Admin features require the admin role. Platform-wide analytics and user management.</p>
+        <div>
+          <h1 className="text-2xl font-heading font-bold">Admin Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1">Platform overview and management.</p>
+        </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { icon: Users, label: "Total Users", value: String(profiles.length) },
-            { icon: Layers, label: "Total Funnels", value: "—" },
-            { icon: Video, label: "Total Videos", value: "—" },
-            { icon: BarChart3, label: "MRR", value: "₹0" },
-          ].map((k) => (
+          {kpis.map((k) => (
             <div key={k.label} className="glass-card p-5">
-              <div className="flex items-center gap-2 mb-2"><k.icon size={16} className="text-primary" /><span className="text-xs text-muted-foreground">{k.label}</span></div>
+              <div className="flex items-center gap-2 mb-2">
+                <k.icon size={16} className={k.color} />
+                <span className="text-xs text-muted-foreground">{k.label}</span>
+              </div>
               <div className="text-2xl font-heading font-bold">{k.value}</div>
             </div>
           ))}
         </div>
 
-        <div className="glass-card p-8 text-center">
-          <p className="text-sm text-muted-foreground">Full admin panel with user management, KYC review, and platform settings will be built in the next iteration.</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {adminLinks.map((link) => (
+            <Link key={link.path} to={link.path} className="glass-card-hover p-5 flex items-center justify-between group">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <link.icon size={18} className="text-primary" />
+                </div>
+                <span className="font-medium text-sm">{link.label}</span>
+              </div>
+              <ArrowRight size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
+            </Link>
+          ))}
         </div>
       </div>
     </DashboardLayout>

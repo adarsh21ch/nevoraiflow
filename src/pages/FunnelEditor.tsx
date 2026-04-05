@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Video, Settings, ClipboardList, Mic, MessageCircle, IndianRupee, Radio, FileText, Rocket, Check, Copy, QrCode } from "lucide-react";
+import { VideoPickerModal } from "@/components/VideoPickerModal";
+
 
 const steps = [
   { icon: Video, label: "Video" },
@@ -36,6 +38,8 @@ const FunnelEditor = () => {
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [videoPickerOpen, setVideoPickerOpen] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<{ id: string; title: string; url: string | null } | null>(null);
   const [funnel, setFunnel] = useState({
     title: "", slug: "", description: "", visibility: "public", intent_type: "lead",
     allow_seek: false, allow_speed_change: true, lock_cta: false,
@@ -174,12 +178,33 @@ const FunnelEditor = () => {
             {step === 0 && (
               <>
                 <h2 className="text-lg font-heading font-semibold">Video</h2>
-                <p className="text-sm text-muted-foreground">Select or upload a video for this funnel. Video upload via Cloudflare R2 will be connected in the next step.</p>
-                <div className="border-2 border-dashed border-border rounded-xl p-12 text-center">
-                  <Video size={40} className="text-muted-foreground mx-auto mb-4" />
-                  <p className="text-sm text-muted-foreground mb-3">Drag & drop a video file or click to browse</p>
-                  <Button variant="outline" size="sm">Select from Gallery</Button>
-                </div>
+                <p className="text-sm text-muted-foreground">Select a video from your gallery to use in this funnel.</p>
+                {selectedVideo ? (
+                  <div className="border border-border rounded-xl p-4 flex items-center gap-4">
+                    <div className="w-20 h-14 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Video size={20} className="text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{selectedVideo.title}</p>
+                      <p className="text-xs text-success mt-1">Selected</p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => setVideoPickerOpen(true)}>Change</Button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-border rounded-xl p-12 text-center">
+                    <Video size={40} className="text-muted-foreground mx-auto mb-4" />
+                    <p className="text-sm text-muted-foreground mb-3">Choose a video from your gallery</p>
+                    <Button variant="hero" size="sm" onClick={() => setVideoPickerOpen(true)}>Select from Gallery</Button>
+                  </div>
+                )}
+                <VideoPickerModal
+                  open={videoPickerOpen}
+                  onClose={() => setVideoPickerOpen(false)}
+                  onSelect={(videoId, title, publicUrl) => {
+                    setSelectedVideo({ id: videoId, title, url: publicUrl });
+                    setVideoPickerOpen(false);
+                  }}
+                />
               </>
             )}
 
