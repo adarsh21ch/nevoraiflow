@@ -26,13 +26,22 @@ Deno.serve(async (req) => {
     const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
     if (!isAdmin) return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    const { videoId, fileSizeBytes, durationSeconds } = await req.json();
+    const { videoId, fileSizeBytes, durationSeconds, failed, errorMessage } = await req.json();
     if (!videoId) return new Response(JSON.stringify({ error: "Missing videoId" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Handle failed upload marking
+    if (failed) {
+      await serviceClient.from("video_assets").update({
+        status: "failed",
+        error_message: errorMessage || "Upload failed",
+      }).eq("id", videoId);
+      return new Response(JSON.stringify({ success: true, status: "failed" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const { data: video } = await serviceClient.from("video_assets").select("r2_key").eq("id", videoId).single();
     if (!video) return new Response(JSON.stringify({ error: "Video not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -52,6 +61,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ success: true, publicUrl }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err: any) {
+    console.error("confirm-r2-upload error:", err);
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
