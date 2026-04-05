@@ -1,5 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 const R2_PUBLIC_URL = Deno.env.get("R2_PUBLIC_URL") || "";
 
@@ -12,7 +16,7 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
 
@@ -25,13 +29,17 @@ Deno.serve(async (req) => {
     const { videoId, fileSizeBytes, durationSeconds } = await req.json();
     if (!videoId) return new Response(JSON.stringify({ error: "Missing videoId" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    // Get the video record
-    const { data: video } = await supabase.from("video_assets").select("r2_key").eq("id", videoId).single();
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { data: video } = await serviceClient.from("video_assets").select("r2_key").eq("id", videoId).single();
     if (!video) return new Response(JSON.stringify({ error: "Video not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const publicUrl = R2_PUBLIC_URL ? `${R2_PUBLIC_URL}/${video.r2_key}` : null;
 
-    const { error } = await supabase.from("video_assets").update({
+    const { error } = await serviceClient.from("video_assets").update({
       status: "ready",
       upload_percent: 100,
       public_url: publicUrl,
