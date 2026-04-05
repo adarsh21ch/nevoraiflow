@@ -37,6 +37,8 @@ const FunnelEditor = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
+  const searchParams = new URLSearchParams(window.location.search);
+  const preselectedVideoId = searchParams.get("videoId");
   const [saving, setSaving] = useState(false);
   const [videoPickerOpen, setVideoPickerOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<{ id: string; title: string; url: string | null } | null>(null);
@@ -95,6 +97,22 @@ const FunnelEditor = () => {
     }
   }, [existingFunnel]);
 
+  // Auto-select video from URL param (Use in Funnel button)
+  useEffect(() => {
+    if (preselectedVideoId && !isEdit && !selectedVideo) {
+      supabase
+        .from("video_assets")
+        .select("id, title, public_url")
+        .eq("id", preselectedVideoId)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            setSelectedVideo({ id: data.id, title: data.title, url: data.public_url });
+          }
+        });
+    }
+  }, [preselectedVideoId, isEdit, selectedVideo]);
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Not authenticated");
@@ -114,6 +132,7 @@ const FunnelEditor = () => {
         is_live_broadcast: funnel.is_live_broadcast, broadcast_scheduled_at: funnel.broadcast_scheduled_at || null,
         broadcast_password: funnel.broadcast_password || null, broadcast_replay_enabled: funnel.broadcast_replay_enabled,
         is_published: funnel.is_published,
+        video_asset_id: selectedVideo?.id || null,
       };
 
       if (isEdit) {
