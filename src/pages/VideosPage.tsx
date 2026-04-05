@@ -2,15 +2,15 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Video, Search, Grid, List, Link2, Share2, Pencil, Rocket } from "lucide-react";
 import { VideoLinkModal } from "@/components/VideoLinkModal";
 import { VideoShareModal } from "@/components/VideoShareModal";
 import { VideoRenameModal } from "@/components/VideoRenameModal";
-import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const VideosPage = () => {
   const { user } = useAuth();
