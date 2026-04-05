@@ -165,7 +165,7 @@ const FunnelEditor = () => {
         <div className="hidden lg:flex flex-col gap-1 w-48 shrink-0">
           {steps.map((s, i) => (
             <button key={i} onClick={() => setStep(i)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${step === i ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${step === i ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
               <s.icon size={16} />
               <span>{s.label}</span>
               {i === 8 && funnel.is_published && <Check size={14} className="ml-auto text-success" />}
