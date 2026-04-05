@@ -9,11 +9,11 @@ export const Logo = ({ size = "default" }: { size?: "sm" | "default" | "lg" }) =
 
   return (
     <div className={`flex items-center gap-2 font-heading font-bold ${sizes[size]}`}>
-      <div className="gradient-primary w-8 h-8 rounded-lg flex items-center justify-center text-primary-foreground font-bold text-sm">
+      <div className="gradient-primary w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ color: 'white' }}>
         N
       </div>
       <span className="text-foreground">{brand.nameShort}</span>
-      <span className="gradient-text">{brand.nameAccent}</span>
+      <span className="gradient-text font-bold">{brand.nameAccent}</span>
     </div>
   );
 };
