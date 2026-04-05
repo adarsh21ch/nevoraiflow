@@ -38,6 +38,8 @@ const FunnelEditor = () => {
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [videoPickerOpen, setVideoPickerOpen] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<{ id: string; title: string; url: string | null } | null>(null);
   const [funnel, setFunnel] = useState({
     title: "", slug: "", description: "", visibility: "public", intent_type: "lead",
     allow_seek: false, allow_speed_change: true, lock_cta: false,
