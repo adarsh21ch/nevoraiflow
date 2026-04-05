@@ -7,16 +7,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useState, useRef } from "react";
-import { Upload, Video, Trash2, Loader2, Link2 } from "lucide-react";
+import { Upload, Video, Trash2, Loader2, Link2, Share2, Pencil, Rocket } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { VideoShareModal } from "@/components/VideoShareModal";
+import { VideoRenameModal } from "@/components/VideoRenameModal";
+import { useNavigate } from "react-router-dom";
 
 const AdminVideosPage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [title, setTitle] = useState("");
+  const [shareVideo, setShareVideo] = useState<{ id: string; title: string } | null>(null);
+  const [renameVideo, setRenameVideo] = useState<{ id: string; title: string } | null>(null);
 
   const { data: videos = [], isLoading } = useQuery({
     queryKey: ["admin-all-videos"],
@@ -34,7 +40,6 @@ const AdminVideosPage = () => {
     let videoId: string | null = null;
 
     try {
-      // Step 1: Get presigned URL
       const { data, error } = await supabase.functions.invoke("get-r2-upload-url", {
         body: { filename: file.name, contentType: file.type, title: title || file.name },
       });
@@ -42,7 +47,6 @@ const AdminVideosPage = () => {
       if (error || !data?.uploadUrl) throw new Error(data?.error || "Failed to get upload URL");
       videoId = data.videoId;
 
-      // Step 2: Upload to R2
       const xhr = new XMLHttpRequest();
       xhr.upload.addEventListener("progress", (e) => {
         if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100));
@@ -52,18 +56,14 @@ const AdminVideosPage = () => {
         xhr.open("PUT", data.uploadUrl);
         xhr.setRequestHeader("Content-Type", file.type);
         xhr.onload = () => {
-          if (xhr.status < 300) {
-            resolve();
-          } else {
-            reject(new Error(`R2 rejected upload (HTTP ${xhr.status}): ${xhr.responseText?.slice(0, 200) || "unknown error"}`));
-          }
+          if (xhr.status < 300) resolve();
+          else reject(new Error(`R2 rejected upload (HTTP ${xhr.status}): ${xhr.responseText?.slice(0, 200) || "unknown error"}`));
         };
         xhr.onerror = () => reject(new Error("Network error — check CORS config on R2 bucket"));
         xhr.ontimeout = () => reject(new Error("Upload timed out"));
         xhr.send(file);
       });
 
-      // Step 3: Confirm upload
       const { error: confirmErr } = await supabase.functions.invoke("confirm-r2-upload", {
         body: { videoId: data.videoId, fileSizeBytes: file.size },
       });
@@ -77,7 +77,6 @@ const AdminVideosPage = () => {
       console.error("Upload error:", err);
       toast.error(err.message || "Upload failed");
 
-      // Mark the video as failed if we have a videoId
       if (videoId) {
         try {
           await supabase.functions.invoke("confirm-r2-upload", {
@@ -88,7 +87,6 @@ const AdminVideosPage = () => {
     } finally {
       setUploading(false);
       setUploadProgress(0);
-      // Reset file input so the same file can be retried
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -106,6 +104,10 @@ const AdminVideosPage = () => {
   const copyLink = (id: string) => {
     navigator.clipboard.writeText(`${window.location.origin}/video/${id}`);
     toast.success("Video link copied!");
+  };
+
+  const useInFunnel = (videoId: string) => {
+    navigate(`/funnels/create?videoId=${videoId}`);
   };
 
   const formatSize = (bytes: number | null) => {
@@ -141,7 +143,7 @@ const AdminVideosPage = () => {
           </div>
           {uploading && (
             <div className="space-y-2">
-              <Progress value={uploadProgress} className="h-2" />
+              <Progress value={uploadProgress} className="h-2 bg-muted [&>div]:bg-white" />
               <p className="text-xs text-muted-foreground text-center">{uploadProgress}%</p>
             </div>
           )}
@@ -196,8 +198,17 @@ const AdminVideosPage = () => {
                       <td className="p-4 text-xs text-muted-foreground">{v.view_count || 0}</td>
                       <td className="p-4">
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyLink(v.id)} title="Copy Nevorai Link">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRenameVideo({ id: v.id, title: v.title })} title="Rename">
+                            <Pencil size={14} />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShareVideo({ id: v.id, title: v.title })} title="Share">
+                            <Share2 size={14} />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyLink(v.id)} title="Copy Link">
                             <Link2 size={14} />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => useInFunnel(v.id)} title="Use in Funnel">
+                            <Rocket size={14} />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { if (confirm("Delete this video?")) deleteMutation.mutate(v.id); }}>
                             <Trash2 size={14} />
@@ -212,6 +223,25 @@ const AdminVideosPage = () => {
           </div>
         </div>
       </div>
+
+      {shareVideo && (
+        <VideoShareModal
+          open={!!shareVideo}
+          onClose={() => setShareVideo(null)}
+          videoId={shareVideo.id}
+          videoTitle={shareVideo.title}
+        />
+      )}
+
+      {renameVideo && (
+        <VideoRenameModal
+          open={!!renameVideo}
+          onClose={() => setRenameVideo(null)}
+          videoId={renameVideo.id}
+          currentTitle={renameVideo.title}
+          onSuccess={() => queryClient.invalidateQueries({ queryKey: ["admin-all-videos"] })}
+        />
+      )}
     </DashboardLayout>
   );
 };

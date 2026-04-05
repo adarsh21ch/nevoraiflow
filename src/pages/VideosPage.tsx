@@ -5,18 +5,23 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import { Video, Search, Grid, List, Link2 } from "lucide-react";
+import { Video, Search, Grid, List, Link2, Share2, Pencil, Rocket } from "lucide-react";
 import { VideoLinkModal } from "@/components/VideoLinkModal";
+import { VideoShareModal } from "@/components/VideoShareModal";
+import { VideoRenameModal } from "@/components/VideoRenameModal";
 import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
 const VideosPage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"grid" | "list">("grid");
   const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [shareVideo, setShareVideo] = useState<{ id: string; title: string } | null>(null);
+  const [renameVideo, setRenameVideo] = useState<{ id: string; title: string } | null>(null);
 
-  // Own videos
   const { data: ownVideos = [], isLoading } = useQuery({
     queryKey: ["videos", user?.id],
     queryFn: async () => {
@@ -26,7 +31,6 @@ const VideosPage = () => {
     enabled: !!user,
   });
 
-  // Shared/linked videos
   const { data: sharedVideos = [] } = useQuery({
     queryKey: ["shared-videos", user?.id],
     queryFn: async () => {
@@ -51,6 +55,16 @@ const VideosPage = () => {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
     if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  };
+
+  const useInFunnel = (videoId: string) => {
+    navigate(`/funnels/create?videoId=${videoId}`);
+  };
+
+  const copyLink = (id: string) => {
+    navigator.clipboard.writeText(`${window.location.origin}/video/${id}`);
+    const { toast } = require("sonner");
+    toast.success("Video link copied!");
   };
 
   return (
@@ -102,6 +116,18 @@ const VideosPage = () => {
                     <span className="px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary">Linked</span>
                   )}
                 </div>
+                {/* Action buttons */}
+                <div className="flex gap-1 mt-3 border-t border-border pt-3">
+                  <Button variant="ghost" size="sm" className="h-7 text-xs flex-1" onClick={() => setRenameVideo({ id: v.id, title: v.title })}>
+                    <Pencil size={12} className="mr-1" /> Rename
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs flex-1" onClick={() => setShareVideo({ id: v.id, title: v.title })}>
+                    <Share2 size={12} className="mr-1" /> Share
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs flex-1" onClick={() => useInFunnel(v.id)}>
+                    <Rocket size={12} className="mr-1" /> Funnel
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -114,6 +140,28 @@ const VideosPage = () => {
             queryClient.invalidateQueries({ queryKey: ["shared-videos"] });
           }}
         />
+
+        {shareVideo && (
+          <VideoShareModal
+            open={!!shareVideo}
+            onClose={() => setShareVideo(null)}
+            videoId={shareVideo.id}
+            videoTitle={shareVideo.title}
+          />
+        )}
+
+        {renameVideo && (
+          <VideoRenameModal
+            open={!!renameVideo}
+            onClose={() => setRenameVideo(null)}
+            videoId={renameVideo.id}
+            currentTitle={renameVideo.title}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ["videos"] });
+              queryClient.invalidateQueries({ queryKey: ["shared-videos"] });
+            }}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
