@@ -1,0 +1,49 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+
+const R2_PUBLIC_URL = Deno.env.get("R2_PUBLIC_URL") || "";
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return new Response(JSON.stringify({ error: "No auth" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+    if (!isAdmin) return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    const { videoId, fileSizeBytes, durationSeconds } = await req.json();
+    if (!videoId) return new Response(JSON.stringify({ error: "Missing videoId" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    // Get the video record
+    const { data: video } = await supabase.from("video_assets").select("r2_key").eq("id", videoId).single();
+    if (!video) return new Response(JSON.stringify({ error: "Video not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    const publicUrl = R2_PUBLIC_URL ? `${R2_PUBLIC_URL}/${video.r2_key}` : null;
+
+    const { error } = await supabase.from("video_assets").update({
+      status: "ready",
+      upload_percent: 100,
+      public_url: publicUrl,
+      file_size_bytes: fileSizeBytes || null,
+      duration_seconds: durationSeconds || null,
+      is_shared: true,
+    }).eq("id", videoId);
+
+    if (error) throw error;
+
+    return new Response(JSON.stringify({ success: true, publicUrl }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+});
