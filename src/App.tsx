@@ -2,20 +2,28 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
+import ResetPassword from "./pages/ResetPassword";
+import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
+import FunnelsPage from "./pages/FunnelsPage";
+import FunnelEditor from "./pages/FunnelEditor";
+import FunnelDetail from "./pages/FunnelDetail";
+import PublicFunnel from "./pages/PublicFunnel";
+import VideosPage from "./pages/VideosPage";
+import LeadsPage from "./pages/LeadsPage";
+import PaymentsPage from "./pages/PaymentsPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
+import ProfilePage from "./pages/ProfilePage";
+import KYCPage from "./pages/KYCPage";
+import NotificationsPage from "./pages/NotificationsPage";
+import SettingsPage from "./pages/SettingsPage";
+import PricingFullPage from "./pages/PricingFullPage";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
-import {
-  FunnelsPage,
-  VideosPage,
-  LeadsPage,
-  PaymentsPage,
-  AnalyticsPage,
-  ProfilePage,
-  NotificationsPage,
-  SettingsPage,
-} from "./pages/AppPages";
 
 const queryClient = new QueryClient();
 
@@ -24,20 +32,38 @@ const App = () => (
     <TooltipProvider>
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/funnels" element={<FunnelsPage />} />
-          <Route path="/videos" element={<VideosPage />} />
-          <Route path="/leads" element={<LeadsPage />} />
-          <Route path="/payments" element={<PaymentsPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/notifications" element={<NotificationsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            {/* Public */}
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/auth/reset-password" element={<ResetPassword />} />
+            <Route path="/pricing" element={<PricingFullPage />} />
+            <Route path="/f/:slug" element={<PublicFunnel />} />
+
+            {/* Auth Required */}
+            <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/funnels" element={<ProtectedRoute><FunnelsPage /></ProtectedRoute>} />
+            <Route path="/funnels/create" element={<ProtectedRoute><FunnelEditor /></ProtectedRoute>} />
+            <Route path="/funnels/:id" element={<ProtectedRoute><FunnelDetail /></ProtectedRoute>} />
+            <Route path="/funnels/:id/edit" element={<ProtectedRoute><FunnelEditor /></ProtectedRoute>} />
+            <Route path="/videos" element={<ProtectedRoute><VideosPage /></ProtectedRoute>} />
+            <Route path="/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
+            <Route path="/payments" element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/kyc" element={<ProtectedRoute><KYCPage /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            <Route path="/upgrade" element={<ProtectedRoute><PricingFullPage /></ProtectedRoute>} />
+
+            {/* Admin */}
+            <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
