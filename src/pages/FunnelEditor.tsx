@@ -37,6 +37,8 @@ const FunnelEditor = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
+  const searchParams = new URLSearchParams(window.location.search);
+  const preselectedVideoId = searchParams.get("videoId");
   const [saving, setSaving] = useState(false);
   const [videoPickerOpen, setVideoPickerOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<{ id: string; title: string; url: string | null } | null>(null);
