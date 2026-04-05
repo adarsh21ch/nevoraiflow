@@ -187,7 +187,7 @@ const FunnelEditor = () => {
           <div className="lg:hidden flex gap-1 overflow-x-auto pb-3 mb-4">
             {steps.map((s, i) => (
               <button key={i} onClick={() => setStep(i)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs whitespace-nowrap ${step === i ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs whitespace-nowrap ${step === i ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
                 <s.icon size={14} /> {s.label}
               </button>
             ))}
