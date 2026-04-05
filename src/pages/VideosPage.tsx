@@ -63,7 +63,7 @@ const VideosPage = () => {
 
   const copyLink = (videoId: string) => {
     navigator.clipboard.writeText(`${window.location.origin}/video/${videoId}`);
-    import("sonner").then(({ toast }) => toast.success("Video link copied!"));
+    toast.success("Video link copied!");
   };
 
   return (
