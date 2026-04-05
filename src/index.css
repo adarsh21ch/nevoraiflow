@@ -6,55 +6,55 @@
 
 @layer base {
   :root {
-    --background: 210 20% 4%;
-    --foreground: 180 20% 98%;
+    --background: 215 25% 3%;
+    --foreground: 180 15% 96%;
 
-    --card: 210 15% 8%;
-    --card-foreground: 180 20% 98%;
+    --card: 215 20% 7%;
+    --card-foreground: 180 15% 96%;
 
-    --popover: 210 15% 8%;
-    --popover-foreground: 180 20% 98%;
+    --popover: 215 20% 7%;
+    --popover-foreground: 180 15% 96%;
 
-    --primary: 168 76% 42%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 162 72% 46%;
+    --primary-foreground: 210 30% 6%;
 
-    --secondary: 199 84% 55%;
+    --secondary: 195 80% 50%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 10% 14%;
-    --muted-foreground: 180 15% 60%;
+    --muted: 215 12% 13%;
+    --muted-foreground: 200 12% 55%;
 
-    --accent: 199 84% 55%;
+    --accent: 195 80% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 160 84% 39%;
+    --success: 158 70% 42%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 0%;
 
-    --border: 210 10% 18%;
-    --input: 210 10% 18%;
-    --ring: 168 76% 42%;
+    --border: 215 12% 15%;
+    --input: 215 12% 15%;
+    --ring: 162 72% 46%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 210 15% 6%;
-    --sidebar-foreground: 210 5% 65%;
-    --sidebar-primary: 168 76% 42%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 10% 14%;
-    --sidebar-accent-foreground: 180 20% 98%;
-    --sidebar-border: 210 10% 14%;
-    --sidebar-ring: 168 76% 42%;
+    --sidebar-background: 215 22% 5%;
+    --sidebar-foreground: 200 8% 58%;
+    --sidebar-primary: 162 72% 46%;
+    --sidebar-primary-foreground: 210 30% 6%;
+    --sidebar-accent: 215 12% 12%;
+    --sidebar-accent-foreground: 180 15% 96%;
+    --sidebar-border: 215 12% 12%;
+    --sidebar-ring: 162 72% 46%;
 
-    --surface: 210 15% 8%;
-    --surface-hover: 210 12% 12%;
-    --glass: 210 15% 8% / 0.6;
-    --glass-border: 180 20% 98% / 0.08;
+    --surface: 215 20% 7%;
+    --surface-hover: 215 16% 10%;
+    --glass: 215 20% 7% / 0.65;
+    --glass-border: 180 15% 96% / 0.07;
   }
 }
 
@@ -74,19 +74,19 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-card/60 backdrop-blur-xl border border-white/[0.08] rounded-xl;
+    @apply bg-card/60 backdrop-blur-xl border border-white/[0.06] rounded-xl;
   }
 
   .glass-card-hover {
-    @apply glass-card hover:bg-card/80 hover:border-white/[0.12] transition-all duration-200;
+    @apply glass-card hover:bg-card/80 hover:border-white/[0.10] transition-all duration-300;
   }
 
   .gradient-primary {
-    background: linear-gradient(135deg, hsl(145, 65%, 55%), hsl(199, 84%, 55%));
+    background: linear-gradient(135deg, hsl(150, 60%, 50%), hsl(195, 85%, 50%));
   }
 
   .gradient-text {
-    background-image: linear-gradient(135deg, hsl(145, 65%, 55%), hsl(199, 84%, 55%));
+    background-image: linear-gradient(135deg, hsl(150, 65%, 55%), hsl(195, 85%, 55%));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -94,22 +94,22 @@
   }
 
   .gradient-bg-subtle {
-    background: radial-gradient(ellipse at top, hsl(168, 76%, 42%, 0.08) 0%, transparent 60%),
-                radial-gradient(ellipse at bottom right, hsl(199, 84%, 55%, 0.05) 0%, transparent 50%);
+    background: radial-gradient(ellipse 80% 60% at 50% 20%, hsl(162, 72%, 46%, 0.06) 0%, transparent 70%),
+                radial-gradient(ellipse 60% 50% at 80% 80%, hsl(195, 80%, 50%, 0.04) 0%, transparent 60%);
   }
 
   .glow-primary {
-    box-shadow: 0 0 40px -10px hsl(168, 76%, 42%, 0.3);
+    box-shadow: 0 0 50px -12px hsl(162, 72%, 46%, 0.35);
   }
 
   .glow-accent {
-    box-shadow: 0 0 40px -10px hsl(199, 84%, 55%, 0.3);
+    box-shadow: 0 0 50px -12px hsl(195, 80%, 50%, 0.3);
   }
 
   .animate-grid {
-    background-size: 40px 40px;
+    background-size: 48px 48px;
     background-image:
-      linear-gradient(to right, hsl(180, 20%, 98%, 0.03) 1px, transparent 1px),
-      linear-gradient(to bottom, hsl(180, 20%, 98%, 0.03) 1px, transparent 1px);
+      linear-gradient(to right, hsl(180, 15%, 96%, 0.025) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(180, 15%, 96%, 0.025) 1px, transparent 1px);
   }
 }
