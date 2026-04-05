@@ -61,10 +61,9 @@ const VideosPage = () => {
     navigate(`/funnels/create?videoId=${videoId}`);
   };
 
-  const copyLink = (id: string) => {
-    navigator.clipboard.writeText(`${window.location.origin}/video/${id}`);
-    const { toast } = require("sonner");
-    toast.success("Video link copied!");
+  const copyLink = (videoId: string) => {
+    navigator.clipboard.writeText(`${window.location.origin}/video/${videoId}`);
+    import("sonner").then(({ toast }) => toast.success("Video link copied!"));
   };
 
   return (

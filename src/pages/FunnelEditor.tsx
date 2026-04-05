@@ -116,6 +116,7 @@ const FunnelEditor = () => {
         is_live_broadcast: funnel.is_live_broadcast, broadcast_scheduled_at: funnel.broadcast_scheduled_at || null,
         broadcast_password: funnel.broadcast_password || null, broadcast_replay_enabled: funnel.broadcast_replay_enabled,
         is_published: funnel.is_published,
+        video_asset_id: selectedVideo?.id || null,
       };
 
       if (isEdit) {
