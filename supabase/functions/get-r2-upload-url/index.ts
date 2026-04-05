@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { S3Client, PutObjectCommand } from "https://esm.sh/@aws-sdk/client-s3@3.600.0";
+import { getSignedUrl } from "https://esm.sh/@aws-sdk/s3-request-presigner@3.600.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,6 +11,16 @@ const R2_ENDPOINT = Deno.env.get("R2_ENDPOINT") || "";
 const R2_ACCESS_KEY_ID = Deno.env.get("R2_ACCESS_KEY_ID") || "";
 const R2_SECRET_ACCESS_KEY = Deno.env.get("R2_SECRET_ACCESS_KEY") || "";
 const R2_BUCKET_NAME = Deno.env.get("R2_BUCKET_NAME") || "";
+
+function sanitizeFilename(filename: string): string {
+  const ext = filename.lastIndexOf(".") >= 0 ? filename.slice(filename.lastIndexOf(".")).toLowerCase() : "";
+  const name = filename.slice(0, filename.length - ext.length);
+  const safe = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return (safe || "video") + ext;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -37,6 +49,8 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    const safeFilename = sanitizeFilename(filename);
+
     const { data: video, error: dbErr } = await serviceClient.from("video_assets").insert({
       owner_id: user.id,
       title: title || filename,
@@ -47,43 +61,35 @@ Deno.serve(async (req) => {
 
     if (dbErr) throw dbErr;
 
-    const r2Key = `videos/${video.id}/${filename}`;
+    const r2Key = `videos/${video.id}/${safeFilename}`;
 
-    // Generate presigned PUT URL
-    const expiresIn = 3600;
-    const url = new URL(`${R2_ENDPOINT}/${R2_BUCKET_NAME}/${r2Key}`);
-    url.searchParams.set("X-Amz-Algorithm", "AWS4-HMAC-SHA256");
-    const now = new Date();
-    const dateStamp = now.toISOString().replace(/[-:]/g, "").slice(0, 8);
-    const amzDate = now.toISOString().replace(/[-:]/g, "").replace(/\.\d+Z/, "Z");
-    const region = "auto";
-    const credentialScope = `${dateStamp}/${region}/s3/aws4_request`;
-    url.searchParams.set("X-Amz-Credential", `${R2_ACCESS_KEY_ID}/${credentialScope}`);
-    url.searchParams.set("X-Amz-Date", amzDate);
-    url.searchParams.set("X-Amz-Expires", String(expiresIn));
-    url.searchParams.set("X-Amz-SignedHeaders", "host");
-    url.searchParams.sort();
+    // Use official AWS SDK presigner
+    const s3 = new S3Client({
+      region: "auto",
+      endpoint: R2_ENDPOINT,
+      credentials: {
+        accessKeyId: R2_ACCESS_KEY_ID,
+        secretAccessKey: R2_SECRET_ACCESS_KEY,
+      },
+    });
 
-    const canonicalRequest = ["PUT", `/${R2_BUCKET_NAME}/${r2Key}`, url.searchParams.toString(), `host:${url.hostname}\n`, "host", "UNSIGNED-PAYLOAD"].join("\n");
-    const stringToSign = ["AWS4-HMAC-SHA256", amzDate, credentialScope, Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonicalRequest)))).map((b) => b.toString(16).padStart(2, "0")).join("")].join("\n");
+    const command = new PutObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: r2Key,
+      ContentType: contentType,
+    });
 
-    const enc = new TextEncoder();
-    let key = await crypto.subtle.importKey("raw", enc.encode("AWS4" + R2_SECRET_ACCESS_KEY), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-    for (const msg of [dateStamp, region, "s3", "aws4_request"]) {
-      const sig = await crypto.subtle.sign("HMAC", key, enc.encode(msg));
-      key = await crypto.subtle.importKey("raw", sig, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-    }
-    const signature = Array.from(new Uint8Array(await crypto.subtle.sign("HMAC", key, enc.encode(stringToSign)))).map((b) => b.toString(16).padStart(2, "0")).join("");
-    url.searchParams.set("X-Amz-Signature", signature);
+    const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
 
     await serviceClient.from("video_assets").update({ r2_key: r2Key }).eq("id", video.id);
 
     return new Response(JSON.stringify({
-      uploadUrl: url.toString(),
+      uploadUrl,
       videoId: video.id,
       r2Key,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err: any) {
+    console.error("get-r2-upload-url error:", err);
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

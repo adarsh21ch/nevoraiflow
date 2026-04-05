@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useState, useRef } from "react";
-import { Upload, Video, Copy, Trash2, Check, Loader2, Link2 } from "lucide-react";
+import { Upload, Video, Trash2, Loader2, Link2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 const AdminVideosPage = () => {
@@ -31,6 +31,8 @@ const AdminVideosPage = () => {
     setUploading(true);
     setUploadProgress(0);
 
+    let videoId: string | null = null;
+
     try {
       // Step 1: Get presigned URL
       const { data, error } = await supabase.functions.invoke("get-r2-upload-url", {
@@ -38,6 +40,7 @@ const AdminVideosPage = () => {
       });
 
       if (error || !data?.uploadUrl) throw new Error(data?.error || "Failed to get upload URL");
+      videoId = data.videoId;
 
       // Step 2: Upload to R2
       const xhr = new XMLHttpRequest();
@@ -48,24 +51,45 @@ const AdminVideosPage = () => {
       await new Promise<void>((resolve, reject) => {
         xhr.open("PUT", data.uploadUrl);
         xhr.setRequestHeader("Content-Type", file.type);
-        xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`)));
-        xhr.onerror = () => reject(new Error("Upload failed"));
+        xhr.onload = () => {
+          if (xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`R2 rejected upload (HTTP ${xhr.status}): ${xhr.responseText?.slice(0, 200) || "unknown error"}`));
+          }
+        };
+        xhr.onerror = () => reject(new Error("Network error — check CORS config on R2 bucket"));
+        xhr.ontimeout = () => reject(new Error("Upload timed out"));
         xhr.send(file);
       });
 
       // Step 3: Confirm upload
-      await supabase.functions.invoke("confirm-r2-upload", {
+      const { error: confirmErr } = await supabase.functions.invoke("confirm-r2-upload", {
         body: { videoId: data.videoId, fileSizeBytes: file.size },
       });
+
+      if (confirmErr) throw new Error("Upload succeeded but confirmation failed");
 
       toast.success("Video uploaded successfully!");
       setTitle("");
       queryClient.invalidateQueries({ queryKey: ["admin-all-videos"] });
     } catch (err: any) {
+      console.error("Upload error:", err);
       toast.error(err.message || "Upload failed");
+
+      // Mark the video as failed if we have a videoId
+      if (videoId) {
+        try {
+          await supabase.functions.invoke("confirm-r2-upload", {
+            body: { videoId, failed: true, errorMessage: err.message },
+          });
+        } catch (_) { /* best effort */ }
+      }
     } finally {
       setUploading(false);
       setUploadProgress(0);
+      // Reset file input so the same file can be retried
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
