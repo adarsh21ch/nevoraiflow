@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Video, Settings, ClipboardList, Mic, MessageCircle, IndianRupee, Radio, FileText, Rocket, Check, Copy, QrCode } from "lucide-react";
+import { VideoPickerModal } from "@/components/VideoPickerModal";
+
 
 const steps = [
   { icon: Video, label: "Video" },
