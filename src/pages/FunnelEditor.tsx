@@ -97,6 +97,22 @@ const FunnelEditor = () => {
     }
   }, [existingFunnel]);
 
+  // Auto-select video from URL param (Use in Funnel button)
+  useEffect(() => {
+    if (preselectedVideoId && !isEdit && !selectedVideo) {
+      supabase
+        .from("video_assets")
+        .select("id, title, public_url")
+        .eq("id", preselectedVideoId)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            setSelectedVideo({ id: data.id, title: data.title, url: data.public_url });
+          }
+        });
+    }
+  }, [preselectedVideoId, isEdit, selectedVideo]);
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Not authenticated");
