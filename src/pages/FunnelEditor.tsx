@@ -686,7 +686,13 @@ const FunnelEditor = () => {
         <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl"><div><Label className="font-semibold">Show Contact Buttons</Label></div><Switch checked={funnel.show_contact_buttons} onCheckedChange={(v) => update("show_contact_buttons", v)} /></div>
         {funnel.show_contact_buttons && (
           <div className="space-y-3 p-4 bg-muted/50 rounded-xl">
-            <Input placeholder="WhatsApp (+91...)" value={funnel.contact_whatsapp} onChange={(e) => update("contact_whatsapp", e.target.value)} className="bg-muted border-border" />
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1">WhatsApp Number</Label>
+              <div className="flex gap-2">
+                <div className="flex items-center px-3 bg-muted border border-border rounded-md text-sm text-muted-foreground shrink-0">+91</div>
+                <Input placeholder="9876543210" value={funnel.contact_whatsapp?.replace(/^\+91/, "")} onChange={(e) => update("contact_whatsapp", "+91" + e.target.value.replace(/\D/g, ""))} className="bg-muted border-border" />
+              </div>
+            </div>
             <Input placeholder="Phone Number" value={funnel.contact_phone} onChange={(e) => update("contact_phone", e.target.value)} className="bg-muted border-border" />
             <Input placeholder="Instagram Handle" value={funnel.contact_instagram} onChange={(e) => update("contact_instagram", e.target.value)} className="bg-muted border-border" />
             <div className="flex items-center justify-between"><Label className="text-sm">Show Only After CTA</Label><Switch checked={funnel.show_contact_after_cta} onCheckedChange={(v) => update("show_contact_after_cta", v)} /></div>
