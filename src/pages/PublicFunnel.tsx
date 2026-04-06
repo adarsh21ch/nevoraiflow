@@ -307,58 +307,29 @@ const PublicFunnel = () => {
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordUnlocked, setPasswordUnlocked] = useState(false);
 
-  // Fetch funnel
-  const { data: funnel, isLoading } = useQuery({
-    queryKey: ["public-funnel", slug],
+  // Single combined fetch — replaces 5 cascading queries
+  const { data: bundle, isLoading } = useQuery({
+    queryKey: ["public-funnel-bundle", slug],
     queryFn: async () => {
-      const { data } = await supabase.from("funnels").select("*").eq("slug", slug!).single();
-      if (!data) throw new Error("Not found");
-      return data;
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-funnel-data?slug=${encodeURIComponent(slug!)}`,
+        { headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } }
+      );
+      if (!res.ok) throw new Error("Not found");
+      return res.json();
     },
     enabled: !!slug,
+    staleTime: 5 * 60 * 1000,       // 5 min — funnel data rarely changes mid-session
+    gcTime: 30 * 60 * 1000,          // keep in cache 30 min
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
-  const isOwner = user && funnel && user.id === funnel.owner_id;
-  const isDraft = funnel && !funnel.is_published;
-  const canView = funnel && (funnel.is_published || isOwner);
-
-  // Fetch video asset
-  const { data: videoAsset } = useQuery({
-    queryKey: ["funnel-video-asset", funnel?.video_asset_id],
-    queryFn: async () => {
-      const { data } = await supabase.from("video_assets").select("*").eq("id", funnel!.video_asset_id!).single();
-      return data;
-    },
-    enabled: !!funnel?.video_asset_id,
-  });
-
-  // Fetch creator profile
-  const { data: creatorProfile } = useQuery({
-    queryKey: ["creator-profile", funnel?.owner_id],
-    queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("full_name, city, instagram_url, avatar_url, kyc_status").eq("id", funnel!.owner_id).single();
-      return data;
-    },
-    enabled: !!funnel?.owner_id,
-  });
-
-  const { data: formConfig } = useQuery({
-    queryKey: ["public-funnel-form", funnel?.id],
-    queryFn: async () => {
-      const { data } = await supabase.from("funnel_lead_form_config").select("*").eq("funnel_id", funnel!.id).single();
-      return data;
-    },
-    enabled: !!funnel?.id,
-  });
-
-  const { data: priceOptions = [] } = useQuery({
-    queryKey: ["public-funnel-prices", funnel?.id],
-    queryFn: async () => {
-      const { data } = await supabase.from("funnel_price_options").select("*").eq("funnel_id", funnel!.id).order("position");
-      return data || [];
-    },
-    enabled: !!funnel?.id && funnel?.payment_enabled === true,
-  });
+  const funnel = bundle?.funnel;
+  const videoAsset = bundle?.video;
+  const creatorProfile = bundle?.creator;
+  const formConfig = bundle?.formConfig;
+  const priceOptions: any[] = bundle?.priceOptions || [];
 
   // CTA timing based on actual watch seconds
   useEffect(() => {
