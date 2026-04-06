@@ -349,9 +349,7 @@ const FunnelEditor = () => {
   const totalSteps = visibleSteps.length;
   const lastStepIdx = totalSteps - 1;
 
-  // ── Mode selection gate (for new funnels) ──
-  // After Basic Info (step 0), if mode not chosen yet, show mode picker
-  const showModePicker = wizardStep === 0 && !modeChosen && !isEdit;
+  // visibleSteps & nav computed
 
   // ── Render helper for common steps ──
   const renderCommonStep = (offset: number) => {
