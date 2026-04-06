@@ -10,7 +10,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
-import { Eye, Users, TrendingUp, IndianRupee, Edit, Copy, ExternalLink, Search, Download, Phone, MessageCircle, Check, X } from "lucide-react";
+import { Eye, Users, TrendingUp, IndianRupee, Edit, Copy, ExternalLink, Search, Download, Phone, MessageCircle, Check, X, Layers } from "lucide-react";
+import { LeadProgressTab } from "@/components/funnel/LeadProgressTab";
 
 const FunnelDetail = () => {
   const { id } = useParams();
