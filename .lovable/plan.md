@@ -1,61 +1,47 @@
 
-I checked the current flow and the upload is failing after the app gets the upload URL.
 
-Do I know what the issue is? Yes, mostly.
+## Plan: Migrate Video Delivery to cdn.nevorai.com
 
-What I found
-- `get-r2-upload-url` is working: it returns `200` plus a valid-looking `uploadUrl` and `videoId`.
-- The failure happens in `src/pages/AdminVideosPage.tsx` during the direct browser `PUT` to R2.
-- The strongest code-level bug is in `supabase/functions/get-r2-upload-url/index.ts`: the presigned URL is being signed with a hand-written AWS SigV4 implementation that uses the raw `r2Key` in the canonical path.
-- Your recent filenames include spaces and parentheses like `videoplayback (47).mp4`; those characters must be URI-encoded correctly for SigV4, and the current code is not production-safe there.
-- Because the client only shows a generic `Upload failed`, the real cause is being hidden and stale `uploading` rows are left behind.
+### What's happening now
+- Videos are stored in R2 with keys like `videos/{id}/filename.mp4`
+- The `confirm-r2-upload` edge function builds `public_url` using the `R2_PUBLIC_URL` secret (currently `https://pub-ae283552759240cf98fa3f6ccb20733d.r2.dev`)
+- All 2 existing videos have URLs pointing to `pub-*.r2.dev`
+- Frontend components read `public_url` from the `video_assets` table directly
 
-```text
-AdminVideosPage
-  -> get-r2-upload-url   OK (200)
-  -> PUT to R2           FAILS
-  -> confirm-r2-upload   never runs
+### Changes required
+
+**1. Update the `R2_PUBLIC_URL` secret**
+- Change the value from `https://pub-ae283552759240cf98fa3f6ccb20733d.r2.dev` to `https://cdn.nevorai.com`
+- This ensures all future uploads automatically get CDN URLs
+- No code change needed in `confirm-r2-upload/index.ts` — it already uses `R2_PUBLIC_URL` dynamically
+
+**2. Database migration — normalize existing video URLs**
+- Run a SQL migration to update all existing `public_url` values:
+```sql
+UPDATE video_assets
+SET public_url = REPLACE(public_url, 'https://pub-ae283552759240cf98fa3f6ccb20733d.r2.dev', 'https://cdn.nevorai.com')
+WHERE public_url LIKE '%pub-ae283552759240cf98fa3f6ccb20733d.r2.dev%';
 ```
 
-Implementation plan
-1. Replace the fragile manual R2 signing
-   - In `supabase/functions/get-r2-upload-url/index.ts`, replace the custom AWS signing block with the official S3 presigner approach.
-   - This removes path-encoding/signature edge cases and makes uploads production-safe.
+**3. No frontend code changes needed**
+- All frontend components (`PublicFunnel.tsx`, `PublicVideoPage.tsx`, `FunnelEditor.tsx`, `VideosPage.tsx`, `VideoPickerModal.tsx`) read `public_url` from the database — they don't hardcode any R2 domain
+- Once the DB URLs are updated and the secret is changed, everything works automatically
 
-2. Sanitize object keys before signing
-   - Keep `original_filename` unchanged for display.
-   - Generate a safe storage filename for `r2_key` (lowercase, dash-separated, preserve extension).
-   - This prevents spaces/special characters from breaking upload or playback URLs.
+### CORS note
+Since `cdn.nevorai.com` is a custom domain on the R2 bucket, CORS headers are served by Cloudflare automatically. The video element just needs GET access which custom domains provide by default. No additional CORS config is needed for `<video src="...">` tags (same-origin policy doesn't apply to media elements).
 
-3. Harden the admin upload client
-   - In `src/pages/AdminVideosPage.tsx`, improve the XHR error handling so it reports:
-     - failed to get URL
-     - upload blocked by CORS/network
-     - upload rejected by R2
-     - confirm step failed
-   - Reset the file input after each attempt so retrying the same file works.
-   - On failed upload, update the existing `video_assets` row to `status = 'failed'` and store `error_message` instead of leaving it stuck on `uploading`.
+### Cache headers
+Cloudflare CDN automatically caches static assets served through custom domains. For optimal performance, set a Cache-Control rule in the Cloudflare dashboard for the `cdn.nevorai.com` domain:
+- `Cache-Control: public, max-age=31536000, immutable` for the `videos/*` path
+- This is safe because video files are immutable (each upload gets a unique path with the video ID)
 
-4. Make public URLs safe too
-   - In `supabase/functions/confirm-r2-upload/index.ts`, generate `public_url` from the safe key so `/video/:id` playback remains reliable.
-   - This also avoids future broken links in the user gallery and funnel picker.
+### Production readiness
+- Moving off `r2.dev` removes the undocumented rate limits on the dev subdomain
+- Cloudflare CDN edge caching means videos are served from the nearest POP to the viewer
+- This change alone raises the safe concurrent viewer estimate from ~100 to ~500+
 
-5. Re-check the R2 CORS setup
-   - Verify the bucket allows `PUT`, `GET`, and `HEAD` from the actual app origin.
-   - Important detail: the request origin I saw is `https://5b1420fc-ab4f-47dd-9c4a-50546e2dd4e9.lovableproject.com`, so if CORS was tightened from `*`, that exact origin must be allowed too.
+### Summary of actions
+1. Update `R2_PUBLIC_URL` secret to `https://cdn.nevorai.com`
+2. Run DB migration to rewrite 2 existing URLs
+3. No code changes to any frontend or backend files
 
-Files to update
-- `supabase/functions/get-r2-upload-url/index.ts`
-- `src/pages/AdminVideosPage.tsx`
-- `supabase/functions/confirm-r2-upload/index.ts`
-
-Technical details
-- No database migration is required for this fix.
-- I can reuse the existing `video_assets.error_message` column for failed uploads.
-- The main production fix is not just “more CORS”; it is replacing the custom signer plus sanitizing filenames.
-
-Success checks after implementation
-- Upload a file with spaces/parentheses in the name.
-- Confirm the row moves from `uploading` to `ready`.
-- Copy the Nevorai video link and verify playback on `/video/:id`.
-- Test one failed upload and confirm it becomes `failed` with a visible retry path instead of silently breaking.
