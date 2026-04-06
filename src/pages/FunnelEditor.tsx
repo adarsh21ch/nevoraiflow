@@ -852,13 +852,7 @@ const FunnelEditor = () => {
           <div className="flex gap-3 mt-5">
             {(modeChosen && wizardStep > 0) && <Button variant="outline" onClick={() => setWizardStep(wizardStep - 1)}>Previous</Button>}
             <div className="flex-1" />
-            {showModePicker && funnel.title ? (
-              <Button variant="default" onClick={() => {}}>Choose a mode above to continue</Button>
-            ) : !modeChosen ? (
-              funnel.title ? (
-                <Button variant="default" onClick={() => {}}>Enter a title, then choose mode</Button>
-              ) : null
-            ) : wizardStep < lastStepIdx ? (
+            {!modeChosen ? null : wizardStep < lastStepIdx ? (
               <Button variant="default" onClick={() => setWizardStep(wizardStep + 1)}>Next</Button>
             ) : (
               <Button variant="hero" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !funnel.title}>
