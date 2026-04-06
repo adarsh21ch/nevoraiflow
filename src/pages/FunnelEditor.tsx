@@ -147,7 +147,8 @@ const FunnelEditor = () => {
       owner_id: user.id, title: funnel.title, slug, description: funnel.description,
       visibility: funnel.visibility, intent_type: funnel.intent_type,
       allow_seek: funnel.allow_seek, allow_speed_change: funnel.allow_speed_change,
-      lock_cta: funnel.lock_cta, cta_text: funnel.cta_text, cta_timing_seconds: funnel.cta_timing_seconds,
+      lock_cta: funnel.lock_cta, cta_enabled: funnel.cta_enabled,
+      cta_text: funnel.cta_text, cta_timing_seconds: funnel.cta_timing_seconds,
       cta_url: funnel.cta_url || null, video_access_minutes: funnel.video_access_minutes,
       show_contact_buttons: funnel.show_contact_buttons, contact_whatsapp: funnel.contact_whatsapp || null,
       contact_phone: funnel.contact_phone || null, contact_instagram: funnel.contact_instagram || null,
@@ -290,15 +291,23 @@ const FunnelEditor = () => {
                 <h2 className="text-lg font-heading font-semibold">Video</h2>
                 <p className="text-sm text-muted-foreground">Select a video from your gallery to use in this funnel.</p>
                 {selectedVideo ? (
-                  <div className="border border-border rounded-xl p-4 flex items-center gap-4">
-                    <div className="w-20 h-14 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Video size={20} className="text-muted-foreground" />
+                  <div className="space-y-4">
+                    <div className="border border-border rounded-xl p-4 flex items-center gap-4">
+                      <div className="w-20 h-14 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Video size={20} className="text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{selectedVideo.title}</p>
+                        <p className="text-xs text-success mt-1">✓ Selected</p>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => setVideoPickerOpen(true)}>Change</Button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{selectedVideo.title}</p>
-                      <p className="text-xs text-success mt-1">✓ Selected</p>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => setVideoPickerOpen(true)}>Change</Button>
+                    {/* Video Preview */}
+                    {selectedVideo.url && (
+                      <div className="rounded-xl overflow-hidden border border-border">
+                        <video src={selectedVideo.url} className="w-full aspect-video object-contain bg-black" controls playsInline />
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="border-2 border-dashed border-border rounded-xl p-12 text-center">
