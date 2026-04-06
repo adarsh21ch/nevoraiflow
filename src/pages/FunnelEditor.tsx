@@ -778,20 +778,15 @@ const FunnelEditor = () => {
 
   // ── Determine which content to render ──
   const renderWizardContent = () => {
-    // Gate: mode picker for new funnels
-    if (showModePicker) {
-      if (funnel.title) return renderModePicker();
-      return renderBasicInfo();
-    }
+    // Gate: if mode not chosen yet, show mode picker as the FIRST screen
+    if (!modeChosen) return renderModePicker();
 
     if (wizardStep === 0) return renderBasicInfo();
 
     if (isMulti) {
-      // Multi: 0=Basics, 1=Steps, 2+=common (Controls, Audio, WhatsApp, Payment, Broadcast, Publish)
       if (wizardStep === 1) return renderFlowStepsBuilder();
       return renderCommonStep(2);
     } else {
-      // Single: 0=Basics, 1=Video, 2=Controls, 3=LeadForm, 4+=common (Audio, WhatsApp, Payment, Broadcast, Publish)
       if (wizardStep === 1) return renderVideoStep();
       return renderCommonStep(2);
     }
