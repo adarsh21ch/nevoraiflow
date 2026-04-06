@@ -296,7 +296,7 @@ const CustomVideoPlayer = ({
         preload="auto"
         onTimeUpdate={handleTimeUpdate}
         onSeeking={handleSeeking}
-        onLoadedMetadata={() => { if (videoRef.current) setDuration(videoRef.current.duration); }}
+        onLoadedMetadata={() => { if (videoRef.current) { setDuration(videoRef.current.duration); if (initialTime > 0) videoRef.current.currentTime = initialTime; } }}
         onPlay={() => { setPlaying(true); setIsLoading(false); }}
         onPause={() => setPlaying(false)}
         onPlaying={() => { setIsBuffering(false); setIsLoading(false); }}
