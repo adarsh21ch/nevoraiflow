@@ -11,7 +11,6 @@ import {
   AlertTriangle, BadgeCheck, MapPin, Instagram, Volume2, VolumeX,
   Maximize, Minimize, Share2, Loader2
 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
 import logoImg from "@/assets/logo.png";
 
 /* ─── Custom Video Player ─── */
