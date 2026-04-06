@@ -587,7 +587,10 @@ const PublicFunnel = () => {
           <Input placeholder="Full Name" value={leadForm.name} onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })} required={formConfig.name_required || false} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
         )}
         {formConfig?.show_phone && (
-          <Input placeholder="Phone (+91...)" value={leadForm.phone} onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })} required={formConfig.phone_required || false} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
+          <div className="flex gap-2">
+            <div className="flex items-center px-3 bg-[#09090b] border border-[#27272a] rounded-xl text-sm text-white/40 shrink-0 h-12">+91</div>
+            <Input placeholder="Phone number" value={leadForm.phone} onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })} required={formConfig.phone_required || false} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
+          </div>
         )}
         {formConfig?.show_email && (
           <Input type="email" placeholder="Email" value={leadForm.email} onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })} required={formConfig.email_required || false} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
@@ -633,7 +636,7 @@ const PublicFunnel = () => {
 
         {/* Multi-step funnel viewer */}
         {isMultiStep ? (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <MultiStepViewer
               funnel={funnel}
               steps={funnelSteps}
@@ -642,24 +645,6 @@ const PublicFunnel = () => {
               priceOptions={priceOptions}
               VideoPlayer={CustomVideoPlayer}
             />
-            {/* Creator Badge */}
-            {creatorProfile?.full_name && (
-              <div className="flex items-center gap-3 py-4 mt-4">
-                <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 overflow-hidden ring-2 ring-primary/20">
-                  {creatorProfile.avatar_url ? (
-                    <img src={creatorProfile.avatar_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-primary font-heading font-bold text-sm">{creatorProfile.full_name.charAt(0).toUpperCase()}</span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-heading font-semibold text-white text-sm truncate">{creatorProfile.full_name}</span>
-                    {creatorProfile.kyc_status === "approved" && <BadgeCheck size={15} className="text-primary flex-shrink-0" />}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         ) : (
           <>
