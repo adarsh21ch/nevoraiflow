@@ -43,6 +43,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
   const { signOut, user } = useAuth();
   const { isAdmin } = useAdmin();
   const [collapsed, setCollapsed] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ["unread-notifications", user?.id],
