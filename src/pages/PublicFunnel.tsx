@@ -331,7 +331,10 @@ const PublicFunnel = () => {
   const formConfig = bundle?.formConfig;
   const priceOptions: any[] = bundle?.priceOptions || [];
 
-  // CTA timing based on actual watch seconds
+  const isOwner = user && funnel && user.id === funnel.owner_id;
+  const isDraft = funnel && !funnel.is_published;
+  const canView = funnel && (funnel.is_published || isOwner);
+
   useEffect(() => {
     if (!funnel || funnel.cta_enabled !== true) return;
     if (!funnel.cta_timing_seconds) {
