@@ -23,6 +23,7 @@ const PublicFunnel = () => {
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordUnlocked, setPasswordUnlocked] = useState(false);
+  const maxTimeReached = useRef(0);
 
   // Fetch funnel
   const { data: funnel, isLoading } = useQuery({
