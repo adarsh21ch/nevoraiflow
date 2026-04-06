@@ -802,6 +802,8 @@ const PublicFunnel = () => {
             <p className="text-sm text-[#94a3b8] mt-1">Your payment proof has been submitted. You'll be notified once it's verified.</p>
           </div>
         )}
+        </>
+        )}
 
         {/* Contact Buttons */}
         {funnel.show_contact_buttons && (leadSubmitted || !funnel.show_contact_after_cta) && (
