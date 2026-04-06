@@ -397,15 +397,15 @@ const FunnelEditor = () => {
 
   const renderModePicker = () => (
     <>
-      <h2 className="text-lg font-heading font-semibold">How should this funnel work?</h2>
-      <p className="text-sm text-muted-foreground">Choose the structure that fits your goal.</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+      <h2 className="text-xl font-heading font-bold">Create New Funnel</h2>
+      <p className="text-sm text-muted-foreground">What type of funnel do you want to build?</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
         <button
-          onClick={() => { update("funnel_mode", "single"); setModeChosen(true); setWizardStep(1); }}
+          onClick={() => { update("funnel_mode", "single"); setModeChosen(true); setWizardStep(0); }}
           className="p-6 rounded-xl border-2 border-border hover:border-primary/50 hover:bg-primary/5 text-left transition-all group"
         >
-          <div className="w-11 h-11 rounded-xl bg-blue-500/10 flex items-center justify-center mb-3">
-            <Video size={22} className="text-blue-400" />
+          <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+            <Video size={22} className="text-primary" />
           </div>
           <h3 className="font-heading font-bold text-sm group-hover:text-primary transition-colors">Single Video Funnel</h3>
           <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
@@ -417,12 +417,12 @@ const FunnelEditor = () => {
             update("funnel_mode", "multi");
             if (flowSteps.length === 0) setFlowSteps([createEmptyStep(0)]);
             setModeChosen(true);
-            setWizardStep(1);
+            setWizardStep(0);
           }}
           className="p-6 rounded-xl border-2 border-border hover:border-primary/50 hover:bg-primary/5 text-left transition-all group"
         >
-          <div className="w-11 h-11 rounded-xl bg-violet-500/10 flex items-center justify-center mb-3">
-            <Layers size={22} className="text-violet-400" />
+          <div className="w-11 h-11 rounded-xl bg-accent/20 flex items-center justify-center mb-3">
+            <Layers size={22} className="text-accent-foreground" />
           </div>
           <h3 className="font-heading font-bold text-sm group-hover:text-primary transition-colors">Multi-Step Flow</h3>
           <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
