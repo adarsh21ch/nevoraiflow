@@ -88,16 +88,46 @@ Deno.serve(async (req) => {
         .then((r) => ({ key: "priceOptions", data: r.data || [] }))
     );
 
-    // Funnel steps (for multi-step mode)
+    // Funnel steps (for multi-step mode) — include video asset resolution
     if (funnel.funnel_mode === "multi") {
       promises.push(
-        supabase
-          .from("funnel_steps")
-          .select("id, step_order, title, description, step_type, video_asset_id, is_active, unlock_rule_type, unlock_rule_value, cta_text, cta_url, booking_url")
-          .eq("funnel_id", funnel.id)
-          .eq("is_active", true)
-          .order("step_order")
-          .then((r) => ({ key: "steps", data: r.data || [] }))
+        (async () => {
+          const { data: steps } = await supabase
+            .from("funnel_steps")
+            .select("id, step_order, title, description, step_type, video_asset_id, is_active, unlock_rule_type, unlock_rule_value, cta_text, cta_url, booking_url")
+            .eq("funnel_id", funnel.id)
+            .eq("is_active", true)
+            .order("step_order");
+
+          if (!steps || steps.length === 0) return { key: "steps", data: [] };
+
+          // Resolve video URLs for video steps
+          const videoIds = steps
+            .filter((s) => s.step_type === "video" && s.video_asset_id)
+            .map((s) => s.video_asset_id!);
+
+          let videoMap: Record<string, { public_url: string | null; thumbnail_url: string | null }> = {};
+          if (videoIds.length > 0) {
+            const { data: videos } = await supabase
+              .from("video_assets")
+              .select("id, public_url, thumbnail_url")
+              .in("id", videoIds);
+            if (videos) {
+              for (const v of videos) {
+                videoMap[v.id] = { public_url: v.public_url, thumbnail_url: v.thumbnail_url };
+              }
+            }
+          }
+
+          // Enrich steps with video URLs
+          const enrichedSteps = steps.map((s) => ({
+            ...s,
+            video_url: s.video_asset_id ? videoMap[s.video_asset_id]?.public_url || null : null,
+            video_thumbnail: s.video_asset_id ? videoMap[s.video_asset_id]?.thumbnail_url || null : null,
+          }));
+
+          return { key: "steps", data: enrichedSteps };
+        })()
       );
     } else {
       promises.push(Promise.resolve({ key: "steps", data: [] }));

@@ -271,6 +271,10 @@ const FunnelDetail = () => {
             )}
           </div>
         )}
+
+        {tab === "progress" && isMultiStep && (
+          <LeadProgressTab funnelId={id!} userId={user?.id || ""} />
+        )}
       </div>
     </DashboardLayout>
   );
