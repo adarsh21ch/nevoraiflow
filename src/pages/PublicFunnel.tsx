@@ -12,6 +12,7 @@ import {
   Maximize, Minimize, Share2, Loader2, Gauge
 } from "lucide-react";
 import logoImg from "@/assets/logo.png";
+import { MultiStepViewer } from "@/components/funnel/MultiStepViewer";
 
 /* ─── Speed Popover ─── */
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
@@ -75,6 +76,7 @@ const CustomVideoPlayer = ({
   allowSeek,
   allowSpeed,
   autoplay = false,
+  initialTime = 0,
   onTimeUpdate,
   onPlay,
 }: {
@@ -83,6 +85,7 @@ const CustomVideoPlayer = ({
   allowSeek: boolean;
   allowSpeed: boolean;
   autoplay?: boolean;
+  initialTime?: number;
   onTimeUpdate?: (currentTime: number, duration: number) => void;
   onPlay?: () => void;
 }) => {
@@ -293,7 +296,7 @@ const CustomVideoPlayer = ({
         preload="auto"
         onTimeUpdate={handleTimeUpdate}
         onSeeking={handleSeeking}
-        onLoadedMetadata={() => { if (videoRef.current) setDuration(videoRef.current.duration); }}
+        onLoadedMetadata={() => { if (videoRef.current) { setDuration(videoRef.current.duration); if (initialTime > 0) videoRef.current.currentTime = initialTime; } }}
         onPlay={() => { setPlaying(true); setIsLoading(false); }}
         onPause={() => setPlaying(false)}
         onPlaying={() => { setIsBuffering(false); setIsLoading(false); }}
@@ -447,6 +450,8 @@ const PublicFunnel = () => {
   const creatorProfile = bundle?.creator;
   const formConfig = bundle?.formConfig;
   const priceOptions: any[] = bundle?.priceOptions || [];
+  const funnelSteps: any[] = bundle?.steps || [];
+  const isMultiStep = funnel?.funnel_mode === "multi" && funnelSteps.length > 0;
 
   const isDraft = funnel && !funnel.is_published;
   const canView = funnel && funnel.is_published;
@@ -626,6 +631,38 @@ const PublicFunnel = () => {
           {funnel.description && <p className="text-[15px] text-white/40 mt-3 max-w-xl mx-auto leading-relaxed">{funnel.description}</p>}
         </div>
 
+        {/* Multi-step funnel viewer */}
+        {isMultiStep ? (
+          <div className="max-w-4xl mx-auto">
+            <MultiStepViewer
+              funnel={funnel}
+              steps={funnelSteps}
+              creatorProfile={creatorProfile}
+              formConfig={formConfig}
+              priceOptions={priceOptions}
+              VideoPlayer={CustomVideoPlayer}
+            />
+            {/* Creator Badge */}
+            {creatorProfile?.full_name && (
+              <div className="flex items-center gap-3 py-4 mt-4">
+                <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 overflow-hidden ring-2 ring-primary/20">
+                  {creatorProfile.avatar_url ? (
+                    <img src={creatorProfile.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-primary font-heading font-bold text-sm">{creatorProfile.full_name.charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-heading font-semibold text-white text-sm truncate">{creatorProfile.full_name}</span>
+                    {creatorProfile.kyc_status === "approved" && <BadgeCheck size={15} className="text-primary flex-shrink-0" />}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
         {/* Lead form before video */}
         {showLeadFormNow && <LeadFormCard className="max-w-md mx-auto mb-8" />}
 
@@ -764,6 +801,8 @@ const PublicFunnel = () => {
             <h3 className="font-heading font-semibold text-white">Payment Under Review</h3>
             <p className="text-sm text-[#94a3b8] mt-1">Your payment proof has been submitted. You'll be notified once it's verified.</p>
           </div>
+        )}
+        </>
         )}
 
         {/* Contact Buttons */}

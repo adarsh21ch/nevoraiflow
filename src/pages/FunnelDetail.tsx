@@ -10,13 +10,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
-import { Eye, Users, TrendingUp, IndianRupee, Edit, Copy, ExternalLink, Search, Download, Phone, MessageCircle, Check, X } from "lucide-react";
+import { Eye, Users, TrendingUp, IndianRupee, Edit, Copy, ExternalLink, Search, Download, Phone, MessageCircle, Check, X, Layers } from "lucide-react";
+import { LeadProgressTab } from "@/components/funnel/LeadProgressTab";
 
 const FunnelDetail = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<"overview" | "leads" | "payments">("overview");
+  const [tab, setTab] = useState<"overview" | "leads" | "payments" | "progress">("overview");
   const [leadSearch, setLeadSearch] = useState("");
   const [leadFilter, setLeadFilter] = useState("all");
 
@@ -81,10 +82,13 @@ const FunnelDetail = () => {
   const convRate = funnel.total_views ? ((leads.length / funnel.total_views) * 100).toFixed(1) : "0";
   const totalRevenue = payments.filter((p) => p.status === "verified").reduce((a, p) => a + p.amount, 0);
 
+  const isMultiStep = (funnel as any)?.funnel_mode === "multi";
+
   const tabs = [
     { key: "overview", label: "Overview" },
     { key: "leads", label: `Leads (${leads.length})` },
     { key: "payments", label: `Payments (${payments.length})` },
+    ...(isMultiStep ? [{ key: "progress", label: "Lead Progress" }] : []),
   ] as const;
 
   return (
@@ -109,7 +113,7 @@ const FunnelDetail = () => {
 
         <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
           {tabs.map((t) => (
-            <button key={t.key} onClick={() => setTab(t.key)}
+            <button key={t.key} onClick={() => setTab(t.key as any)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${tab === t.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
               {t.label}
             </button>
@@ -266,6 +270,10 @@ const FunnelDetail = () => {
               </div>
             )}
           </div>
+        )}
+
+        {tab === "progress" && isMultiStep && (
+          <LeadProgressTab funnelId={id!} userId={user?.id || ""} />
         )}
       </div>
     </DashboardLayout>
