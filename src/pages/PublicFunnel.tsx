@@ -294,7 +294,8 @@ const CustomVideoPlayer = ({
 /* ─── Main Page ─── */
 const PublicFunnel = () => {
   const { slug } = useParams();
-  const { user } = useAuth();
+  // No useAuth() here — public visitors should not trigger auth session checks
+  // Owner preview is determined server-side by the edge function returning unpublished funnels
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [showCta, setShowCta] = useState(false);
   const [watchSeconds, setWatchSeconds] = useState(0);
