@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { Play, MessageCircle, Phone as PhoneIcon, Lock, Check, AlertTriangle } from "lucide-react";
+import { Play, MessageCircle, Phone as PhoneIcon, Lock, Check, AlertTriangle, BadgeCheck, MapPin, Instagram } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import logoImg from "@/assets/logo.png";
 
@@ -24,11 +24,10 @@ const PublicFunnel = () => {
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordUnlocked, setPasswordUnlocked] = useState(false);
 
-  // Fetch funnel - allow owner to see drafts
+  // Fetch funnel
   const { data: funnel, isLoading } = useQuery({
     queryKey: ["public-funnel", slug],
     queryFn: async () => {
-      // First try published
       const { data } = await supabase.from("funnels").select("*").eq("slug", slug!).single();
       if (!data) throw new Error("Not found");
       return data;
@@ -48,6 +47,16 @@ const PublicFunnel = () => {
       return data;
     },
     enabled: !!funnel?.video_asset_id,
+  });
+
+  // Fetch creator profile
+  const { data: creatorProfile } = useQuery({
+    queryKey: ["creator-profile", funnel?.owner_id],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("full_name, city, instagram_url, avatar_url, kyc_status").eq("id", funnel!.owner_id).single();
+      return data;
+    },
+    enabled: !!funnel?.owner_id,
   });
 
   const { data: formConfig } = useQuery({
@@ -70,7 +79,7 @@ const PublicFunnel = () => {
 
   // CTA timing
   useEffect(() => {
-    if (!funnel || !(funnel as any).cta_enabled) return;
+    if (!funnel || funnel.cta_enabled === false) return;
     if (funnel.cta_timing_seconds && playing) {
       const timer = setTimeout(() => setShowCta(true), funnel.cta_timing_seconds * 1000);
       return () => clearTimeout(timer);
@@ -171,11 +180,12 @@ const PublicFunnel = () => {
     );
   }
 
-  const ctaEnabled = (funnel as any).cta_enabled !== false;
+  const ctaEnabled = funnel.cta_enabled === true;
   const showLeadFormNow = formConfig?.capture_enabled && !leadSubmitted && formConfig.capture_timing === "before_video";
   const showLeadFormAfterCta = formConfig?.capture_enabled && !leadSubmitted && formConfig.capture_timing === "after_cta" && showCta;
   const videoUrl = videoAsset?.public_url;
   const ctaTimingLeft = funnel.cta_timing_seconds ? Math.max(0, funnel.cta_timing_seconds - watchSeconds) : 0;
+  const isVerified = creatorProfile?.kyc_status === "approved";
 
   const LeadFormComponent = () => (
     <div className="bg-[#12151f] border border-[#2a3050] rounded-2xl p-6 w-full max-w-md mx-auto">
@@ -253,11 +263,41 @@ const PublicFunnel = () => {
           </div>
         )}
 
-        {/* CTA Button */}
+        {/* Creator Badge */}
+        {creatorProfile && (
+          <div className="flex items-center gap-3 bg-[#12151f] border border-[#2a3050] rounded-2xl p-4">
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 text-primary font-heading font-bold text-sm">
+              {creatorProfile.avatar_url ? (
+                <img src={creatorProfile.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+              ) : (
+                creatorProfile.full_name?.charAt(0)?.toUpperCase() || "N"
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="font-heading font-semibold text-white text-sm truncate">{creatorProfile.full_name}</span>
+                {isVerified && <BadgeCheck size={16} className="text-primary flex-shrink-0" />}
+              </div>
+              <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
+                {creatorProfile.city && (
+                  <span className="flex items-center gap-1"><MapPin size={10} /> {creatorProfile.city}</span>
+                )}
+                {creatorProfile.instagram_url && (
+                  <a href={creatorProfile.instagram_url.startsWith("http") ? creatorProfile.instagram_url : `https://instagram.com/${creatorProfile.instagram_url.replace("@", "")}`}
+                    target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary transition-colors">
+                    <Instagram size={10} /> @{creatorProfile.instagram_url.replace(/.*instagram\.com\//, "").replace("@", "")}
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CTA Button — only when explicitly enabled */}
         {ctaEnabled && (showCta || !funnel.cta_timing_seconds) && (!showLeadFormNow || leadSubmitted) && (
           <div>
             <Button
-              className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 animate-pulse"
+              className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20"
               onClick={() => funnel.cta_url ? window.open(funnel.cta_url, "_blank") : null}
             >
               {funnel.cta_text || "Get Started"} →
