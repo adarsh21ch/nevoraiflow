@@ -4,26 +4,308 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
-import { Play, MessageCircle, Phone as PhoneIcon, Lock, Check, AlertTriangle, BadgeCheck, MapPin, Instagram } from "lucide-react";
+import {
+  Play, Pause, MessageCircle, Phone as PhoneIcon, Lock, Check,
+  AlertTriangle, BadgeCheck, MapPin, Instagram, Volume2, VolumeX,
+  Maximize, Minimize, Share2, Loader2
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import logoImg from "@/assets/logo.png";
 
+/* ─── Custom Video Player ─── */
+const CustomVideoPlayer = ({
+  src,
+  poster,
+  allowSeek,
+  allowSpeed,
+  onTimeUpdate,
+  onPlay,
+}: {
+  src: string;
+  poster?: string;
+  allowSeek: boolean;
+  allowSpeed: boolean;
+  onTimeUpdate?: (currentTime: number, duration: number) => void;
+  onPlay?: () => void;
+}) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const maxWatched = useRef(0);
+  const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrent] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [buffered, setBuffered] = useState(0);
+  const [muted, setMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [started, setStarted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const hideTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  const fmt = (s: number) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = Math.floor(s % 60);
+    return h > 0
+      ? `${h}:${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`
+      : `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  const togglePlay = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (!started) {
+      setIsLoading(true);
+      setStarted(true);
+      v.play().catch(() => {});
+      onPlay?.();
+    } else if (v.paused) {
+      v.play();
+    } else {
+      v.pause();
+    }
+  }, [started, onPlay]);
+
+  // Keyboard shortcut blocking
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!containerRef.current?.contains(document.activeElement) && document.activeElement !== document.body) return;
+      if (e.key === " " || e.key === "k" || e.key === "K") {
+        e.preventDefault();
+        togglePlay();
+      }
+      if (!allowSeek) {
+        if (["ArrowRight", "l", "L"].includes(e.key)) e.preventDefault();
+        if ("123456789".includes(e.key)) {
+          const v = videoRef.current;
+          if (v) {
+            const target = v.duration * (parseInt(e.key) / 10);
+            if (target > maxWatched.current + 1) e.preventDefault();
+          }
+        }
+      }
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        const v = videoRef.current;
+        if (v) v.currentTime = Math.max(0, v.currentTime - 5);
+      }
+      if (e.key === "m" || e.key === "M") {
+        setMuted((p) => { if (videoRef.current) videoRef.current.muted = !p; return !p; });
+      }
+      if (e.key === "f" || e.key === "F") toggleFullscreen();
+    };
+    window.addEventListener("keydown", handler, true);
+    return () => window.removeEventListener("keydown", handler, true);
+  }, [allowSeek, togglePlay]);
+
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      containerRef.current.requestFullscreen?.();
+    }
+  };
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  const handleTimeUpdate = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.currentTime > maxWatched.current) maxWatched.current = v.currentTime;
+    setCurrent(v.currentTime);
+    onTimeUpdate?.(v.currentTime, v.duration);
+    // buffered
+    if (v.buffered.length > 0) {
+      setBuffered(v.buffered.end(v.buffered.length - 1));
+    }
+  };
+
+  const handleSeeking = () => {
+    const v = videoRef.current;
+    if (!v || allowSeek) return;
+    if (v.currentTime > maxWatched.current + 1) {
+      v.currentTime = maxWatched.current;
+    }
+  };
+
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const v = videoRef.current;
+    if (!v || !duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const targetTime = pct * duration;
+    if (!allowSeek && targetTime > maxWatched.current + 1) {
+      v.currentTime = maxWatched.current;
+    } else {
+      v.currentTime = targetTime;
+    }
+  };
+
+  const resetHideTimer = () => {
+    setShowControls(true);
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    if (playing) {
+      hideTimer.current = setTimeout(() => setShowControls(false), 3000);
+    }
+  };
+
+  const watchedPct = duration ? (currentTime / duration) * 100 : 0;
+  const bufferedPct = duration ? (buffered / duration) * 100 : 0;
+  const maxWatchedPct = duration ? (maxWatched.current / duration) * 100 : 0;
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden group select-none"
+      onMouseMove={resetHideTimer}
+      onTouchStart={resetHideTimer}
+      onClick={() => { if (started) togglePlay(); }}
+      onContextMenu={(e) => e.preventDefault()}
+      tabIndex={0}
+    >
+      <video
+        ref={videoRef}
+        src={started ? src : undefined}
+        poster={poster}
+        className="w-full h-full object-contain"
+        playsInline
+        preload="metadata"
+        onTimeUpdate={handleTimeUpdate}
+        onSeeking={handleSeeking}
+        onLoadedMetadata={() => { if (videoRef.current) setDuration(videoRef.current.duration); }}
+        onPlay={() => { setPlaying(true); setIsLoading(false); }}
+        onPause={() => setPlaying(false)}
+        onPlaying={() => { setIsBuffering(false); setIsLoading(false); }}
+        onWaiting={() => setIsBuffering(true)}
+        onCanPlay={() => setIsLoading(false)}
+      />
+
+      {/* Watermark */}
+      <div className="absolute bottom-12 right-3 text-[10px] text-white/30 font-medium pointer-events-none select-none z-10">
+        Nevorai Flow
+      </div>
+
+      {/* Center play button (before start) */}
+      {!started && (
+        <div
+          className="absolute inset-0 flex items-center justify-center cursor-pointer z-20"
+          onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+        >
+          {poster && <img src={poster} alt="" className="absolute inset-0 w-full h-full object-cover" />}
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative z-10">
+            <button className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center hover:scale-110 transition-transform shadow-lg shadow-primary/30">
+              <Play size={36} className="ml-1 text-white" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Loading spinner */}
+      {(isLoading || isBuffering) && started && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+          <Loader2 size={40} className="text-white animate-spin" />
+        </div>
+      )}
+
+      {/* Center play/pause indicator */}
+      {started && !playing && !isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+          <div className="w-16 h-16 rounded-full bg-black/50 flex items-center justify-center">
+            <Play size={28} className="ml-1 text-white" />
+          </div>
+        </div>
+      )}
+
+      {/* Controls bar */}
+      {started && (
+        <div
+          className={`absolute bottom-0 left-0 right-0 z-30 transition-opacity duration-300 ${showControls || !playing ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          onClick={(e) => e.stopPropagation()}
+          style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.85))" }}
+        >
+          {/* Progress bar */}
+          <div
+            className="h-1.5 mx-3 mt-2 cursor-pointer relative group/bar"
+            onClick={handleProgressClick}
+          >
+            {/* Track */}
+            <div className="absolute inset-0 rounded-full bg-white/15" />
+            {/* Buffered */}
+            <div className="absolute inset-y-0 left-0 rounded-full bg-white/25" style={{ width: `${bufferedPct}%` }} />
+            {/* Unwatched zone indicator (when seek disabled) */}
+            {!allowSeek && (
+              <div
+                className="absolute inset-y-0 rounded-r-full bg-white/5 cursor-not-allowed"
+                style={{ left: `${maxWatchedPct}%`, right: 0 }}
+              />
+            )}
+            {/* Played */}
+            <div className="absolute inset-y-0 left-0 rounded-full bg-primary" style={{ width: `${watchedPct}%` }} />
+            {/* Thumb */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-primary border-2 border-white shadow-md opacity-0 group-hover/bar:opacity-100 transition-opacity"
+              style={{ left: `calc(${watchedPct}% - 7px)` }}
+            />
+          </div>
+
+          {/* Buttons row */}
+          <div className="flex items-center gap-2 px-3 py-2.5 text-white text-xs">
+            <button onClick={togglePlay} className="p-1 hover:bg-white/10 rounded">
+              {playing ? <Pause size={18} /> : <Play size={18} />}
+            </button>
+            <span className="tabular-nums text-white/80 text-[11px]">{fmt(currentTime)} / {fmt(duration)}</span>
+            <div className="flex-1" />
+            <button onClick={() => { setMuted((p) => { if (videoRef.current) videoRef.current.muted = !p; return !p; }); }} className="p-1 hover:bg-white/10 rounded">
+              {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            </button>
+            {allowSpeed && (
+              <select
+                className="bg-transparent text-white text-[11px] border border-white/20 rounded px-1 py-0.5 cursor-pointer"
+                defaultValue="1"
+                onChange={(e) => { if (videoRef.current) videoRef.current.playbackRate = parseFloat(e.target.value); }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <option value="0.5" className="text-black">0.5x</option>
+                <option value="0.75" className="text-black">0.75x</option>
+                <option value="1" className="text-black">1x</option>
+                <option value="1.25" className="text-black">1.25x</option>
+                <option value="1.5" className="text-black">1.5x</option>
+                <option value="2" className="text-black">2x</option>
+              </select>
+            )}
+            <button onClick={toggleFullscreen} className="p-1 hover:bg-white/10 rounded">
+              {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ─── Main Page ─── */
 const PublicFunnel = () => {
   const { slug } = useParams();
   const { user } = useAuth();
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [showCta, setShowCta] = useState(false);
   const [watchSeconds, setWatchSeconds] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [leadForm, setLeadForm] = useState({ name: "", phone: "", email: "", city: "", custom_value: "" });
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [leadForm, setLeadForm] = useState({ name: "", phone: "", email: "", city: "", custom_value: "", website: "" });
   const [paymentProof, setPaymentProof] = useState({ upi_transaction_id: "", amount: 0 });
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordUnlocked, setPasswordUnlocked] = useState(false);
-  const maxTimeReached = useRef(0);
 
   // Fetch funnel
   const { data: funnel, isLoading } = useQuery({
@@ -78,28 +360,22 @@ const PublicFunnel = () => {
     enabled: !!funnel?.id && funnel?.payment_enabled === true,
   });
 
-  // CTA timing
+  // CTA timing based on actual watch seconds
   useEffect(() => {
-    if (!funnel || funnel.cta_enabled === false) return;
-    if (funnel.cta_timing_seconds && playing) {
-      const timer = setTimeout(() => setShowCta(true), funnel.cta_timing_seconds * 1000);
-      return () => clearTimeout(timer);
-    } else if (!funnel.cta_timing_seconds) {
+    if (!funnel || funnel.cta_enabled !== true) return;
+    if (!funnel.cta_timing_seconds) {
+      setShowCta(true);
+      return;
+    }
+    if (watchSeconds >= funnel.cta_timing_seconds) {
       setShowCta(true);
     }
-  }, [funnel, playing]);
+  }, [funnel, watchSeconds]);
 
-  // Watch time tracker
-  useEffect(() => {
-    if (!playing) return;
-    const interval = setInterval(() => setWatchSeconds(s => s + 1), 1000);
-    return () => clearInterval(interval);
-  }, [playing]);
-
-  // Set OG tags
+  // OG tags
   useEffect(() => {
     if (!funnel) return;
-    document.title = `${funnel.title} | Nevorai`;
+    document.title = `${funnel.title} | Nevorai Flow`;
     const setMeta = (name: string, content: string, prop = false) => {
       const attr = prop ? "property" : "name";
       let el = document.querySelector(`meta[${attr}="${name}"]`);
@@ -112,20 +388,37 @@ const PublicFunnel = () => {
     setMeta("og:type", "website", true);
     setMeta("og:url", window.location.href, true);
     if (funnel.thumbnail_url) setMeta("og:image", funnel.thumbnail_url, true);
-    setMeta("og:site_name", "Nevorai", true);
+    setMeta("og:site_name", "Nevorai Flow", true);
     setMeta("twitter:card", "summary_large_image");
     setMeta("twitter:title", funnel.title);
     setMeta("twitter:description", funnel.description || funnel.title);
     if (funnel.thumbnail_url) setMeta("twitter:image", funnel.thumbnail_url);
   }, [funnel]);
 
+  // Resume progress
+  const savedProgress = funnel ? localStorage.getItem(`nevora_progress_${funnel.id}`) : null;
+  const [resumePrompt, setResumePrompt] = useState(true);
+  const parsedProgress = savedProgress ? JSON.parse(savedProgress) : null;
+
+  // Save progress periodically
+  useEffect(() => {
+    if (!funnel || !videoPlaying) return;
+    const interval = setInterval(() => {
+      localStorage.setItem(`nevora_progress_${funnel.id}`, JSON.stringify({ lastPosition: watchSeconds, watchedAt: Date.now() }));
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [funnel, videoPlaying, watchSeconds]);
+
   const submitLead = useMutation({
     mutationFn: async () => {
+      // Honeypot check
+      if (leadForm.website) return;
       await supabase.from("funnel_leads").insert({
         funnel_id: funnel!.id,
         name: leadForm.name || null, phone: leadForm.phone || null,
         email: leadForm.email || null, city: leadForm.city || null,
         custom_value: leadForm.custom_value || null,
+        watch_progress_at_submit: watchSeconds,
         device_type: /Mobi/.test(navigator.userAgent) ? "mobile" : "desktop",
         user_agent: navigator.userAgent,
       });
@@ -146,22 +439,17 @@ const PublicFunnel = () => {
     onSuccess: () => { setPaymentSubmitted(true); toast.success("Payment proof submitted!"); },
   });
 
-  const handlePlayVideo = () => {
-    setPlaying(true);
-    setTimeout(() => videoRef.current?.play(), 100);
-  };
-
   if (isLoading) return (
-    <div className="min-h-screen bg-[#0a0d14] flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+    <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
+      <Loader2 size={32} className="text-primary animate-spin" />
     </div>
   );
 
   if (!canView) return (
-    <div className="min-h-screen bg-[#0a0d14] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4">
       <div className="text-center">
         <h1 className="text-xl font-heading font-bold mb-2 text-white">Funnel Not Found</h1>
-        <p className="text-sm text-gray-400">This funnel doesn't exist or has been unpublished.</p>
+        <p className="text-sm text-[#94a3b8]">This funnel doesn't exist or has been unpublished.</p>
       </div>
     </div>
   );
@@ -169,12 +457,12 @@ const PublicFunnel = () => {
   // Password gate
   if (funnel.visibility === "password" && !passwordUnlocked) {
     return (
-      <div className="min-h-screen bg-[#0a0d14] flex items-center justify-center p-4">
-        <div className="bg-[#12151f] border border-[#2a3050] rounded-2xl p-8 w-full max-w-sm text-center">
+      <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4">
+        <div className="bg-[#141419] border border-[#27272a] rounded-2xl p-8 w-full max-w-sm text-center">
           <Lock size={32} className="text-primary mx-auto mb-4" />
           <h2 className="text-lg font-heading font-semibold mb-2 text-white">{funnel.title}</h2>
-          <p className="text-sm text-gray-400 mb-4">This funnel is password protected.</p>
-          <Input type="password" placeholder="Enter password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="bg-[#1a1f2e] border-[#2a3050] text-white mb-3" />
+          <p className="text-sm text-[#94a3b8] mb-4">This funnel is password protected.</p>
+          <Input type="password" placeholder="Enter password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="bg-[#09090b] border-[#27272a] text-white mb-3" />
           <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => setPasswordUnlocked(true)}>Unlock</Button>
         </div>
       </div>
@@ -182,183 +470,211 @@ const PublicFunnel = () => {
   }
 
   const ctaEnabled = funnel.cta_enabled === true;
-  const showLeadFormNow = formConfig?.capture_enabled && !leadSubmitted && formConfig.capture_timing === "before_video";
-  const showLeadFormAfterCta = formConfig?.capture_enabled && !leadSubmitted && formConfig.capture_timing === "after_cta" && showCta;
+  const hasLeadForm = formConfig?.capture_enabled;
+  const showLeadFormNow = hasLeadForm && !leadSubmitted && formConfig.capture_timing === "before_video";
+  const showLeadFormAfterCta = hasLeadForm && !leadSubmitted && formConfig.capture_timing === "after_cta" && showCta;
+  const showLeadFormSidebar = hasLeadForm && !leadSubmitted && formConfig.capture_timing !== "before_video";
   const videoUrl = videoAsset?.public_url;
   const ctaTimingLeft = funnel.cta_timing_seconds ? Math.max(0, funnel.cta_timing_seconds - watchSeconds) : 0;
   const isVerified = creatorProfile?.kyc_status === "approved";
 
-  const LeadFormComponent = () => (
-    <div className="bg-[#12151f] border border-[#2a3050] rounded-2xl p-6 w-full max-w-md mx-auto">
-      <h3 className="text-lg font-heading font-semibold mb-1 text-center text-white">{funnel.title}</h3>
-      <p className="text-xs text-gray-400 text-center mb-4">Fill in your details to continue</p>
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success("Link copied! Share it with your friends.");
+  };
+
+  const LeadFormCard = ({ className = "" }: { className?: string }) => (
+    <div className={`bg-[#141419] border border-[#27272a] rounded-2xl p-6 ${className}`}>
+      <h3 className="text-lg font-heading font-bold mb-1 text-white">{funnel.cta_text || "Register Now"}</h3>
+      <p className="text-xs text-[#94a3b8] mb-5">Fill in your details to continue</p>
       <form onSubmit={(e) => { e.preventDefault(); submitLead.mutate(); }} className="space-y-3">
-        {formConfig?.show_name && <Input placeholder="Full Name" value={leadForm.name} onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })} required={formConfig.name_required || false} className="bg-[#1a1f2e] border-[#2a3050] text-white placeholder:text-gray-500" />}
-        {formConfig?.show_phone && <Input placeholder="Phone (+91...)" value={leadForm.phone} onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })} required={formConfig.phone_required || false} className="bg-[#1a1f2e] border-[#2a3050] text-white placeholder:text-gray-500" />}
-        {formConfig?.show_email && <Input type="email" placeholder="Email" value={leadForm.email} onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })} required={formConfig.email_required || false} className="bg-[#1a1f2e] border-[#2a3050] text-white placeholder:text-gray-500" />}
-        {formConfig?.show_city && <Input placeholder="City" value={leadForm.city} onChange={(e) => setLeadForm({ ...leadForm, city: e.target.value })} required={formConfig.city_required || false} className="bg-[#1a1f2e] border-[#2a3050] text-white placeholder:text-gray-500" />}
-        {formConfig?.show_custom && <Input placeholder={formConfig.custom_field_label || "Additional Info"} value={leadForm.custom_value} onChange={(e) => setLeadForm({ ...leadForm, custom_value: e.target.value })} required={formConfig.custom_required || false} className="bg-[#1a1f2e] border-[#2a3050] text-white placeholder:text-gray-500" />}
-        <Button className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl" disabled={submitLead.isPending}>
-          {submitLead.isPending ? "Submitting..." : funnel.cta_text || "Get Started"}
+        {/* Honeypot */}
+        <input type="text" name="website" value={leadForm.website} onChange={(e) => setLeadForm({ ...leadForm, website: e.target.value })} style={{ position: "absolute", left: "-9999px" }} tabIndex={-1} autoComplete="off" />
+        {formConfig?.show_name && (
+          <Input placeholder="Full Name" value={leadForm.name} onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })} required={formConfig.name_required || false} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
+        )}
+        {formConfig?.show_phone && (
+          <Input placeholder="Phone (+91...)" value={leadForm.phone} onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })} required={formConfig.phone_required || false} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
+        )}
+        {formConfig?.show_email && (
+          <Input type="email" placeholder="Email" value={leadForm.email} onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })} required={formConfig.email_required || false} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
+        )}
+        {formConfig?.show_city && (
+          <Input placeholder="City" value={leadForm.city} onChange={(e) => setLeadForm({ ...leadForm, city: e.target.value })} required={formConfig.city_required || false} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
+        )}
+        {formConfig?.show_custom && (
+          <Input placeholder={formConfig.custom_field_label || "Additional Info"} value={leadForm.custom_value} onChange={(e) => setLeadForm({ ...leadForm, custom_value: e.target.value })} required={formConfig.custom_required || false} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
+        )}
+        <Button
+          type="submit"
+          className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
+          disabled={submitLead.isPending}
+        >
+          {submitLead.isPending ? "Submitting..." : funnel.cta_text || "Get Started"} →
         </Button>
       </form>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0d14]">
+    <div className="min-h-screen bg-[#09090b]">
       {/* Draft banner */}
       {isDraft && isOwner && (
-        <div className="bg-warning/10 border-b border-warning/20 px-4 py-2 text-center">
-          <p className="text-sm text-warning flex items-center justify-center gap-2">
+        <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-4 py-2 text-center">
+          <p className="text-sm text-yellow-400 flex items-center justify-center gap-2">
             <AlertTriangle size={14} /> This is a draft preview. Publish your funnel to share it.
           </p>
         </div>
       )}
 
       {/* Header */}
-      <div className="px-4 py-3 flex items-center justify-between border-b border-[#2a3050]/30">
+      <div className="px-4 py-3 flex items-center justify-between border-b border-[#27272a]/50">
         <div className="flex items-center gap-2">
           <img src={logoImg} alt="Nevorai" className="h-6 w-6" />
-          <span className="text-xs text-gray-500">Powered by Nevorai</span>
+          <span className="text-[11px] text-[#64748b]">Powered by Nevorai Flow</span>
         </div>
+        <button onClick={handleShare} className="text-[#64748b] hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5">
+          <Share2 size={16} />
+        </button>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      {/* Main content */}
+      <div className="max-w-6xl mx-auto px-4 py-6">
         {/* Title */}
-        <div className="text-center">
-          <h1 className="text-2xl md:text-3xl font-heading font-bold text-white">{funnel.title}</h1>
-          {funnel.description && <p className="text-sm text-gray-400 mt-2 max-w-lg mx-auto">{funnel.description}</p>}
+        <div className="text-center mb-6">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-heading font-extrabold text-white tracking-tight leading-tight">{funnel.title}</h1>
+          {funnel.description && <p className="text-sm text-[#94a3b8] mt-2 max-w-xl mx-auto">{funnel.description}</p>}
         </div>
 
-        {/* Lead form before video */}
-        {showLeadFormNow && <LeadFormComponent />}
+        {/* Lead form before video (full width, blocks video) */}
+        {showLeadFormNow && <LeadFormCard className="max-w-md mx-auto mb-6" />}
 
-        {/* Video Player */}
+        {/* Two-column layout on desktop when lead form is shown beside video */}
         {(!showLeadFormNow || leadSubmitted) && (
-          <div className="relative aspect-video bg-[#12151f] rounded-2xl overflow-hidden shadow-2xl shadow-black/40">
-            {videoUrl && playing ? (
-              <video
-                ref={videoRef}
-                src={videoUrl}
-                className="w-full h-full object-contain"
-                controls
-                playsInline
-                controlsList={`${!funnel.allow_speed_change ? "nofullscreen" : ""}`}
-                onTimeUpdate={() => {
-                  if (videoRef.current) {
-                    const ct = videoRef.current.currentTime;
-                    if (ct > maxTimeReached.current) maxTimeReached.current = ct;
-                    setWatchSeconds(Math.floor(ct));
-                  }
-                }}
-                onSeeking={() => {
-                  if (funnel.allow_seek === false && videoRef.current) {
-                    if (videoRef.current.currentTime > maxTimeReached.current + 1) {
-                      videoRef.current.currentTime = maxTimeReached.current;
-                    }
-                  }
-                }}
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center cursor-pointer" onClick={handlePlayVideo}>
-                {funnel.thumbnail_url && <img src={funnel.thumbnail_url} alt="" className="absolute inset-0 w-full h-full object-cover" />}
-                <div className="relative z-10">
-                  <button className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center hover:scale-110 transition-transform shadow-lg shadow-primary/30">
-                    <Play size={36} className="ml-1 text-white" />
-                  </button>
+          <div className={`${showLeadFormSidebar && !leadSubmitted ? "lg:grid lg:grid-cols-[1fr_380px] lg:gap-6" : "max-w-4xl mx-auto"}`}>
+            {/* Left: Video + Creator */}
+            <div className="space-y-4">
+              {videoUrl && (
+                <CustomVideoPlayer
+                  src={videoUrl}
+                  poster={funnel.thumbnail_url || videoAsset?.thumbnail_url || undefined}
+                  allowSeek={funnel.allow_seek !== false}
+                  allowSpeed={funnel.allow_speed_change !== false}
+                  onTimeUpdate={(ct, dur) => { setWatchSeconds(Math.floor(ct)); setVideoDuration(dur); }}
+                  onPlay={() => setVideoPlaying(true)}
+                />
+              )}
+              {!videoUrl && (
+                <div className="aspect-video bg-[#141419] rounded-2xl flex items-center justify-center">
+                  <Play size={48} className="text-[#64748b]" />
                 </div>
-                {funnel.thumbnail_url && <div className="absolute inset-0 bg-black/30" />}
+              )}
+
+              {/* Creator Badge */}
+              {creatorProfile?.full_name && (
+                <div className="flex items-center gap-3 py-3">
+                  <div className="w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 overflow-hidden border-2 border-primary/30">
+                    {creatorProfile.avatar_url ? (
+                      <img src={creatorProfile.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-primary font-heading font-bold text-sm">{creatorProfile.full_name.charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-heading font-semibold text-white text-sm truncate">{creatorProfile.full_name}</span>
+                      {isVerified && <BadgeCheck size={16} className="text-primary flex-shrink-0" />}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-[#94a3b8] mt-0.5">
+                      {creatorProfile.city && <span className="flex items-center gap-1"><MapPin size={10} /> {creatorProfile.city}</span>}
+                      {creatorProfile.instagram_url && (
+                        <a
+                          href={creatorProfile.instagram_url.startsWith("http") ? creatorProfile.instagram_url : `https://instagram.com/${creatorProfile.instagram_url.replace("@", "")}`}
+                          target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary transition-colors"
+                        >
+                          <Instagram size={10} /> @{creatorProfile.instagram_url.replace(/.*instagram\.com\//, "").replace("@", "")}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CTA Button — only on mobile or when no sidebar */}
+              <div className={showLeadFormSidebar && !leadSubmitted ? "lg:hidden" : ""}>
+                {/* Active CTA */}
+                {ctaEnabled && showCta && (
+                  <Button
+                    className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 cta-pulse"
+                    onClick={() => funnel.cta_url ? window.open(funnel.cta_url, "_blank") : null}
+                  >
+                    {funnel.cta_text || "Get Started"} →
+                  </Button>
+                )}
+                {/* Locked CTA countdown */}
+                {ctaEnabled && funnel.lock_cta && !showCta && videoPlaying && (
+                  <Button disabled className="w-full h-14 text-base rounded-xl bg-[#27272a] text-[#64748b] cursor-not-allowed">
+                    🔒 {funnel.cta_text || "Get Started"} — unlocks in {Math.floor(ctaTimingLeft / 60)}:{(ctaTimingLeft % 60).toString().padStart(2, "0")}
+                  </Button>
+                )}
+              </div>
+
+              {/* Lead form after CTA (mobile) */}
+              {showLeadFormAfterCta && <div className="lg:hidden"><LeadFormCard /></div>}
+            </div>
+
+            {/* Right sidebar: Lead form on desktop */}
+            {showLeadFormSidebar && !leadSubmitted && (
+              <div className="hidden lg:block sticky top-6 self-start">
+                <LeadFormCard />
+                {/* CTA on desktop sidebar */}
+                {ctaEnabled && showCta && funnel.cta_url && (
+                  <Button
+                    className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 mt-4 cta-pulse"
+                    onClick={() => window.open(funnel.cta_url!, "_blank")}
+                  >
+                    {funnel.cta_text || "Get Started"} →
+                  </Button>
+                )}
               </div>
             )}
           </div>
         )}
 
-        {/* Creator Badge */}
-        {creatorProfile && (
-          <div className="flex items-center gap-3 bg-[#12151f] border border-[#2a3050] rounded-2xl p-4">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 text-primary font-heading font-bold text-sm">
-              {creatorProfile.avatar_url ? (
-                <img src={creatorProfile.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
-              ) : (
-                creatorProfile.full_name?.charAt(0)?.toUpperCase() || "N"
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="font-heading font-semibold text-white text-sm truncate">{creatorProfile.full_name}</span>
-                {isVerified && <BadgeCheck size={16} className="text-primary flex-shrink-0" />}
-              </div>
-              <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
-                {creatorProfile.city && (
-                  <span className="flex items-center gap-1"><MapPin size={10} /> {creatorProfile.city}</span>
-                )}
-                {creatorProfile.instagram_url && (
-                  <a href={creatorProfile.instagram_url.startsWith("http") ? creatorProfile.instagram_url : `https://instagram.com/${creatorProfile.instagram_url.replace("@", "")}`}
-                    target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary transition-colors">
-                    <Instagram size={10} /> @{creatorProfile.instagram_url.replace(/.*instagram\.com\//, "").replace("@", "")}
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* CTA Button — only when explicitly enabled */}
-        {ctaEnabled && (showCta || !funnel.cta_timing_seconds) && (!showLeadFormNow || leadSubmitted) && (
-          <div>
-            <Button
-              className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20"
-              onClick={() => funnel.cta_url ? window.open(funnel.cta_url, "_blank") : null}
-            >
-              {funnel.cta_text || "Get Started"} →
-            </Button>
-          </div>
-        )}
-
-        {/* Locked CTA countdown */}
-        {ctaEnabled && funnel.lock_cta && !showCta && playing && (
-          <div className="text-center">
-            <Button disabled className="w-full h-14 text-base rounded-xl bg-gray-700 text-gray-400 cursor-not-allowed">
-              🔒 Watch the video to unlock · {Math.floor(ctaTimingLeft / 60)}:{(ctaTimingLeft % 60).toString().padStart(2, "0")}
-            </Button>
-          </div>
-        )}
-
-        {/* Lead form after CTA */}
-        {showLeadFormAfterCta && <LeadFormComponent />}
+        {/* Lead form after CTA (desktop, no sidebar layout) */}
+        {showLeadFormAfterCta && !showLeadFormSidebar && <LeadFormCard className="max-w-md mx-auto mt-6" />}
 
         {/* Payment Section */}
         {funnel.payment_enabled && leadSubmitted && !paymentSubmitted && (
-          <div className="bg-[#12151f] border border-[#2a3050] rounded-2xl p-6">
+          <div className="bg-[#141419] border border-[#27272a] rounded-2xl p-6 max-w-md mx-auto mt-6">
             <h3 className="text-lg font-heading font-semibold mb-4 text-white">Complete Payment</h3>
             {priceOptions.length > 0 && (
               <div className="space-y-2 mb-4">
                 {priceOptions.map((opt) => (
                   <button key={opt.id} onClick={() => setPaymentProof({ ...paymentProof, amount: opt.amount })}
-                    className={`w-full p-3 rounded-xl border text-left transition-all ${paymentProof.amount === opt.amount ? "border-primary bg-primary/10" : "border-[#2a3050] bg-[#1a1f2e]"}`}>
+                    className={`w-full p-3 rounded-xl border text-left transition-all ${paymentProof.amount === opt.amount ? "border-primary bg-primary/10" : "border-[#27272a] bg-[#09090b]"}`}>
                     <div className="flex justify-between items-center">
                       <span className="font-medium text-white">{opt.label}</span>
                       <span className="font-heading font-bold text-white">₹{opt.amount.toLocaleString("en-IN")}</span>
                     </div>
-                    {opt.description && <p className="text-xs text-gray-400 mt-1">{opt.description}</p>}
+                    {opt.description && <p className="text-xs text-[#94a3b8] mt-1">{opt.description}</p>}
                   </button>
                 ))}
               </div>
             )}
             {funnel.upi_id && (
-              <div className="p-3 bg-[#1a1f2e] rounded-xl mb-4">
-                <Label className="text-xs text-gray-400">Pay via UPI</Label>
+              <div className="p-3 bg-[#09090b] rounded-xl mb-4">
+                <Label className="text-xs text-[#94a3b8]">Pay via UPI</Label>
                 <div className="flex items-center gap-2 mt-1">
                   <code className="text-sm text-primary flex-1">{funnel.upi_id}</code>
-                  <Button variant="ghost" size="sm" className="text-gray-300" onClick={() => { navigator.clipboard.writeText(funnel.upi_id!); toast.success("UPI ID copied!"); }}>Copy</Button>
+                  <Button variant="ghost" size="sm" className="text-[#94a3b8]" onClick={() => { navigator.clipboard.writeText(funnel.upi_id!); toast.success("UPI ID copied!"); }}>Copy</Button>
                 </div>
               </div>
             )}
             {funnel.qr_code_url && <img src={funnel.qr_code_url} alt="QR Code" className="w-48 h-48 mx-auto mb-4 rounded-xl" />}
-            {funnel.payment_instructions && <p className="text-sm text-gray-400 mb-4">{funnel.payment_instructions}</p>}
+            {funnel.payment_instructions && <p className="text-sm text-[#94a3b8] mb-4">{funnel.payment_instructions}</p>}
             <div className="space-y-3">
-              <Input placeholder="UPI Transaction ID (optional)" value={paymentProof.upi_transaction_id} onChange={(e) => setPaymentProof({ ...paymentProof, upi_transaction_id: e.target.value })} className="bg-[#1a1f2e] border-[#2a3050] text-white" />
+              <Input placeholder="UPI Transaction ID (optional)" value={paymentProof.upi_transaction_id} onChange={(e) => setPaymentProof({ ...paymentProof, upi_transaction_id: e.target.value })} className="bg-[#09090b] border-[#27272a] text-white h-12 rounded-xl" />
               <Button className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl" onClick={() => submitPayment.mutate()} disabled={submitPayment.isPending}>
                 {submitPayment.isPending ? "Submitting..." : "I've Made the Payment"}
               </Button>
@@ -367,29 +683,45 @@ const PublicFunnel = () => {
         )}
 
         {paymentSubmitted && (
-          <div className="bg-[#12151f] border border-[#2a3050] rounded-2xl p-6 text-center">
-            <Check size={32} className="text-success mx-auto mb-3" />
+          <div className="bg-[#141419] border border-[#27272a] rounded-2xl p-6 text-center max-w-md mx-auto mt-6">
+            <Check size={32} className="text-green-500 mx-auto mb-3" />
             <h3 className="font-heading font-semibold text-white">Payment Under Review</h3>
-            <p className="text-sm text-gray-400 mt-1">Your payment proof has been submitted. You'll be notified once it's verified.</p>
+            <p className="text-sm text-[#94a3b8] mt-1">Your payment proof has been submitted. You'll be notified once it's verified.</p>
           </div>
         )}
 
         {/* Contact Buttons */}
         {funnel.show_contact_buttons && (leadSubmitted || !funnel.show_contact_after_cta) && (
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#12151f]/95 backdrop-blur-xl border-t border-[#2a3050] flex gap-3 justify-center z-50">
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#09090b]/95 backdrop-blur-xl border-t border-[#27272a] flex gap-3 justify-center z-50">
             {funnel.contact_whatsapp && (
-              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}>
+              <Button className="bg-[#25d366] hover:bg-[#20b858] text-white" onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}>
                 <MessageCircle size={16} /> WhatsApp
               </Button>
             )}
             {funnel.contact_phone && (
-              <Button className="bg-[#2a3050] hover:bg-[#343a50] text-white" onClick={() => window.open(`tel:${funnel.contact_phone}`)}>
+              <Button className="bg-[#27272a] hover:bg-[#3f3f46] text-white" onClick={() => window.open(`tel:${funnel.contact_phone}`)}>
                 <PhoneIcon size={16} /> Call
               </Button>
             )}
           </div>
         )}
+
+        {/* Footer */}
+        <div className="mt-12 pt-6 border-t border-[#27272a]/50 text-center">
+          <p className="text-[11px] text-[#64748b]">© {new Date().getFullYear()} Nevorai Flow · Powered by Nevorai</p>
+        </div>
       </div>
+
+      {/* CTA pulse animation */}
+      <style>{`
+        .cta-pulse {
+          animation: ctaPulse 2s ease-in-out infinite;
+        }
+        @keyframes ctaPulse {
+          0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4); }
+          50% { box-shadow: 0 0 0 8px hsl(var(--primary) / 0); }
+        }
+      `}</style>
     </div>
   );
 };
