@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Video, Settings, ClipboardList, Mic, MessageCircle, IndianRupee, Radio, FileText, Rocket, Check, Copy, QrCode } from "lucide-react";
+import { FileText, Video, Settings, ClipboardList, Mic, MessageCircle, IndianRupee, Radio, Rocket, Check, Copy } from "lucide-react";
 import { VideoPickerModal } from "@/components/VideoPickerModal";
 
-
 const steps = [
+  { icon: FileText, label: "Basic Info" },
   { icon: Video, label: "Video" },
   { icon: Settings, label: "Controls" },
   { icon: ClipboardList, label: "Lead Form" },
@@ -23,7 +23,6 @@ const steps = [
   { icon: MessageCircle, label: "WhatsApp" },
   { icon: IndianRupee, label: "Payment" },
   { icon: Radio, label: "Broadcast" },
-  { icon: FileText, label: "Basic Info" },
   { icon: Rocket, label: "Publish" },
 ];
 
@@ -39,13 +38,14 @@ const FunnelEditor = () => {
   const [step, setStep] = useState(0);
   const searchParams = new URLSearchParams(window.location.search);
   const preselectedVideoId = searchParams.get("videoId");
-  const [saving, setSaving] = useState(false);
   const [videoPickerOpen, setVideoPickerOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<{ id: string; title: string; url: string | null } | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const autoSaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const [funnel, setFunnel] = useState({
     title: "", slug: "", description: "", visibility: "public", intent_type: "lead",
     allow_seek: false, allow_speed_change: true, lock_cta: false,
-    cta_text: "Get Started", cta_timing_seconds: 60, cta_url: "",
+    cta_enabled: true, cta_text: "Get Started", cta_timing_seconds: 60, cta_url: "",
     video_access_minutes: null as number | null,
     show_contact_buttons: false, contact_whatsapp: "", contact_phone: "", contact_instagram: "",
     show_contact_after_cta: true, whatsapp_auto_message: false, whatsapp_message_template: "Hi {name}, thanks for watching!",
@@ -71,6 +71,16 @@ const FunnelEditor = () => {
     enabled: isEdit,
   });
 
+  const { data: existingLeadForm } = useQuery({
+    queryKey: ["funnel-lead-form", id],
+    queryFn: async () => {
+      if (!id) return null;
+      const { data } = await supabase.from("funnel_lead_form_config").select("*").eq("funnel_id", id).single();
+      return data;
+    },
+    enabled: isEdit,
+  });
+
   useEffect(() => {
     if (existingFunnel) {
       setFunnel((prev) => ({
@@ -78,8 +88,11 @@ const FunnelEditor = () => {
         title: existingFunnel.title || "", slug: existingFunnel.slug || "", description: existingFunnel.description || "",
         visibility: existingFunnel.visibility || "public", intent_type: existingFunnel.intent_type || "lead",
         allow_seek: existingFunnel.allow_seek || false, allow_speed_change: existingFunnel.allow_speed_change ?? true,
-        lock_cta: existingFunnel.lock_cta || false, cta_text: existingFunnel.cta_text || "Get Started",
+        lock_cta: existingFunnel.lock_cta || false,
+        cta_enabled: (existingFunnel as any).cta_enabled ?? true,
+        cta_text: existingFunnel.cta_text || "Get Started",
         cta_timing_seconds: existingFunnel.cta_timing_seconds || 60, cta_url: existingFunnel.cta_url || "",
+        video_access_minutes: existingFunnel.video_access_minutes || null,
         show_contact_buttons: existingFunnel.show_contact_buttons || false,
         contact_whatsapp: existingFunnel.contact_whatsapp || "", contact_phone: existingFunnel.contact_phone || "",
         contact_instagram: existingFunnel.contact_instagram || "",
@@ -94,51 +107,68 @@ const FunnelEditor = () => {
         broadcast_replay_enabled: existingFunnel.broadcast_replay_enabled ?? true,
         is_published: existingFunnel.is_published || false,
       }));
+      // Load selected video if exists
+      if (existingFunnel.video_asset_id) {
+        supabase.from("video_assets").select("id, title, public_url").eq("id", existingFunnel.video_asset_id).single().then(({ data }) => {
+          if (data) setSelectedVideo({ id: data.id, title: data.title, url: data.public_url });
+        });
+      }
     }
   }, [existingFunnel]);
 
-  // Auto-select video from URL param (Use in Funnel button)
+  useEffect(() => {
+    if (existingLeadForm) {
+      setLeadForm({
+        capture_enabled: existingLeadForm.capture_enabled ?? true,
+        capture_timing: existingLeadForm.capture_timing || "before_video",
+        show_name: existingLeadForm.show_name ?? true, name_required: existingLeadForm.name_required ?? true,
+        show_phone: existingLeadForm.show_phone ?? true, phone_required: existingLeadForm.phone_required ?? true,
+        show_email: existingLeadForm.show_email ?? false, email_required: existingLeadForm.email_required ?? false,
+        show_city: existingLeadForm.show_city ?? true, city_required: existingLeadForm.city_required ?? false,
+        custom_field_label: existingLeadForm.custom_field_label || "", show_custom: existingLeadForm.show_custom ?? false,
+        custom_required: existingLeadForm.custom_required ?? false,
+      });
+    }
+  }, [existingLeadForm]);
+
+  // Auto-select video from URL param
   useEffect(() => {
     if (preselectedVideoId && !isEdit && !selectedVideo) {
-      supabase
-        .from("video_assets")
-        .select("id, title, public_url")
-        .eq("id", preselectedVideoId)
-        .single()
-        .then(({ data }) => {
-          if (data) {
-            setSelectedVideo({ id: data.id, title: data.title, url: data.public_url });
-          }
-        });
+      supabase.from("video_assets").select("id, title, public_url").eq("id", preselectedVideoId).single().then(({ data }) => {
+        if (data) setSelectedVideo({ id: data.id, title: data.title, url: data.public_url });
+      });
     }
   }, [preselectedVideoId, isEdit, selectedVideo]);
 
+  const buildPayload = useCallback(() => {
+    if (!user) return null;
+    const slug = funnel.slug || generateSlug(funnel.title);
+    return {
+      owner_id: user.id, title: funnel.title, slug, description: funnel.description,
+      visibility: funnel.visibility, intent_type: funnel.intent_type,
+      allow_seek: funnel.allow_seek, allow_speed_change: funnel.allow_speed_change,
+      lock_cta: funnel.lock_cta, cta_text: funnel.cta_text, cta_timing_seconds: funnel.cta_timing_seconds,
+      cta_url: funnel.cta_url || null, video_access_minutes: funnel.video_access_minutes,
+      show_contact_buttons: funnel.show_contact_buttons, contact_whatsapp: funnel.contact_whatsapp || null,
+      contact_phone: funnel.contact_phone || null, contact_instagram: funnel.contact_instagram || null,
+      show_contact_after_cta: funnel.show_contact_after_cta,
+      whatsapp_auto_message: funnel.whatsapp_auto_message, whatsapp_message_template: funnel.whatsapp_message_template || null,
+      payment_enabled: funnel.payment_enabled, upi_id: funnel.upi_id || null,
+      qr_code_url: funnel.qr_code_url || null, payment_instructions: funnel.payment_instructions || null,
+      is_live_broadcast: funnel.is_live_broadcast, broadcast_scheduled_at: funnel.broadcast_scheduled_at || null,
+      broadcast_password: funnel.broadcast_password || null, broadcast_replay_enabled: funnel.broadcast_replay_enabled,
+      is_published: funnel.is_published,
+      video_asset_id: selectedVideo?.id || null,
+    };
+  }, [user, funnel, selectedVideo]);
+
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error("Not authenticated");
-      const slug = funnel.slug || generateSlug(funnel.title);
-      const payload = {
-        owner_id: user.id, title: funnel.title, slug, description: funnel.description,
-        visibility: funnel.visibility, intent_type: funnel.intent_type,
-        allow_seek: funnel.allow_seek, allow_speed_change: funnel.allow_speed_change,
-        lock_cta: funnel.lock_cta, cta_text: funnel.cta_text, cta_timing_seconds: funnel.cta_timing_seconds,
-        cta_url: funnel.cta_url || null, video_access_minutes: funnel.video_access_minutes,
-        show_contact_buttons: funnel.show_contact_buttons, contact_whatsapp: funnel.contact_whatsapp || null,
-        contact_phone: funnel.contact_phone || null, contact_instagram: funnel.contact_instagram || null,
-        show_contact_after_cta: funnel.show_contact_after_cta,
-        whatsapp_auto_message: funnel.whatsapp_auto_message, whatsapp_message_template: funnel.whatsapp_message_template || null,
-        payment_enabled: funnel.payment_enabled, upi_id: funnel.upi_id || null,
-        qr_code_url: funnel.qr_code_url || null, payment_instructions: funnel.payment_instructions || null,
-        is_live_broadcast: funnel.is_live_broadcast, broadcast_scheduled_at: funnel.broadcast_scheduled_at || null,
-        broadcast_password: funnel.broadcast_password || null, broadcast_replay_enabled: funnel.broadcast_replay_enabled,
-        is_published: funnel.is_published,
-        video_asset_id: selectedVideo?.id || null,
-      };
-
+      const payload = buildPayload();
+      if (!payload) throw new Error("Not authenticated");
       if (isEdit) {
         const { error } = await supabase.from("funnels").update(payload).eq("id", id);
         if (error) throw error;
-        // Update lead form
         await supabase.from("funnel_lead_form_config").upsert({ funnel_id: id, ...leadForm }, { onConflict: "funnel_id" });
         return id;
       } else {
@@ -150,11 +180,34 @@ const FunnelEditor = () => {
     },
     onSuccess: (funnelId) => {
       queryClient.invalidateQueries({ queryKey: ["my-funnels"] });
+      setLastSavedAt(new Date());
       toast.success(isEdit ? "Funnel updated!" : "Funnel created!");
       navigate(`/funnels/${funnelId}`);
     },
     onError: (err: any) => toast.error(err.message || "Failed to save"),
   });
+
+  // Auto-save every 30s when editing
+  useEffect(() => {
+    if (!isEdit || !id) return;
+    autoSaveTimer.current = setInterval(async () => {
+      const payload = buildPayload();
+      if (!payload || !payload.title) return;
+      try {
+        await supabase.from("funnels").update(payload).eq("id", id);
+        await supabase.from("funnel_lead_form_config").upsert({ funnel_id: id, ...leadForm }, { onConflict: "funnel_id" });
+        setLastSavedAt(new Date());
+      } catch {}
+    }, 30000);
+    return () => { if (autoSaveTimer.current) clearInterval(autoSaveTimer.current); };
+  }, [isEdit, id, buildPayload, leadForm]);
+
+  // Unsaved changes warning
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
 
   const update = (key: string, value: any) => setFunnel((p) => ({ ...p, [key]: value }));
 
@@ -176,8 +229,10 @@ const FunnelEditor = () => {
         {/* Content */}
         <div className="flex-1 max-w-2xl">
           <div className="flex items-center justify-between mb-6">
-            <Input value={funnel.title} onChange={(e) => { update("title", e.target.value); if (!isEdit) update("slug", generateSlug(e.target.value)); }}
-              placeholder="Funnel Title" className="text-xl font-heading font-bold bg-transparent border-none p-0 h-auto focus-visible:ring-0" />
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-heading font-bold truncate">{funnel.title || "New Funnel"}</h1>
+              {lastSavedAt && <p className="text-xs text-muted-foreground">Auto-saved {lastSavedAt.toLocaleTimeString()}</p>}
+            </div>
             <Button variant="hero" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !funnel.title}>
               {saveMutation.isPending ? "Saving..." : "Save Funnel"}
             </Button>
@@ -193,8 +248,44 @@ const FunnelEditor = () => {
             ))}
           </div>
 
+          {/* Step progress */}
+          <div className="flex items-center gap-1 mb-4">
+            {steps.map((_, i) => (
+              <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= step ? "bg-primary" : "bg-muted"}`} />
+            ))}
+          </div>
+
           <div className="glass-card p-6 space-y-6">
+            {/* Step 0: Basic Info */}
             {step === 0 && (
+              <>
+                <h2 className="text-lg font-heading font-semibold">Basic Info</h2>
+                <div className="space-y-4">
+                  <div><Label>Title *</Label><Input value={funnel.title} onChange={(e) => { update("title", e.target.value); if (!isEdit) update("slug", generateSlug(e.target.value)); }} className="mt-1 bg-muted border-border" /></div>
+                  <div><Label>Slug</Label><div className="flex items-center gap-2 mt-1"><span className="text-xs text-muted-foreground whitespace-nowrap">/f/</span><Input value={funnel.slug} onChange={(e) => update("slug", e.target.value)} className="bg-muted border-border" /></div>
+                    {funnel.slug && <p className="text-xs text-muted-foreground mt-1">{window.location.origin}/f/{funnel.slug}</p>}
+                  </div>
+                  <div><Label>Description</Label><Textarea value={funnel.description} onChange={(e) => update("description", e.target.value)} className="mt-1 bg-muted border-border" rows={3} /></div>
+                  <div>
+                    <Label>Visibility</Label>
+                    <Select value={funnel.visibility} onValueChange={(v) => update("visibility", v)}>
+                      <SelectTrigger className="mt-1 bg-muted border-border"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-card border-border"><SelectItem value="public">Public</SelectItem><SelectItem value="private">Private</SelectItem><SelectItem value="password">Password Protected</SelectItem></SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Intent Type</Label>
+                    <Select value={funnel.intent_type} onValueChange={(v) => update("intent_type", v)}>
+                      <SelectTrigger className="mt-1 bg-muted border-border"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-card border-border"><SelectItem value="lead">Lead Capture</SelectItem><SelectItem value="paid">Payment Collection</SelectItem><SelectItem value="watch_only">Watch Only</SelectItem></SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Step 1: Video */}
+            {step === 1 && (
               <>
                 <h2 className="text-lg font-heading font-semibold">Video</h2>
                 <p className="text-sm text-muted-foreground">Select a video from your gallery to use in this funnel.</p>
@@ -205,7 +296,7 @@ const FunnelEditor = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{selectedVideo.title}</p>
-                      <p className="text-xs text-success mt-1">Selected</p>
+                      <p className="text-xs text-success mt-1">✓ Selected</p>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => setVideoPickerOpen(true)}>Change</Button>
                   </div>
@@ -227,16 +318,33 @@ const FunnelEditor = () => {
               </>
             )}
 
-            {step === 1 && (
+            {/* Step 2: Controls */}
+            {step === 2 && (
               <>
                 <h2 className="text-lg font-heading font-semibold">Video Controls</h2>
                 <div className="space-y-4">
+                  {/* CTA Enable/Disable */}
+                  <div className="p-4 bg-muted/50 rounded-lg space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base font-semibold">Show CTA Button</Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">When off, no call-to-action button appears on the video page</p>
+                      </div>
+                      <Switch checked={funnel.cta_enabled} onCheckedChange={(v) => update("cta_enabled", v)} />
+                    </div>
+                    {funnel.cta_enabled && (
+                      <>
+                        <div className="border-t border-border pt-4 space-y-4">
+                          <div><Label>CTA Button Text</Label><Input value={funnel.cta_text} onChange={(e) => update("cta_text", e.target.value)} className="mt-1 bg-muted border-border" /></div>
+                          <div><Label>CTA Appears At (seconds)</Label><Input type="number" value={funnel.cta_timing_seconds} onChange={(e) => update("cta_timing_seconds", parseInt(e.target.value) || 0)} className="mt-1 bg-muted border-border" /><p className="text-xs text-muted-foreground mt-1">CTA button appears after this many seconds of playback</p></div>
+                          <div className="flex items-center justify-between"><Label>Lock CTA Until Timing</Label><Switch checked={funnel.lock_cta} onCheckedChange={(v) => update("lock_cta", v)} /></div>
+                          <div><Label>CTA Link URL (optional)</Label><Input value={funnel.cta_url} onChange={(e) => update("cta_url", e.target.value)} placeholder="https://..." className="mt-1 bg-muted border-border" /><p className="text-xs text-muted-foreground mt-1">Leave empty to use the lead form</p></div>
+                        </div>
+                      </>
+                    )}
+                  </div>
                   <div className="flex items-center justify-between"><Label>Allow Speed Control</Label><Switch checked={funnel.allow_speed_change} onCheckedChange={(v) => update("allow_speed_change", v)} /></div>
                   <div className="flex items-center justify-between"><Label>Allow Forward Seek</Label><Switch checked={funnel.allow_seek} onCheckedChange={(v) => update("allow_seek", v)} /></div>
-                  <div className="flex items-center justify-between"><Label>Lock CTA Until Timing</Label><Switch checked={funnel.lock_cta} onCheckedChange={(v) => update("lock_cta", v)} /></div>
-                  <div><Label>CTA Button Text</Label><Input value={funnel.cta_text} onChange={(e) => update("cta_text", e.target.value)} className="mt-1 bg-muted border-border" /></div>
-                  <div><Label>CTA Appears At (seconds)</Label><Input type="number" value={funnel.cta_timing_seconds} onChange={(e) => update("cta_timing_seconds", parseInt(e.target.value) || 0)} className="mt-1 bg-muted border-border" /></div>
-                  <div><Label>CTA Link URL (optional)</Label><Input value={funnel.cta_url} onChange={(e) => update("cta_url", e.target.value)} placeholder="https://..." className="mt-1 bg-muted border-border" /></div>
                   <div>
                     <Label>Video Access Time Limit</Label>
                     <Select value={funnel.video_access_minutes?.toString() || "unlimited"} onValueChange={(v) => update("video_access_minutes", v === "unlimited" ? null : parseInt(v))}>
@@ -248,7 +356,8 @@ const FunnelEditor = () => {
               </>
             )}
 
-            {step === 2 && (
+            {/* Step 3: Lead Form */}
+            {step === 3 && (
               <>
                 <h2 className="text-lg font-heading font-semibold">Lead Capture</h2>
                 <div className="space-y-4">
@@ -286,7 +395,8 @@ const FunnelEditor = () => {
               </>
             )}
 
-            {step === 3 && (
+            {/* Step 4: Audio Note */}
+            {step === 4 && (
               <>
                 <h2 className="text-lg font-heading font-semibold">Audio Note</h2>
                 <p className="text-sm text-muted-foreground">Add a personal audio message for your prospects.</p>
@@ -308,7 +418,8 @@ const FunnelEditor = () => {
               </>
             )}
 
-            {step === 4 && (
+            {/* Step 5: WhatsApp */}
+            {step === 5 && (
               <>
                 <h2 className="text-lg font-heading font-semibold">Contact & WhatsApp</h2>
                 <div className="space-y-4">
@@ -331,7 +442,8 @@ const FunnelEditor = () => {
               </>
             )}
 
-            {step === 5 && (
+            {/* Step 6: Payment */}
+            {step === 6 && (
               <>
                 <h2 className="text-lg font-heading font-semibold">Payment (UPI Manual)</h2>
                 <div className="space-y-4">
@@ -339,10 +451,7 @@ const FunnelEditor = () => {
                   {funnel.payment_enabled && (
                     <>
                       <div><Label>UPI ID</Label><Input value={funnel.upi_id} onChange={(e) => update("upi_id", e.target.value)} placeholder="yourname@upi" className="mt-1 bg-muted border-border" /></div>
-                      <div>
-                        <Label>QR Code Image URL</Label>
-                        <Input value={funnel.qr_code_url} onChange={(e) => update("qr_code_url", e.target.value)} placeholder="Upload or paste QR image URL" className="mt-1 bg-muted border-border" />
-                      </div>
+                      <div><Label>QR Code Image URL</Label><Input value={funnel.qr_code_url} onChange={(e) => update("qr_code_url", e.target.value)} placeholder="Upload or paste QR image URL" className="mt-1 bg-muted border-border" /></div>
                       <div><Label>Payment Instructions</Label><Textarea value={funnel.payment_instructions} onChange={(e) => update("payment_instructions", e.target.value)} className="mt-1 bg-muted border-border" rows={3} /></div>
                     </>
                   )}
@@ -350,7 +459,8 @@ const FunnelEditor = () => {
               </>
             )}
 
-            {step === 6 && (
+            {/* Step 7: Broadcast */}
+            {step === 7 && (
               <>
                 <h2 className="text-lg font-heading font-semibold">Live Broadcast</h2>
                 <div className="space-y-4">
@@ -366,37 +476,14 @@ const FunnelEditor = () => {
               </>
             )}
 
-            {step === 7 && (
-              <>
-                <h2 className="text-lg font-heading font-semibold">Basic Info</h2>
-                <div className="space-y-4">
-                  <div><Label>Title *</Label><Input value={funnel.title} onChange={(e) => { update("title", e.target.value); if (!isEdit) update("slug", generateSlug(e.target.value)); }} className="mt-1 bg-muted border-border" /></div>
-                  <div><Label>Slug</Label><div className="flex items-center gap-2 mt-1"><span className="text-xs text-muted-foreground">/f/</span><Input value={funnel.slug} onChange={(e) => update("slug", e.target.value)} className="bg-muted border-border" /></div></div>
-                  <div><Label>Description</Label><Textarea value={funnel.description} onChange={(e) => update("description", e.target.value)} className="mt-1 bg-muted border-border" rows={3} /></div>
-                  <div>
-                    <Label>Visibility</Label>
-                    <Select value={funnel.visibility} onValueChange={(v) => update("visibility", v)}>
-                      <SelectTrigger className="mt-1 bg-muted border-border"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-card border-border"><SelectItem value="public">Public</SelectItem><SelectItem value="private">Private</SelectItem><SelectItem value="password">Password Protected</SelectItem></SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Intent Type</Label>
-                    <Select value={funnel.intent_type} onValueChange={(v) => update("intent_type", v)}>
-                      <SelectTrigger className="mt-1 bg-muted border-border"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-card border-border"><SelectItem value="lead">Lead Capture</SelectItem><SelectItem value="paid">Payment Collection</SelectItem><SelectItem value="watch_only">Watch Only</SelectItem></SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </>
-            )}
-
+            {/* Step 8: Publish */}
             {step === 8 && (
               <>
                 <h2 className="text-lg font-heading font-semibold">Publish</h2>
                 <div className="space-y-4">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2"><Check size={16} className={funnel.title ? "text-success" : "text-muted-foreground"} /><span className="text-sm">{funnel.title ? "Title added" : "Add a title"}</span></div>
+                    <div className="flex items-center gap-2"><Check size={16} className={selectedVideo ? "text-success" : "text-muted-foreground"} /><span className="text-sm">{selectedVideo ? "Video selected" : "Select a video"}</span></div>
                     <div className="flex items-center gap-2"><Check size={16} className={leadForm.capture_enabled ? "text-success" : "text-muted-foreground"} /><span className="text-sm">{leadForm.capture_enabled ? "Lead form configured" : "Lead form disabled"}</span></div>
                   </div>
                   {funnel.slug && (
@@ -410,12 +497,18 @@ const FunnelEditor = () => {
                       </div>
                     </div>
                   )}
-                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                    <div>
-                      <Label className="text-base font-semibold">{funnel.is_published ? "Published" : "Draft"}</Label>
-                      <p className="text-xs text-muted-foreground mt-1">{funnel.is_published ? "Your funnel is live!" : "Toggle to make your funnel public"}</p>
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base font-semibold">{funnel.is_published ? "Published" : "Draft"}</Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {funnel.is_published
+                            ? "🟢 Your funnel is live! Anyone with the link can see it."
+                            : "🔴 Only you can see this funnel. Toggle to make it public."}
+                        </p>
+                      </div>
+                      <Switch checked={funnel.is_published} onCheckedChange={(v) => update("is_published", v)} />
                     </div>
-                    <Switch checked={funnel.is_published} onCheckedChange={(v) => update("is_published", v)} />
                   </div>
                 </div>
               </>
