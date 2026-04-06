@@ -82,10 +82,13 @@ const FunnelDetail = () => {
   const convRate = funnel.total_views ? ((leads.length / funnel.total_views) * 100).toFixed(1) : "0";
   const totalRevenue = payments.filter((p) => p.status === "verified").reduce((a, p) => a + p.amount, 0);
 
+  const isMultiStep = (funnel as any)?.funnel_mode === "multi";
+
   const tabs = [
     { key: "overview", label: "Overview" },
     { key: "leads", label: `Leads (${leads.length})` },
     { key: "payments", label: `Payments (${payments.length})` },
+    ...(isMultiStep ? [{ key: "progress", label: "Lead Progress" }] : []),
   ] as const;
 
   return (
