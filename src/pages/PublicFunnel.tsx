@@ -450,6 +450,8 @@ const PublicFunnel = () => {
   const creatorProfile = bundle?.creator;
   const formConfig = bundle?.formConfig;
   const priceOptions: any[] = bundle?.priceOptions || [];
+  const funnelSteps: any[] = bundle?.steps || [];
+  const isMultiStep = funnel?.funnel_mode === "multi" && funnelSteps.length > 0;
 
   const isDraft = funnel && !funnel.is_published;
   const canView = funnel && funnel.is_published;
