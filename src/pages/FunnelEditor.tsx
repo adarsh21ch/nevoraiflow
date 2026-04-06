@@ -97,9 +97,9 @@ const FunnelEditor = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Wizard state
+  // Wizard state — modeChosen gates entry into the real wizard
   const [wizardStep, setWizardStep] = useState(0);
-  const [modeChosen, setModeChosen] = useState(false);
+  const [modeChosen, setModeChosen] = useState(isEdit);
 
   // Video picker
   const searchParams = new URLSearchParams(window.location.search);
