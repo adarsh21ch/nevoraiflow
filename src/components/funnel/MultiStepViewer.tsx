@@ -33,6 +33,7 @@ interface StepProgress {
   watched_percentage: number;
   last_position_seconds: number;
   completed_at: string | null;
+  manually_unlocked?: boolean;
 }
 
 interface MultiStepViewerProps {
