@@ -9,9 +9,64 @@ import { toast } from "sonner";
 import {
   Play, Pause, MessageCircle, Phone as PhoneIcon, Lock, Check,
   AlertTriangle, BadgeCheck, MapPin, Instagram, Volume2, VolumeX,
-  Maximize, Minimize, Share2, Loader2
+  Maximize, Minimize, Share2, Loader2, Gauge
 } from "lucide-react";
 import logoImg from "@/assets/logo.png";
+
+/* ─── Speed Popover ─── */
+const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
+
+const SpeedControl = ({
+  currentSpeed,
+  onSpeedChange,
+}: {
+  currentSpeed: number;
+  onSpeedChange: (s: number) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        className="flex items-center gap-1 px-2 py-1 text-[12px] font-medium text-white/80 hover:text-white hover:bg-white/10 rounded-md transition-colors tabular-nums"
+      >
+        <Gauge size={14} />
+        {currentSpeed === 1 ? "1x" : `${currentSpeed}x`}
+      </button>
+      {open && (
+        <div
+          className="absolute bottom-full mb-2 right-0 bg-[#1a1a22] border border-white/10 rounded-xl p-1 shadow-2xl shadow-black/50 min-w-[100px] z-50"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {SPEED_OPTIONS.map((s) => (
+            <button
+              key={s}
+              onClick={() => { onSpeedChange(s); setOpen(false); }}
+              className={`w-full text-left px-3 py-2 text-[13px] rounded-lg transition-colors ${
+                currentSpeed === s
+                  ? "bg-primary/20 text-primary font-semibold"
+                  : "text-white/70 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              {s}x {s === 1 && <span className="text-[11px] text-white/40 ml-1">Normal</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 /* ─── Custom Video Player ─── */
 const CustomVideoPlayer = ({
@@ -32,6 +87,7 @@ const CustomVideoPlayer = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const maxWatched = useRef(0);
+  const isSeeking = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -42,6 +98,7 @@ const CustomVideoPlayer = ({
   const [isBuffering, setIsBuffering] = useState(false);
   const [started, setStarted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [speed, setSpeed] = useState(1);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const fmt = (s: number) => {
@@ -68,7 +125,12 @@ const CustomVideoPlayer = ({
     }
   }, [started, onPlay]);
 
-  // Keyboard shortcut blocking
+  const handleSpeedChange = useCallback((s: number) => {
+    setSpeed(s);
+    if (videoRef.current) videoRef.current.playbackRate = s;
+  }, []);
+
+  // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!containerRef.current?.contains(document.activeElement) && document.activeElement !== document.body) return;
@@ -76,6 +138,7 @@ const CustomVideoPlayer = ({
         e.preventDefault();
         togglePlay();
       }
+      // Forward seek blocking
       if (!allowSeek) {
         if (["ArrowRight", "l", "L"].includes(e.key)) e.preventDefault();
         if ("123456789".includes(e.key)) {
@@ -86,6 +149,7 @@ const CustomVideoPlayer = ({
           }
         }
       }
+      // Backward always allowed
       if (e.key === "ArrowLeft") {
         e.preventDefault();
         const v = videoRef.current;
@@ -117,21 +181,26 @@ const CustomVideoPlayer = ({
 
   const handleTimeUpdate = () => {
     const v = videoRef.current;
-    if (!v) return;
-    if (v.currentTime > maxWatched.current) maxWatched.current = v.currentTime;
+    if (!v || isSeeking.current) return;
+    // Update maxWatched on every tick
+    if (v.currentTime > maxWatched.current) {
+      maxWatched.current = v.currentTime;
+    }
     setCurrent(v.currentTime);
     onTimeUpdate?.(v.currentTime, v.duration);
-    // buffered
     if (v.buffered.length > 0) {
       setBuffered(v.buffered.end(v.buffered.length - 1));
     }
   };
 
+  // Seek enforcement: allow backward, block forward past maxWatched
   const handleSeeking = () => {
     const v = videoRef.current;
     if (!v || allowSeek) return;
-    if (v.currentTime > maxWatched.current + 1) {
+    if (v.currentTime > maxWatched.current + 0.5) {
+      isSeeking.current = true;
       v.currentTime = maxWatched.current;
+      requestAnimationFrame(() => { isSeeking.current = false; });
     }
   };
 
@@ -141,9 +210,11 @@ const CustomVideoPlayer = ({
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const targetTime = pct * duration;
-    if (!allowSeek && targetTime > maxWatched.current + 1) {
+    if (!allowSeek && targetTime > maxWatched.current + 0.5) {
+      // Block forward seek, snap to maxWatched
       v.currentTime = maxWatched.current;
     } else {
+      // Backward or within watched range — always allowed
       v.currentTime = targetTime;
     }
   };
@@ -187,10 +258,12 @@ const CustomVideoPlayer = ({
         onCanPlay={() => setIsLoading(false)}
       />
 
-      {/* Watermark */}
-      <div className="absolute bottom-12 right-3 text-[10px] text-white/30 font-medium pointer-events-none select-none z-10">
-        Nevorai Flow
-      </div>
+      {/* Subtle watermark — top-right, minimal */}
+      {started && (
+        <div className="absolute top-3 right-3 text-[10px] text-white/15 font-medium pointer-events-none select-none z-10 tracking-wide">
+          nevorai.com
+        </div>
+      )}
 
       {/* Center play button (before start) */}
       {!started && (
@@ -201,24 +274,24 @@ const CustomVideoPlayer = ({
           {poster && <img src={poster} alt="" className="absolute inset-0 w-full h-full object-cover" />}
           <div className="absolute inset-0 bg-black/40" />
           <div className="relative z-10">
-            <button className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center hover:scale-110 transition-transform shadow-lg shadow-primary/30">
+            <button className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center hover:scale-110 transition-transform shadow-xl shadow-primary/25 backdrop-blur-sm">
               <Play size={36} className="ml-1 text-white" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Loading spinner */}
+      {/* Loading / Buffering spinner */}
       {(isLoading || isBuffering) && started && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          <Loader2 size={40} className="text-white animate-spin" />
+          <Loader2 size={40} className="text-white/80 animate-spin" />
         </div>
       )}
 
-      {/* Center play/pause indicator */}
+      {/* Center pause indicator */}
       {started && !playing && !isLoading && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          <div className="w-16 h-16 rounded-full bg-black/50 flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
             <Play size={28} className="ml-1 text-white" />
           </div>
         </div>
@@ -229,60 +302,58 @@ const CustomVideoPlayer = ({
         <div
           className={`absolute bottom-0 left-0 right-0 z-30 transition-opacity duration-300 ${showControls || !playing ? "opacity-100" : "opacity-0 pointer-events-none"}`}
           onClick={(e) => e.stopPropagation()}
-          style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.85))" }}
+          style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.8))" }}
         >
           {/* Progress bar */}
           <div
-            className="h-1.5 mx-3 mt-2 cursor-pointer relative group/bar"
+            className="h-[5px] mx-4 mt-2 cursor-pointer relative group/bar rounded-full"
             onClick={handleProgressClick}
           >
             {/* Track */}
-            <div className="absolute inset-0 rounded-full bg-white/15" />
+            <div className="absolute inset-0 rounded-full bg-white/10" />
             {/* Buffered */}
-            <div className="absolute inset-y-0 left-0 rounded-full bg-white/25" style={{ width: `${bufferedPct}%` }} />
-            {/* Unwatched zone indicator (when seek disabled) */}
+            <div className="absolute inset-y-0 left-0 rounded-full bg-white/20 transition-[width] duration-200" style={{ width: `${bufferedPct}%` }} />
+            {/* Forward-blocked zone */}
             {!allowSeek && (
               <div
-                className="absolute inset-y-0 rounded-r-full bg-white/5 cursor-not-allowed"
+                className="absolute inset-y-0 rounded-r-full bg-white/[0.03]"
                 style={{ left: `${maxWatchedPct}%`, right: 0 }}
               />
             )}
             {/* Played */}
-            <div className="absolute inset-y-0 left-0 rounded-full bg-primary" style={{ width: `${watchedPct}%` }} />
+            <div className="absolute inset-y-0 left-0 rounded-full bg-primary transition-[width] duration-100" style={{ width: `${watchedPct}%` }} />
             {/* Thumb */}
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-primary border-2 border-white shadow-md opacity-0 group-hover/bar:opacity-100 transition-opacity"
+              className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-primary ring-2 ring-white/90 shadow-lg opacity-0 group-hover/bar:opacity-100 transition-opacity"
               style={{ left: `calc(${watchedPct}% - 7px)` }}
             />
           </div>
 
           {/* Buttons row */}
-          <div className="flex items-center gap-2 px-3 py-2.5 text-white text-xs">
-            <button onClick={togglePlay} className="p-1 hover:bg-white/10 rounded">
-              {playing ? <Pause size={18} /> : <Play size={18} />}
+          <div className="flex items-center gap-1.5 px-4 py-2.5 text-white">
+            <button onClick={togglePlay} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+              {playing ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
             </button>
-            <span className="tabular-nums text-white/80 text-[11px]">{fmt(currentTime)} / {fmt(duration)}</span>
+
+            <span className="tabular-nums text-white/60 text-[12px] font-medium ml-1">
+              {fmt(currentTime)}<span className="text-white/30 mx-1">/</span>{fmt(duration)}
+            </span>
+
             <div className="flex-1" />
-            <button onClick={() => { setMuted((p) => { if (videoRef.current) videoRef.current.muted = !p; return !p; }); }} className="p-1 hover:bg-white/10 rounded">
-              {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+
+            <button
+              onClick={() => { setMuted((p) => { if (videoRef.current) videoRef.current.muted = !p; return !p; }); }}
+              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              {muted ? <VolumeX size={17} className="text-white/70" /> : <Volume2 size={17} className="text-white/70" />}
             </button>
+
             {allowSpeed && (
-              <select
-                className="bg-transparent text-white text-[11px] border border-white/20 rounded px-1 py-0.5 cursor-pointer"
-                defaultValue="1"
-                onChange={(e) => { if (videoRef.current) videoRef.current.playbackRate = parseFloat(e.target.value); }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <option value="0.5" className="text-black">0.5x</option>
-                <option value="0.75" className="text-black">0.75x</option>
-                <option value="1" className="text-black">1x</option>
-                <option value="1.25" className="text-black">1.25x</option>
-                <option value="1.5" className="text-black">1.5x</option>
-                <option value="2" className="text-black">2x</option>
-              </select>
+              <SpeedControl currentSpeed={speed} onSpeedChange={handleSpeedChange} />
             )}
-            <button onClick={toggleFullscreen} className="p-1 hover:bg-white/10 rounded">
-              {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+
+            <button onClick={toggleFullscreen} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+              {isFullscreen ? <Minimize size={17} className="text-white/70" /> : <Maximize size={17} className="text-white/70" />}
             </button>
           </div>
         </div>
@@ -294,8 +365,7 @@ const CustomVideoPlayer = ({
 /* ─── Main Page ─── */
 const PublicFunnel = () => {
   const { slug } = useParams();
-  // No useAuth() here — public visitors should not trigger auth session checks
-  // Owner preview is determined server-side by the edge function returning unpublished funnels
+  // No useAuth() — public visitors should not trigger auth session checks
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [showCta, setShowCta] = useState(false);
   const [watchSeconds, setWatchSeconds] = useState(0);
@@ -307,7 +377,7 @@ const PublicFunnel = () => {
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordUnlocked, setPasswordUnlocked] = useState(false);
 
-  // Single combined fetch — replaces 5 cascading queries
+  // Single combined fetch
   const { data: bundle, isLoading } = useQuery({
     queryKey: ["public-funnel-bundle", slug],
     queryFn: async () => {
@@ -319,8 +389,8 @@ const PublicFunnel = () => {
       return res.json();
     },
     enabled: !!slug,
-    staleTime: 5 * 60 * 1000,       // 5 min — funnel data rarely changes mid-session
-    gcTime: 30 * 60 * 1000,          // keep in cache 30 min
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: 1,
   });
@@ -331,7 +401,6 @@ const PublicFunnel = () => {
   const formConfig = bundle?.formConfig;
   const priceOptions: any[] = bundle?.priceOptions || [];
 
-  const isOwner = false; // Owner preview not needed on public page — use /funnels/:id for preview
   const isDraft = funnel && !funnel.is_published;
   const canView = funnel && funnel.is_published;
 
@@ -349,7 +418,7 @@ const PublicFunnel = () => {
   // OG tags
   useEffect(() => {
     if (!funnel) return;
-    document.title = `${funnel.title} | Nevorai Flow`;
+    document.title = `${funnel.title} | Nevorai`;
     const setMeta = (name: string, content: string, prop = false) => {
       const attr = prop ? "property" : "name";
       let el = document.querySelector(`meta[${attr}="${name}"]`);
@@ -362,7 +431,7 @@ const PublicFunnel = () => {
     setMeta("og:type", "website", true);
     setMeta("og:url", window.location.href, true);
     if (funnel.thumbnail_url) setMeta("og:image", funnel.thumbnail_url, true);
-    setMeta("og:site_name", "Nevorai Flow", true);
+    setMeta("og:site_name", "Nevorai", true);
     setMeta("twitter:card", "summary_large_image");
     setMeta("twitter:title", funnel.title);
     setMeta("twitter:description", funnel.description || funnel.title);
@@ -385,7 +454,6 @@ const PublicFunnel = () => {
 
   const submitLead = useMutation({
     mutationFn: async () => {
-      // Honeypot check
       if (leadForm.website) return;
       await supabase.from("funnel_leads").insert({
         funnel_id: funnel!.id,
@@ -462,7 +530,6 @@ const PublicFunnel = () => {
       <h3 className="text-lg font-heading font-bold mb-1 text-white">{funnel.cta_text || "Register Now"}</h3>
       <p className="text-xs text-[#94a3b8] mb-5">Fill in your details to continue</p>
       <form onSubmit={(e) => { e.preventDefault(); submitLead.mutate(); }} className="space-y-3">
-        {/* Honeypot */}
         <input type="text" name="website" value={leadForm.website} onChange={(e) => setLeadForm({ ...leadForm, website: e.target.value })} style={{ position: "absolute", left: "-9999px" }} tabIndex={-1} autoComplete="off" />
         {formConfig?.show_name && (
           <Input placeholder="Full Name" value={leadForm.name} onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })} required={formConfig.name_required || false} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
@@ -492,42 +559,33 @@ const PublicFunnel = () => {
 
   return (
     <div className="min-h-screen bg-[#09090b]">
-      {/* Draft banner */}
-      {isDraft && isOwner && (
-        <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-4 py-2 text-center">
-          <p className="text-sm text-yellow-400 flex items-center justify-center gap-2">
-            <AlertTriangle size={14} /> This is a draft preview. Publish your funnel to share it.
-          </p>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="px-4 py-3 flex items-center justify-between border-b border-[#27272a]/50">
-        <div className="flex items-center gap-2">
+      {/* Header — clean, minimal */}
+      <div className="px-4 py-3 flex items-center justify-between border-b border-white/[0.06]">
+        <div className="flex items-center gap-2.5">
           <img src={logoImg} alt="Nevorai" className="h-6 w-6" />
-          <span className="text-[11px] text-[#64748b]">Powered by Nevorai Flow</span>
+          <span className="text-[12px] font-medium text-white/30 tracking-wide">Nevorai</span>
         </div>
-        <button onClick={handleShare} className="text-[#64748b] hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5">
-          <Share2 size={16} />
+        <button onClick={handleShare} className="text-white/30 hover:text-white/60 transition-colors p-1.5 rounded-lg hover:bg-white/5">
+          <Share2 size={15} />
         </button>
       </div>
 
       {/* Main content */}
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Title */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-8">
           <h1 className="text-2xl md:text-3xl lg:text-4xl font-heading font-extrabold text-white tracking-tight leading-tight">{funnel.title}</h1>
-          {funnel.description && <p className="text-sm text-[#94a3b8] mt-2 max-w-xl mx-auto">{funnel.description}</p>}
+          {funnel.description && <p className="text-[15px] text-white/40 mt-3 max-w-xl mx-auto leading-relaxed">{funnel.description}</p>}
         </div>
 
-        {/* Lead form before video (full width, blocks video) */}
-        {showLeadFormNow && <LeadFormCard className="max-w-md mx-auto mb-6" />}
+        {/* Lead form before video */}
+        {showLeadFormNow && <LeadFormCard className="max-w-md mx-auto mb-8" />}
 
-        {/* Two-column layout on desktop when lead form is shown beside video */}
+        {/* Two-column layout */}
         {(!showLeadFormNow || leadSubmitted) && (
-          <div className={`${showLeadFormSidebar && !leadSubmitted ? "lg:grid lg:grid-cols-[1fr_380px] lg:gap-6" : "max-w-4xl mx-auto"}`}>
+          <div className={`${showLeadFormSidebar && !leadSubmitted ? "lg:grid lg:grid-cols-[1fr_380px] lg:gap-8" : "max-w-4xl mx-auto"}`}>
             {/* Left: Video + Creator */}
-            <div className="space-y-4">
+            <div className="space-y-5">
               {videoUrl && (
                 <CustomVideoPlayer
                   src={videoUrl}
@@ -539,15 +597,15 @@ const PublicFunnel = () => {
                 />
               )}
               {!videoUrl && (
-                <div className="aspect-video bg-[#141419] rounded-2xl flex items-center justify-center">
-                  <Play size={48} className="text-[#64748b]" />
+                <div className="aspect-video bg-[#141419] rounded-2xl flex items-center justify-center border border-white/[0.04]">
+                  <Play size={48} className="text-white/20" />
                 </div>
               )}
 
               {/* Creator Badge */}
               {creatorProfile?.full_name && (
-                <div className="flex items-center gap-3 py-3">
-                  <div className="w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 overflow-hidden border-2 border-primary/30">
+                <div className="flex items-center gap-3 py-2">
+                  <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 overflow-hidden ring-2 ring-primary/20">
                     {creatorProfile.avatar_url ? (
                       <img src={creatorProfile.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -557,9 +615,9 @@ const PublicFunnel = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="font-heading font-semibold text-white text-sm truncate">{creatorProfile.full_name}</span>
-                      {isVerified && <BadgeCheck size={16} className="text-primary flex-shrink-0" />}
+                      {isVerified && <BadgeCheck size={15} className="text-primary flex-shrink-0" />}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-[#94a3b8] mt-0.5">
+                    <div className="flex items-center gap-3 text-xs text-white/35 mt-0.5">
                       {creatorProfile.city && <span className="flex items-center gap-1"><MapPin size={10} /> {creatorProfile.city}</span>}
                       {creatorProfile.instagram_url && (
                         <a
@@ -574,9 +632,8 @@ const PublicFunnel = () => {
                 </div>
               )}
 
-              {/* CTA Button — only on mobile or when no sidebar */}
+              {/* CTA Button */}
               <div className={showLeadFormSidebar && !leadSubmitted ? "lg:hidden" : ""}>
-                {/* Active CTA */}
                 {ctaEnabled && showCta && (
                   <Button
                     className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 cta-pulse"
@@ -585,23 +642,20 @@ const PublicFunnel = () => {
                     {funnel.cta_text || "Get Started"} →
                   </Button>
                 )}
-                {/* Locked CTA countdown */}
                 {ctaEnabled && funnel.lock_cta && !showCta && videoPlaying && (
-                  <Button disabled className="w-full h-14 text-base rounded-xl bg-[#27272a] text-[#64748b] cursor-not-allowed">
+                  <Button disabled className="w-full h-14 text-base rounded-xl bg-white/[0.04] text-white/30 cursor-not-allowed border border-white/[0.06]">
                     🔒 {funnel.cta_text || "Get Started"} — unlocks in {Math.floor(ctaTimingLeft / 60)}:{(ctaTimingLeft % 60).toString().padStart(2, "0")}
                   </Button>
                 )}
               </div>
 
-              {/* Lead form after CTA (mobile) */}
               {showLeadFormAfterCta && <div className="lg:hidden"><LeadFormCard /></div>}
             </div>
 
-            {/* Right sidebar: Lead form on desktop */}
+            {/* Right sidebar */}
             {showLeadFormSidebar && !leadSubmitted && (
               <div className="hidden lg:block sticky top-6 self-start">
                 <LeadFormCard />
-                {/* CTA on desktop sidebar */}
                 {ctaEnabled && showCta && funnel.cta_url && (
                   <Button
                     className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 mt-4 cta-pulse"
@@ -615,7 +669,6 @@ const PublicFunnel = () => {
           </div>
         )}
 
-        {/* Lead form after CTA (desktop, no sidebar layout) */}
         {showLeadFormAfterCta && !showLeadFormSidebar && <LeadFormCard className="max-w-md mx-auto mt-6" />}
 
         {/* Payment Section */}
@@ -624,7 +677,7 @@ const PublicFunnel = () => {
             <h3 className="text-lg font-heading font-semibold mb-4 text-white">Complete Payment</h3>
             {priceOptions.length > 0 && (
               <div className="space-y-2 mb-4">
-                {priceOptions.map((opt) => (
+                {priceOptions.map((opt: any) => (
                   <button key={opt.id} onClick={() => setPaymentProof({ ...paymentProof, amount: opt.amount })}
                     className={`w-full p-3 rounded-xl border text-left transition-all ${paymentProof.amount === opt.amount ? "border-primary bg-primary/10" : "border-[#27272a] bg-[#09090b]"}`}>
                     <div className="flex justify-between items-center">
@@ -666,23 +719,23 @@ const PublicFunnel = () => {
 
         {/* Contact Buttons */}
         {funnel.show_contact_buttons && (leadSubmitted || !funnel.show_contact_after_cta) && (
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#09090b]/95 backdrop-blur-xl border-t border-[#27272a] flex gap-3 justify-center z-50">
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#09090b]/95 backdrop-blur-xl border-t border-white/[0.06] flex gap-3 justify-center z-50">
             {funnel.contact_whatsapp && (
               <Button className="bg-[#25d366] hover:bg-[#20b858] text-white" onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}>
                 <MessageCircle size={16} /> WhatsApp
               </Button>
             )}
             {funnel.contact_phone && (
-              <Button className="bg-[#27272a] hover:bg-[#3f3f46] text-white" onClick={() => window.open(`tel:${funnel.contact_phone}`)}>
+              <Button className="bg-white/[0.06] hover:bg-white/10 text-white border border-white/[0.06]" onClick={() => window.open(`tel:${funnel.contact_phone}`)}>
                 <PhoneIcon size={16} /> Call
               </Button>
             )}
           </div>
         )}
 
-        {/* Footer */}
-        <div className="mt-12 pt-6 border-t border-[#27272a]/50 text-center">
-          <p className="text-[11px] text-[#64748b]">© {new Date().getFullYear()} Nevorai Flow · Powered by Nevorai</p>
+        {/* Footer — clean, single-line */}
+        <div className="mt-16 pt-6 border-t border-white/[0.04] text-center">
+          <p className="text-[11px] text-white/20">© {new Date().getFullYear()} Nevorai · All rights reserved</p>
         </div>
       </div>
 
