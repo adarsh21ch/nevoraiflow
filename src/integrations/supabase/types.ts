@@ -307,6 +307,151 @@ export type Database = {
           },
         ]
       }
+      funnel_step_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          funnel_id: string
+          funnel_step_id: string
+          id: string
+          last_position_seconds: number | null
+          lead_id: string | null
+          manually_unlocked: boolean | null
+          max_watched_seconds: number | null
+          session_id: string | null
+          status: string
+          unlocked_at: string | null
+          unlocked_by: string | null
+          updated_at: string
+          watched_percentage: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          funnel_id: string
+          funnel_step_id: string
+          id?: string
+          last_position_seconds?: number | null
+          lead_id?: string | null
+          manually_unlocked?: boolean | null
+          max_watched_seconds?: number | null
+          session_id?: string | null
+          status?: string
+          unlocked_at?: string | null
+          unlocked_by?: string | null
+          updated_at?: string
+          watched_percentage?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          funnel_id?: string
+          funnel_step_id?: string
+          id?: string
+          last_position_seconds?: number | null
+          lead_id?: string | null
+          manually_unlocked?: boolean | null
+          max_watched_seconds?: number | null
+          session_id?: string | null
+          status?: string
+          unlocked_at?: string | null
+          unlocked_by?: string | null
+          updated_at?: string
+          watched_percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funnel_step_progress_funnel_id_fkey"
+            columns: ["funnel_id"]
+            isOneToOne: false
+            referencedRelation: "funnels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funnel_step_progress_funnel_step_id_fkey"
+            columns: ["funnel_step_id"]
+            isOneToOne: false
+            referencedRelation: "funnel_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funnel_step_progress_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "funnel_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funnel_steps: {
+        Row: {
+          booking_url: string | null
+          created_at: string
+          cta_text: string | null
+          cta_url: string | null
+          description: string | null
+          funnel_id: string
+          id: string
+          is_active: boolean
+          step_order: number
+          step_type: string
+          title: string
+          unlock_rule_type: string
+          unlock_rule_value: string | null
+          updated_at: string
+          video_asset_id: string | null
+        }
+        Insert: {
+          booking_url?: string | null
+          created_at?: string
+          cta_text?: string | null
+          cta_url?: string | null
+          description?: string | null
+          funnel_id: string
+          id?: string
+          is_active?: boolean
+          step_order?: number
+          step_type?: string
+          title?: string
+          unlock_rule_type?: string
+          unlock_rule_value?: string | null
+          updated_at?: string
+          video_asset_id?: string | null
+        }
+        Update: {
+          booking_url?: string | null
+          created_at?: string
+          cta_text?: string | null
+          cta_url?: string | null
+          description?: string | null
+          funnel_id?: string
+          id?: string
+          is_active?: boolean
+          step_order?: number
+          step_type?: string
+          title?: string
+          unlock_rule_type?: string
+          unlock_rule_value?: string | null
+          updated_at?: string
+          video_asset_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funnel_steps_funnel_id_fkey"
+            columns: ["funnel_id"]
+            isOneToOne: false
+            referencedRelation: "funnels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funnel_steps_video_asset_id_fkey"
+            columns: ["video_asset_id"]
+            isOneToOne: false
+            referencedRelation: "video_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       funnel_video_analytics: {
         Row: {
           device_type: string | null
@@ -379,6 +524,7 @@ export type Database = {
           cta_timing_seconds: number | null
           cta_url: string | null
           description: string | null
+          funnel_mode: string
           id: string
           intent_type: string | null
           is_live_broadcast: boolean | null
@@ -426,6 +572,7 @@ export type Database = {
           cta_timing_seconds?: number | null
           cta_url?: string | null
           description?: string | null
+          funnel_mode?: string
           id?: string
           intent_type?: string | null
           is_live_broadcast?: boolean | null
@@ -473,6 +620,7 @@ export type Database = {
           cta_timing_seconds?: number | null
           cta_url?: string | null
           description?: string | null
+          funnel_mode?: string
           id?: string
           intent_type?: string | null
           is_live_broadcast?: boolean | null

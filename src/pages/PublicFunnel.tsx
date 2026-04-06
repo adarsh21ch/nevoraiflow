@@ -74,6 +74,7 @@ const CustomVideoPlayer = ({
   poster,
   allowSeek,
   allowSpeed,
+  autoplay = false,
   onTimeUpdate,
   onPlay,
 }: {
@@ -81,6 +82,7 @@ const CustomVideoPlayer = ({
   poster?: string;
   allowSeek: boolean;
   allowSpeed: boolean;
+  autoplay?: boolean;
   onTimeUpdate?: (currentTime: number, duration: number) => void;
   onPlay?: () => void;
 }) => {
@@ -99,7 +101,9 @@ const CustomVideoPlayer = ({
   const [started, setStarted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [autoplayMuted, setAutoplayMuted] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
+  const autoplayAttempted = useRef(false);
 
   const fmt = (s: number) => {
     const h = Math.floor(s / 3600);
@@ -109,6 +113,42 @@ const CustomVideoPlayer = ({
       ? `${h}:${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`
       : `${m}:${sec.toString().padStart(2, "0")}`;
   };
+
+  // Autoplay logic: try unmuted first, fallback to muted
+  useEffect(() => {
+    if (!autoplay || autoplayAttempted.current || !videoRef.current) return;
+    autoplayAttempted.current = true;
+    const v = videoRef.current;
+    
+    // Try unmuted autoplay first
+    v.muted = false;
+    setMuted(false);
+    const playPromise = v.play();
+    if (playPromise) {
+      playPromise
+        .then(() => {
+          setStarted(true);
+          setPlaying(true);
+          onPlay?.();
+        })
+        .catch(() => {
+          // Fallback: muted autoplay
+          v.muted = true;
+          setMuted(true);
+          setAutoplayMuted(true);
+          v.play()
+            .then(() => {
+              setStarted(true);
+              setPlaying(true);
+              onPlay?.();
+            })
+            .catch(() => {
+              // Autoplay completely blocked, user must click
+              setAutoplayMuted(false);
+            });
+        });
+    }
+  }, [autoplay, src]);
 
   const togglePlay = useCallback(() => {
     const v = videoRef.current;
@@ -125,6 +165,14 @@ const CustomVideoPlayer = ({
     }
   }, [started, onPlay]);
 
+  const handleUnmute = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = false;
+    setMuted(false);
+    setAutoplayMuted(false);
+  }, []);
+
   const handleSpeedChange = useCallback((s: number) => {
     setSpeed(s);
     if (videoRef.current) videoRef.current.playbackRate = s;
@@ -138,7 +186,6 @@ const CustomVideoPlayer = ({
         e.preventDefault();
         togglePlay();
       }
-      // Forward seek blocking
       if (!allowSeek) {
         if (["ArrowRight", "l", "L"].includes(e.key)) e.preventDefault();
         if ("123456789".includes(e.key)) {
@@ -149,7 +196,6 @@ const CustomVideoPlayer = ({
           }
         }
       }
-      // Backward always allowed
       if (e.key === "ArrowLeft") {
         e.preventDefault();
         const v = videoRef.current;
@@ -157,6 +203,7 @@ const CustomVideoPlayer = ({
       }
       if (e.key === "m" || e.key === "M") {
         setMuted((p) => { if (videoRef.current) videoRef.current.muted = !p; return !p; });
+        setAutoplayMuted(false);
       }
       if (e.key === "f" || e.key === "F") toggleFullscreen();
     };
@@ -182,7 +229,6 @@ const CustomVideoPlayer = ({
   const handleTimeUpdate = () => {
     const v = videoRef.current;
     if (!v || isSeeking.current) return;
-    // Update maxWatched on every tick
     if (v.currentTime > maxWatched.current) {
       maxWatched.current = v.currentTime;
     }
@@ -193,7 +239,6 @@ const CustomVideoPlayer = ({
     }
   };
 
-  // Seek enforcement: allow backward, block forward past maxWatched
   const handleSeeking = () => {
     const v = videoRef.current;
     if (!v || allowSeek) return;
@@ -211,10 +256,8 @@ const CustomVideoPlayer = ({
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const targetTime = pct * duration;
     if (!allowSeek && targetTime > maxWatched.current + 0.5) {
-      // Block forward seek, snap to maxWatched
       v.currentTime = maxWatched.current;
     } else {
-      // Backward or within watched range — always allowed
       v.currentTime = targetTime;
     }
   };
@@ -243,11 +286,11 @@ const CustomVideoPlayer = ({
     >
       <video
         ref={videoRef}
-        src={started ? src : undefined}
+        src={src}
         poster={poster}
         className="w-full h-full object-contain"
         playsInline
-        preload="metadata"
+        preload="auto"
         onTimeUpdate={handleTimeUpdate}
         onSeeking={handleSeeking}
         onLoadedMetadata={() => { if (videoRef.current) setDuration(videoRef.current.duration); }}
@@ -258,11 +301,21 @@ const CustomVideoPlayer = ({
         onCanPlay={() => setIsLoading(false)}
       />
 
-      {/* Subtle watermark — top-right, minimal */}
+      {/* Watermark — bottom-right, subtle */}
       {started && (
-        <div className="absolute top-3 right-3 text-[10px] text-white/15 font-medium pointer-events-none select-none z-10 tracking-wide">
-          nevorai.com
+        <div className="absolute bottom-14 right-4 text-[10px] text-white/[0.12] font-medium pointer-events-none select-none z-10 tracking-wide">
+          flow.nevorai.com
         </div>
+      )}
+
+      {/* Unmute banner for autoplay-muted */}
+      {autoplayMuted && started && (
+        <button
+          onClick={(e) => { e.stopPropagation(); handleUnmute(); }}
+          className="absolute top-4 left-4 z-30 flex items-center gap-2 px-3 py-2 bg-black/70 backdrop-blur-sm rounded-xl border border-white/10 text-white text-xs font-medium hover:bg-black/80 transition-colors"
+        >
+          <VolumeX size={14} /> Tap to unmute
+        </button>
       )}
 
       {/* Center play button (before start) */}
@@ -309,20 +362,15 @@ const CustomVideoPlayer = ({
             className="h-[5px] mx-4 mt-2 cursor-pointer relative group/bar rounded-full"
             onClick={handleProgressClick}
           >
-            {/* Track */}
             <div className="absolute inset-0 rounded-full bg-white/10" />
-            {/* Buffered */}
             <div className="absolute inset-y-0 left-0 rounded-full bg-white/20 transition-[width] duration-200" style={{ width: `${bufferedPct}%` }} />
-            {/* Forward-blocked zone */}
             {!allowSeek && (
               <div
                 className="absolute inset-y-0 rounded-r-full bg-white/[0.03]"
                 style={{ left: `${maxWatchedPct}%`, right: 0 }}
               />
             )}
-            {/* Played */}
             <div className="absolute inset-y-0 left-0 rounded-full bg-primary transition-[width] duration-100" style={{ width: `${watchedPct}%` }} />
-            {/* Thumb */}
             <div
               className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-primary ring-2 ring-white/90 shadow-lg opacity-0 group-hover/bar:opacity-100 transition-opacity"
               style={{ left: `calc(${watchedPct}% - 7px)` }}
@@ -342,7 +390,7 @@ const CustomVideoPlayer = ({
             <div className="flex-1" />
 
             <button
-              onClick={() => { setMuted((p) => { if (videoRef.current) videoRef.current.muted = !p; return !p; }); }}
+              onClick={() => { setMuted((p) => { if (videoRef.current) videoRef.current.muted = !p; return !p; }); setAutoplayMuted(false); }}
               className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
             >
               {muted ? <VolumeX size={17} className="text-white/70" /> : <Volume2 size={17} className="text-white/70" />}
@@ -365,7 +413,6 @@ const CustomVideoPlayer = ({
 /* ─── Main Page ─── */
 const PublicFunnel = () => {
   const { slug } = useParams();
-  // No useAuth() — public visitors should not trigger auth session checks
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [showCta, setShowCta] = useState(false);
   const [watchSeconds, setWatchSeconds] = useState(0);
@@ -418,7 +465,7 @@ const PublicFunnel = () => {
   // OG tags
   useEffect(() => {
     if (!funnel) return;
-    document.title = `${funnel.title} | Nevorai`;
+    document.title = `${funnel.title} | Nevorai Flow`;
     const setMeta = (name: string, content: string, prop = false) => {
       const attr = prop ? "property" : "name";
       let el = document.querySelector(`meta[${attr}="${name}"]`);
@@ -431,7 +478,7 @@ const PublicFunnel = () => {
     setMeta("og:type", "website", true);
     setMeta("og:url", window.location.href, true);
     if (funnel.thumbnail_url) setMeta("og:image", funnel.thumbnail_url, true);
-    setMeta("og:site_name", "Nevorai", true);
+    setMeta("og:site_name", "Nevorai Flow", true);
     setMeta("twitter:card", "summary_large_image");
     setMeta("twitter:title", funnel.title);
     setMeta("twitter:description", funnel.description || funnel.title);
@@ -559,11 +606,12 @@ const PublicFunnel = () => {
 
   return (
     <div className="min-h-screen bg-[#09090b]">
-      {/* Header — clean, minimal */}
+      {/* Header — clean, premium Nevorai Flow branding */}
       <div className="px-4 py-3 flex items-center justify-between border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5">
-          <img src={logoImg} alt="Nevorai" className="h-6 w-6" />
-          <span className="text-[12px] font-medium text-white/30 tracking-wide">Nevorai</span>
+          <img src={logoImg} alt="Nevorai Flow" className="h-6 w-6" />
+          <span className="text-[13px] font-semibold text-white/40 tracking-wide">Nevorai</span>
+          <span className="text-[13px] font-bold text-primary/70 tracking-wide">Flow</span>
         </div>
         <button onClick={handleShare} className="text-white/30 hover:text-white/60 transition-colors p-1.5 rounded-lg hover:bg-white/5">
           <Share2 size={15} />
@@ -592,6 +640,7 @@ const PublicFunnel = () => {
                   poster={funnel.thumbnail_url || videoAsset?.thumbnail_url || undefined}
                   allowSeek={funnel.allow_seek !== false}
                   allowSpeed={funnel.allow_speed_change !== false}
+                  autoplay={true}
                   onTimeUpdate={(ct, dur) => { setWatchSeconds(Math.floor(ct)); setVideoDuration(dur); }}
                   onPlay={() => setVideoPlaying(true)}
                 />
@@ -733,9 +782,9 @@ const PublicFunnel = () => {
           </div>
         )}
 
-        {/* Footer — clean, single-line */}
+        {/* Footer — clean Nevorai Flow branding */}
         <div className="mt-16 pt-6 border-t border-white/[0.04] text-center">
-          <p className="text-[11px] text-white/20">© {new Date().getFullYear()} Nevorai · All rights reserved</p>
+          <p className="text-[11px] text-white/20">© {new Date().getFullYear()} Nevorai Flow · All rights reserved</p>
         </div>
       </div>
 

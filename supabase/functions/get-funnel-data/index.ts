@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     const { data: funnel, error: funnelErr } = await supabase
       .from("funnels")
       .select(
-        "id, owner_id, title, slug, description, video_asset_id, thumbnail_url, is_published, visibility, password_hash, intent_type, allow_seek, allow_speed_change, cta_enabled, cta_text, cta_timing_seconds, cta_url, lock_cta, audio_note_url, audio_note_timing, audio_note_autoplay, audio_lock_video, show_contact_buttons, contact_whatsapp, contact_phone, contact_instagram, show_contact_after_cta, whatsapp_auto_message, whatsapp_message_template, payment_enabled, upi_id, qr_code_url, payment_instructions, total_views"
+        "id, owner_id, title, slug, description, video_asset_id, thumbnail_url, is_published, visibility, password_hash, intent_type, allow_seek, allow_speed_change, cta_enabled, cta_text, cta_timing_seconds, cta_url, lock_cta, audio_note_url, audio_note_timing, audio_note_autoplay, audio_lock_video, show_contact_buttons, contact_whatsapp, contact_phone, contact_instagram, show_contact_after_cta, whatsapp_auto_message, whatsapp_message_template, payment_enabled, upi_id, qr_code_url, payment_instructions, total_views, funnel_mode"
       )
       .eq("slug", slug)
       .single();
@@ -88,6 +88,21 @@ Deno.serve(async (req) => {
         .then((r) => ({ key: "priceOptions", data: r.data || [] }))
     );
 
+    // Funnel steps (for multi-step mode)
+    if (funnel.funnel_mode === "multi") {
+      promises.push(
+        supabase
+          .from("funnel_steps")
+          .select("id, step_order, title, description, step_type, video_asset_id, is_active, unlock_rule_type, unlock_rule_value, cta_text, cta_url, booking_url")
+          .eq("funnel_id", funnel.id)
+          .eq("is_active", true)
+          .order("step_order")
+          .then((r) => ({ key: "steps", data: r.data || [] }))
+      );
+    } else {
+      promises.push(Promise.resolve({ key: "steps", data: [] }));
+    }
+
     // Atomic view count increment — fire-and-forget, non-blocking
     supabase.rpc("increment_funnel_views", { _funnel_id: funnel.id }).then(() => {});
 
@@ -103,6 +118,7 @@ Deno.serve(async (req) => {
       creator: resultMap.creator,
       formConfig: resultMap.formConfig,
       priceOptions: resultMap.priceOptions,
+      steps: resultMap.steps,
     };
 
     return new Response(JSON.stringify(payload), {
