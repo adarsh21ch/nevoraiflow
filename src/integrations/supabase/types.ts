@@ -965,6 +965,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_funnel_views: {
+        Args: { _funnel_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
