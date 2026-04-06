@@ -17,7 +17,7 @@ const FunnelDetail = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<"overview" | "leads" | "payments">("overview");
+  const [tab, setTab] = useState<"overview" | "leads" | "payments" | "progress">("overview");
   const [leadSearch, setLeadSearch] = useState("");
   const [leadFilter, setLeadFilter] = useState("all");
 
