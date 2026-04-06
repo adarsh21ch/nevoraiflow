@@ -71,7 +71,6 @@ const MULTI_STEPS = [
   { icon: FileText, label: "Basics" },
   { icon: Layers, label: "Steps" },
   { icon: Settings, label: "Controls" },
-  { icon: Mic, label: "Audio" },
   { icon: MessageCircle, label: "WhatsApp" },
   { icon: IndianRupee, label: "Payment" },
   { icon: Radio, label: "Broadcast" },
