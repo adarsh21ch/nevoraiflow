@@ -113,7 +113,7 @@ const FunnelDetail = () => {
 
         <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
           {tabs.map((t) => (
-            <button key={t.key} onClick={() => setTab(t.key)}
+            <button key={t.key} onClick={() => setTab(t.key as any)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${tab === t.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
               {t.label}
             </button>
