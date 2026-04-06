@@ -374,6 +374,7 @@ export type Database = {
           contact_phone: string | null
           contact_whatsapp: string | null
           created_at: string | null
+          cta_enabled: boolean | null
           cta_text: string | null
           cta_timing_seconds: number | null
           cta_url: string | null
@@ -420,6 +421,7 @@ export type Database = {
           contact_phone?: string | null
           contact_whatsapp?: string | null
           created_at?: string | null
+          cta_enabled?: boolean | null
           cta_text?: string | null
           cta_timing_seconds?: number | null
           cta_url?: string | null
@@ -466,6 +468,7 @@ export type Database = {
           contact_phone?: string | null
           contact_whatsapp?: string | null
           created_at?: string | null
+          cta_enabled?: boolean | null
           cta_text?: string | null
           cta_timing_seconds?: number | null
           cta_url?: string | null
