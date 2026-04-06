@@ -11,7 +11,6 @@ import {
   AlertTriangle, BadgeCheck, MapPin, Instagram, Volume2, VolumeX,
   Maximize, Minimize, Share2, Loader2
 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
 import logoImg from "@/assets/logo.png";
 
 /* ─── Custom Video Player ─── */
@@ -295,7 +294,8 @@ const CustomVideoPlayer = ({
 /* ─── Main Page ─── */
 const PublicFunnel = () => {
   const { slug } = useParams();
-  const { user } = useAuth();
+  // No useAuth() here — public visitors should not trigger auth session checks
+  // Owner preview is determined server-side by the edge function returning unpublished funnels
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [showCta, setShowCta] = useState(false);
   const [watchSeconds, setWatchSeconds] = useState(0);
@@ -331,9 +331,9 @@ const PublicFunnel = () => {
   const formConfig = bundle?.formConfig;
   const priceOptions: any[] = bundle?.priceOptions || [];
 
-  const isOwner = user && funnel && user.id === funnel.owner_id;
+  const isOwner = false; // Owner preview not needed on public page — use /funnels/:id for preview
   const isDraft = funnel && !funnel.is_published;
-  const canView = funnel && (funnel.is_published || isOwner);
+  const canView = funnel && funnel.is_published;
 
   useEffect(() => {
     if (!funnel || funnel.cta_enabled !== true) return;

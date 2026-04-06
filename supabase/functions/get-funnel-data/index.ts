@@ -25,10 +25,12 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Fetch funnel
+    // Fetch funnel — select only needed columns
     const { data: funnel, error: funnelErr } = await supabase
       .from("funnels")
-      .select("*")
+      .select(
+        "id, owner_id, title, slug, description, video_asset_id, thumbnail_url, is_published, visibility, password_hash, intent_type, allow_seek, allow_speed_change, cta_enabled, cta_text, cta_timing_seconds, cta_url, lock_cta, audio_note_url, audio_note_timing, audio_note_autoplay, audio_lock_video, show_contact_buttons, contact_whatsapp, contact_phone, contact_instagram, show_contact_after_cta, whatsapp_auto_message, whatsapp_message_template, payment_enabled, upi_id, qr_code_url, payment_instructions, total_views"
+      )
       .eq("slug", slug)
       .single();
 
@@ -40,9 +42,9 @@ Deno.serve(async (req) => {
     }
 
     // Parallel fetches for related data
-    const promises: Promise<any>[] = [];
+    const promises: Promise<{ key: string; data: unknown }>[] = [];
 
-    // Video asset
+    // Video asset — only needed fields
     if (funnel.video_asset_id) {
       promises.push(
         supabase
@@ -56,7 +58,7 @@ Deno.serve(async (req) => {
       promises.push(Promise.resolve({ key: "video", data: null }));
     }
 
-    // Creator profile
+    // Creator profile — only needed fields
     promises.push(
       supabase
         .from("profiles")
@@ -70,31 +72,27 @@ Deno.serve(async (req) => {
     promises.push(
       supabase
         .from("funnel_lead_form_config")
-        .select("*")
+        .select("capture_enabled, capture_timing, show_name, name_required, show_phone, phone_required, show_email, email_required, show_city, city_required, show_custom, custom_required, custom_field_label")
         .eq("funnel_id", funnel.id)
         .single()
         .then((r) => ({ key: "formConfig", data: r.data }))
     );
 
-    // Price options (always fetch, let client decide)
+    // Price options
     promises.push(
       supabase
         .from("funnel_price_options")
-        .select("*")
+        .select("id, label, amount, description, position")
         .eq("funnel_id", funnel.id)
         .order("position")
         .then((r) => ({ key: "priceOptions", data: r.data || [] }))
     );
 
-    // Increment view count (fire-and-forget)
-    supabase
-      .from("funnels")
-      .update({ total_views: (funnel.total_views || 0) + 1 })
-      .eq("id", funnel.id)
-      .then(() => {});
+    // Atomic view count increment — fire-and-forget, non-blocking
+    supabase.rpc("increment_funnel_views", { _funnel_id: funnel.id }).then(() => {});
 
     const results = await Promise.all(promises);
-    const resultMap: Record<string, any> = {};
+    const resultMap: Record<string, unknown> = {};
     for (const r of results) {
       resultMap[r.key] = r.data;
     }
