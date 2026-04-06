@@ -23,6 +23,7 @@ const PublicFunnel = () => {
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordUnlocked, setPasswordUnlocked] = useState(false);
+  const maxTimeReached = useRef(0);
 
   // Fetch funnel
   const { data: funnel, isLoading } = useQuery({
@@ -245,9 +246,19 @@ const PublicFunnel = () => {
                 playsInline
                 controlsList={`${!funnel.allow_speed_change ? "nofullscreen" : ""}`}
                 onTimeUpdate={() => {
-                  if (videoRef.current) setWatchSeconds(Math.floor(videoRef.current.currentTime));
+                  if (videoRef.current) {
+                    const ct = videoRef.current.currentTime;
+                    if (ct > maxTimeReached.current) maxTimeReached.current = ct;
+                    setWatchSeconds(Math.floor(ct));
+                  }
                 }}
-                style={{ ...(funnel.allow_seek === false ? { pointerEvents: "auto" } : {}) }}
+                onSeeking={() => {
+                  if (funnel.allow_seek === false && videoRef.current) {
+                    if (videoRef.current.currentTime > maxTimeReached.current + 1) {
+                      videoRef.current.currentTime = maxTimeReached.current;
+                    }
+                  }
+                }}
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center cursor-pointer" onClick={handlePlayVideo}>
