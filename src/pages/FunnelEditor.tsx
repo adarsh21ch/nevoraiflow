@@ -97,9 +97,9 @@ const FunnelEditor = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Wizard state
+  // Wizard state — modeChosen gates entry into the real wizard
   const [wizardStep, setWizardStep] = useState(0);
-  const [modeChosen, setModeChosen] = useState(false);
+  const [modeChosen, setModeChosen] = useState(isEdit);
 
   // Video picker
   const searchParams = new URLSearchParams(window.location.search);
@@ -349,9 +349,7 @@ const FunnelEditor = () => {
   const totalSteps = visibleSteps.length;
   const lastStepIdx = totalSteps - 1;
 
-  // ── Mode selection gate (for new funnels) ──
-  // After Basic Info (step 0), if mode not chosen yet, show mode picker
-  const showModePicker = wizardStep === 0 && !modeChosen && !isEdit;
+  // visibleSteps & nav computed
 
   // ── Render helper for common steps ──
   const renderCommonStep = (offset: number) => {
@@ -399,15 +397,15 @@ const FunnelEditor = () => {
 
   const renderModePicker = () => (
     <>
-      <h2 className="text-lg font-heading font-semibold">How should this funnel work?</h2>
-      <p className="text-sm text-muted-foreground">Choose the structure that fits your goal.</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+      <h2 className="text-xl font-heading font-bold">Create New Funnel</h2>
+      <p className="text-sm text-muted-foreground">What type of funnel do you want to build?</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
         <button
-          onClick={() => { update("funnel_mode", "single"); setModeChosen(true); setWizardStep(1); }}
+          onClick={() => { update("funnel_mode", "single"); setModeChosen(true); setWizardStep(0); }}
           className="p-6 rounded-xl border-2 border-border hover:border-primary/50 hover:bg-primary/5 text-left transition-all group"
         >
-          <div className="w-11 h-11 rounded-xl bg-blue-500/10 flex items-center justify-center mb-3">
-            <Video size={22} className="text-blue-400" />
+          <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+            <Video size={22} className="text-primary" />
           </div>
           <h3 className="font-heading font-bold text-sm group-hover:text-primary transition-colors">Single Video Funnel</h3>
           <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
@@ -419,12 +417,12 @@ const FunnelEditor = () => {
             update("funnel_mode", "multi");
             if (flowSteps.length === 0) setFlowSteps([createEmptyStep(0)]);
             setModeChosen(true);
-            setWizardStep(1);
+            setWizardStep(0);
           }}
           className="p-6 rounded-xl border-2 border-border hover:border-primary/50 hover:bg-primary/5 text-left transition-all group"
         >
-          <div className="w-11 h-11 rounded-xl bg-violet-500/10 flex items-center justify-center mb-3">
-            <Layers size={22} className="text-violet-400" />
+          <div className="w-11 h-11 rounded-xl bg-accent/20 flex items-center justify-center mb-3">
+            <Layers size={22} className="text-accent-foreground" />
           </div>
           <h3 className="font-heading font-bold text-sm group-hover:text-primary transition-colors">Multi-Step Flow</h3>
           <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
@@ -778,20 +776,15 @@ const FunnelEditor = () => {
 
   // ── Determine which content to render ──
   const renderWizardContent = () => {
-    // Gate: mode picker for new funnels
-    if (showModePicker) {
-      if (funnel.title) return renderModePicker();
-      return renderBasicInfo();
-    }
+    // Gate: if mode not chosen yet, show mode picker as the FIRST screen
+    if (!modeChosen) return renderModePicker();
 
     if (wizardStep === 0) return renderBasicInfo();
 
     if (isMulti) {
-      // Multi: 0=Basics, 1=Steps, 2+=common (Controls, Audio, WhatsApp, Payment, Broadcast, Publish)
       if (wizardStep === 1) return renderFlowStepsBuilder();
       return renderCommonStep(2);
     } else {
-      // Single: 0=Basics, 1=Video, 2=Controls, 3=LeadForm, 4+=common (Audio, WhatsApp, Payment, Broadcast, Publish)
       if (wizardStep === 1) return renderVideoStep();
       return renderCommonStep(2);
     }
@@ -859,13 +852,7 @@ const FunnelEditor = () => {
           <div className="flex gap-3 mt-5">
             {(modeChosen && wizardStep > 0) && <Button variant="outline" onClick={() => setWizardStep(wizardStep - 1)}>Previous</Button>}
             <div className="flex-1" />
-            {showModePicker && funnel.title ? (
-              <Button variant="default" onClick={() => {}}>Choose a mode above to continue</Button>
-            ) : !modeChosen ? (
-              funnel.title ? (
-                <Button variant="default" onClick={() => {}}>Enter a title, then choose mode</Button>
-              ) : null
-            ) : wizardStep < lastStepIdx ? (
+            {!modeChosen ? null : wizardStep < lastStepIdx ? (
               <Button variant="default" onClick={() => setWizardStep(wizardStep + 1)}>Next</Button>
             ) : (
               <Button variant="hero" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !funnel.title}>
