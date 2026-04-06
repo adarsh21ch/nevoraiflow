@@ -76,6 +76,7 @@ const CustomVideoPlayer = ({
   allowSeek,
   allowSpeed,
   autoplay = false,
+  initialTime = 0,
   onTimeUpdate,
   onPlay,
 }: {
@@ -84,6 +85,7 @@ const CustomVideoPlayer = ({
   allowSeek: boolean;
   allowSpeed: boolean;
   autoplay?: boolean;
+  initialTime?: number;
   onTimeUpdate?: (currentTime: number, duration: number) => void;
   onPlay?: () => void;
 }) => {
