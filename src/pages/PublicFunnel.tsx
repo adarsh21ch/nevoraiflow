@@ -633,7 +633,7 @@ const PublicFunnel = () => {
 
         {/* Multi-step funnel viewer */}
         {isMultiStep ? (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <MultiStepViewer
               funnel={funnel}
               steps={funnelSteps}
@@ -642,24 +642,6 @@ const PublicFunnel = () => {
               priceOptions={priceOptions}
               VideoPlayer={CustomVideoPlayer}
             />
-            {/* Creator Badge */}
-            {creatorProfile?.full_name && (
-              <div className="flex items-center gap-3 py-4 mt-4">
-                <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 overflow-hidden ring-2 ring-primary/20">
-                  {creatorProfile.avatar_url ? (
-                    <img src={creatorProfile.avatar_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-primary font-heading font-bold text-sm">{creatorProfile.full_name.charAt(0).toUpperCase()}</span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-heading font-semibold text-white text-sm truncate">{creatorProfile.full_name}</span>
-                    {creatorProfile.kyc_status === "approved" && <BadgeCheck size={15} className="text-primary flex-shrink-0" />}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         ) : (
           <>
