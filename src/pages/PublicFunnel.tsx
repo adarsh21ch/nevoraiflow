@@ -331,9 +331,9 @@ const PublicFunnel = () => {
   const formConfig = bundle?.formConfig;
   const priceOptions: any[] = bundle?.priceOptions || [];
 
-  const isOwner = user && funnel && user.id === funnel.owner_id;
+  const isOwner = false; // Owner preview not needed on public page — use /funnels/:id for preview
   const isDraft = funnel && !funnel.is_published;
-  const canView = funnel && (funnel.is_published || isOwner);
+  const canView = funnel && funnel.is_published;
 
   useEffect(() => {
     if (!funnel || funnel.cta_enabled !== true) return;
