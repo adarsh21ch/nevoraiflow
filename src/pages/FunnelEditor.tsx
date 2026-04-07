@@ -800,12 +800,20 @@ const FunnelEditor = () => {
       <div className="flex gap-6 min-h-[calc(100vh-8rem)]">
         {/* Sidebar nav */}
         {modeChosen && (
-          <div className="hidden lg:flex flex-col gap-1 w-44 shrink-0">
+          <div className="hidden lg:flex flex-col gap-1 w-48 shrink-0">
             {visibleSteps.map((s, i) => (
               <button key={i} onClick={() => setWizardStep(i)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${wizardStep === i ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                <s.icon size={15} />
-                <span>{s.label}</span>
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
+                  wizardStep === i
+                    ? "bg-primary/10 border-l-[3px] border-primary text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted border-l-[3px] border-transparent"
+                }`}
+              >
+                <s.icon size={15} className={wizardStep === i ? "text-primary" : ""} />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold tracking-[0.05em]" style={{ color: "rgba(255,255,255,0.3)" }}>{(s as any).num || i + 1}</p>
+                  <p className="text-[13px] font-semibold leading-tight">{s.label}</p>
+                </div>
                 {i === lastStepIdx && funnel.is_published && <Check size={14} className="ml-auto text-emerald-500" />}
               </button>
             ))}
