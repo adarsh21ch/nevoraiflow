@@ -681,26 +681,15 @@ const PublicFunnel = () => {
 
       {/* Main content */}
       {isMultiStep ? (
-        <div>
-          <div className="text-center py-6 px-4" style={{ borderBottom: `1px solid ${tc.borderSubtle}` }}>
-            <h1
-              className="font-heading font-extrabold tracking-tight leading-tight"
-              style={{ fontSize: "clamp(20px, 3vw, 36px)", letterSpacing: "-0.02em", color: tc.text }}
-            >
-              {funnel.title}
-            </h1>
-            {funnel.description && <p className="mt-2 max-w-xl mx-auto" style={{ fontSize: "15px", color: tc.textDim, lineHeight: "1.6" }}>{funnel.description}</p>}
-          </div>
-          <MultiStepViewer
-            funnel={funnel}
-            steps={funnelSteps}
-            creatorProfile={creatorProfile}
-            formConfig={formConfig}
-            priceOptions={priceOptions}
-            VideoPlayer={CustomVideoPlayer}
-            isDark={isDark}
-          />
-        </div>
+        <MultiStepViewer
+          funnel={funnel}
+          steps={funnelSteps}
+          creatorProfile={creatorProfile}
+          formConfig={formConfig}
+          priceOptions={priceOptions}
+          VideoPlayer={CustomVideoPlayer}
+          isDark={isDark}
+        />
       ) : (
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
