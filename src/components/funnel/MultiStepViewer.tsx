@@ -686,27 +686,27 @@ export const MultiStepViewer = ({
               )}
 
               {activeStep.step_type === "lead_form" && (
-                <div className="rounded-2xl p-6" style={{ background: "#141419", border: "1px solid #27272a" }}>
+                <div className="rounded-2xl p-6" style={{ background: sc.cardBg, border: `1px solid ${sc.cardBorder}` }}>
                   {leadSubmitted || activeProgress?.status === "completed" ? (
                     <div className="text-center py-6">
                       <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
-                      <h3 className="font-heading font-bold text-white">Details Submitted</h3>
-                      <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }} className="mt-1">Thank you for your information.</p>
+                      <h3 className="font-heading font-bold" style={{ color: sc.text }}>Details Submitted</h3>
+                      <p style={{ fontSize: "12px", color: sc.textMuted }} className="mt-1">Thank you for your information.</p>
                     </div>
                   ) : (
                     <>
-                      <h3 className="text-lg font-heading font-bold mb-4 text-white">Fill in your details</h3>
+                      <h3 className="text-lg font-heading font-bold mb-4" style={{ color: sc.text }}>Fill in your details</h3>
                       <form onSubmit={(e) => { e.preventDefault(); handleLeadSubmit(activeStepIndex); }} className="space-y-3">
                         <input type="text" name="website" value={leadForm.website} onChange={(e) => setLeadForm({ ...leadForm, website: e.target.value })} style={{ position: "absolute", left: "-9999px" }} tabIndex={-1} autoComplete="off" />
-                        {formConfig?.show_name && <Input placeholder="Full Name" value={leadForm.name} onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })} required={formConfig.name_required} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />}
+                        {formConfig?.show_name && <Input placeholder="Full Name" value={leadForm.name} onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })} required={formConfig.name_required} style={{ background: sc.inputBg, borderColor: sc.cardBorder, color: sc.text }} className="h-12 rounded-xl" />}
                         {formConfig?.show_phone && (
                           <div className="flex gap-2">
-                            <div className="flex items-center px-3 bg-[#09090b] border border-[#27272a] rounded-xl text-sm text-white/40 shrink-0 h-12">+91</div>
-                            <Input placeholder="Phone number" value={leadForm.phone} onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })} required={formConfig.phone_required} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
+                            <div className="flex items-center px-3 rounded-xl text-sm shrink-0 h-12" style={{ background: sc.inputBg, border: `1px solid ${sc.cardBorder}`, color: sc.textMuted }}>+91</div>
+                            <Input placeholder="Phone number" value={leadForm.phone} onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })} required={formConfig.phone_required} style={{ background: sc.inputBg, borderColor: sc.cardBorder, color: sc.text }} className="h-12 rounded-xl" />
                           </div>
                         )}
-                        {formConfig?.show_email && <Input type="email" placeholder="Email" value={leadForm.email} onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })} required={formConfig.email_required} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />}
-                        {formConfig?.show_city && <Input placeholder="City" value={leadForm.city} onChange={(e) => setLeadForm({ ...leadForm, city: e.target.value })} required={formConfig.city_required} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />}
+                        {formConfig?.show_email && <Input type="email" placeholder="Email" value={leadForm.email} onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })} required={formConfig.email_required} style={{ background: sc.inputBg, borderColor: sc.cardBorder, color: sc.text }} className="h-12 rounded-xl" />}
+                        {formConfig?.show_city && <Input placeholder="City" value={leadForm.city} onChange={(e) => setLeadForm({ ...leadForm, city: e.target.value })} required={formConfig.city_required} style={{ background: sc.inputBg, borderColor: sc.cardBorder, color: sc.text }} className="h-12 rounded-xl" />}
                         <Button type="submit" className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl">Submit →</Button>
                       </form>
                     </>
