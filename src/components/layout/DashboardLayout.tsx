@@ -25,6 +25,7 @@ const navItems = [
 
 const bottomItems = [
   { icon: User, label: "Profile", path: "/profile" },
+  { icon: FileCheck, label: "KYC", path: "/kyc" },
   { icon: Bell, label: "Notifications", path: "/notifications" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
