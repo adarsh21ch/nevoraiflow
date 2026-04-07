@@ -845,7 +845,7 @@ const FunnelEditor = () => {
               >
                 <s.icon size={15} className={wizardStep === i ? "text-primary" : ""} />
                 <div className="min-w-0">
-                  <p className="text-[10px] font-semibold tracking-[0.05em]" style={{ color: "rgba(255,255,255,0.3)" }}>{(s as any).num || i + 1}</p>
+                  <p className="text-[10px] font-semibold tracking-[0.05em] text-muted-foreground/50">{(s as any).num || i + 1}</p>
                   <p className="text-[13px] font-semibold leading-tight">{s.label}</p>
                 </div>
                 {i === lastStepIdx && funnel.is_published && <Check size={14} className="ml-auto text-emerald-500" />}
