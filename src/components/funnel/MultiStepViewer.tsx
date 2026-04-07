@@ -473,13 +473,13 @@ export const MultiStepViewer = ({
               <div
                 className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
                 style={{
-                  background: isCompleted ? "rgba(34,197,94,0.2)" : isActive ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.06)",
+                  background: isCompleted ? "rgba(34,197,94,0.2)" : isActive ? "rgba(34,197,94,0.15)" : sc.itemIconBg,
                 }}
               >
                 {isCompleted ? (
                   <Check size={13} className="text-green-400" />
                 ) : isLocked ? (
-                  <Lock size={11} style={{ color: "rgba(255,255,255,0.25)" }} />
+                  <Lock size={11} style={{ color: sc.iconLocked }} />
                 ) : (
                   <Icon size={13} className={isActive ? "text-green-400" : ""} style={!isActive ? { color: "rgba(255,255,255,0.5)" } : {}} />
                 )}
