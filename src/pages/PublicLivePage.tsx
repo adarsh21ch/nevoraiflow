@@ -84,7 +84,7 @@ const PublicLivePage = () => {
   if (!session) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <Logo size="md" />
+        <Logo size="lg" />
         <h1 className="text-xl font-heading font-bold">Session Not Found</h1>
         <p className="text-sm text-muted-foreground">This session may have been removed or hasn't been published yet.</p>
       </div>
