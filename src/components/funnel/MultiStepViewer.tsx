@@ -355,13 +355,37 @@ export const MultiStepViewer = ({
     activeStepIndex + 1 < steps.length &&
     getStepStatus(steps[activeStepIndex + 1].id) !== "locked";
 
+  /* ─── Theme colors for sidebar ─── */
+  const sc = {
+    bg: isDark ? "#0f1117" : "#f8f9fa",
+    border: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)",
+    text: isDark ? "#f1f5f9" : "#0f172a",
+    textMuted: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.5)",
+    textDim: isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.4)",
+    textDimmer: isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)",
+    textLocked: isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)",
+    iconDim: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.4)",
+    iconLocked: isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.2)",
+    progressBg: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
+    progressText: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.45)",
+    itemBg: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
+    itemIconBg: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+    cardBg: isDark ? "#141419" : "#ffffff",
+    cardBorder: isDark ? "#27272a" : "#e5e7eb",
+    inputBg: isDark ? "#09090b" : "#f1f5f9",
+    stepBarBg: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)",
+    stepBarBorder: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
+    stepBarActive: isDark ? "rgba(34,197,94,0.15)" : "rgba(34,197,94,0.1)",
+    stepBarInactive: isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)",
+  };
+
   /* ─── LEFT SIDEBAR (Desktop) ─── */
   const JourneySidebar = () => (
     <div
       className="hidden lg:flex flex-col w-[280px] min-w-[280px] shrink-0 h-[calc(100vh-52px)] sticky top-[52px] overflow-y-auto border-r"
       style={{
-        background: "#0f1117",
-        borderColor: "rgba(255,255,255,0.06)",
+        background: sc.bg,
+        borderColor: sc.border,
         padding: "24px 16px",
       }}
     >
