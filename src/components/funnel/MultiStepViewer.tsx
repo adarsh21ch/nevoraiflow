@@ -415,17 +415,17 @@ export const MultiStepViewer = ({
       )}
 
       {/* Progress */}
-      <div className="pb-4 mb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] mb-2" style={{ color: "rgba(255,255,255,0.35)" }}>
+      <div className="pb-4 mb-4" style={{ borderBottom: `1px solid ${sc.border}` }}>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] mb-2" style={{ color: sc.textDim }}>
           Journey Progress
         </p>
-        <div className="h-1 rounded-full overflow-hidden mb-1.5" style={{ background: "rgba(255,255,255,0.08)" }}>
+        <div className="h-1 rounded-full overflow-hidden mb-1.5" style={{ background: sc.progressBg }}>
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{ width: `${progressPct}%`, background: "linear-gradient(90deg, #22c55e, #16a34a)" }}
           />
         </div>
-        <p className="text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>
+        <p className="text-[12px] font-medium" style={{ color: sc.progressText }}>
           {completedCount} / {steps.length} completed
         </p>
       </div>
