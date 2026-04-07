@@ -570,14 +570,14 @@ export const MultiStepViewer = ({
                 ? sc.stepBarActive
                 : isCompleted
                 ? "rgba(34,197,94,0.08)"
-                : "rgba(255,255,255,0.03)",
+                : sc.stepBarBg,
               color: isActive
                 ? "#22c55e"
                 : isCompleted
                 ? "#4ade80"
                 : isLocked
-                ? "rgba(255,255,255,0.25)"
-                : "rgba(255,255,255,0.6)",
+                ? sc.textLocked
+                : sc.stepBarInactive,
               cursor: isLocked ? "not-allowed" : "pointer",
               opacity: isLocked ? 0.5 : 1,
             }}
