@@ -681,17 +681,15 @@ const PublicFunnel = () => {
 
       {/* Main content */}
       {isMultiStep ? (
-        /* Multi-step: full width, sidebar is inside the viewer */
         <div>
-          {/* Title */}
-          <div className="text-center py-6 px-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="text-center py-6 px-4" style={{ borderBottom: `1px solid ${tc.borderSubtle}` }}>
             <h1
-              className="font-heading font-extrabold text-white tracking-tight leading-tight"
-              style={{ fontSize: "clamp(20px, 3vw, 36px)", letterSpacing: "-0.02em" }}
+              className="font-heading font-extrabold tracking-tight leading-tight"
+              style={{ fontSize: "clamp(20px, 3vw, 36px)", letterSpacing: "-0.02em", color: tc.text }}
             >
               {funnel.title}
             </h1>
-            {funnel.description && <p className="mt-2 max-w-xl mx-auto" style={{ fontSize: "15px", color: "rgba(255,255,255,0.4)", lineHeight: "1.6" }}>{funnel.description}</p>}
+            {funnel.description && <p className="mt-2 max-w-xl mx-auto" style={{ fontSize: "15px", color: tc.textDim, lineHeight: "1.6" }}>{funnel.description}</p>}
           </div>
           <MultiStepViewer
             funnel={funnel}
@@ -700,6 +698,7 @@ const PublicFunnel = () => {
             formConfig={formConfig}
             priceOptions={priceOptions}
             VideoPlayer={CustomVideoPlayer}
+            isDark={isDark}
           />
         </div>
       ) : (
