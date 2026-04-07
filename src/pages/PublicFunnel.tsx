@@ -733,8 +733,8 @@ const PublicFunnel = () => {
                 />
               )}
               {!videoUrl && (
-                <div className="aspect-video bg-[#141419] rounded-2xl flex items-center justify-center border border-white/[0.04]">
-                  <Play size={48} className="text-white/20" />
+                <div className="aspect-video rounded-2xl flex items-center justify-center" style={{ background: tc.bgCard, border: `1px solid ${tc.borderSubtle}` }}>
+                  <Play size={48} style={{ color: tc.textDimmer }} />
                 </div>
               )}
 
