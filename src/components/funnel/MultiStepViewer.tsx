@@ -640,7 +640,10 @@ export const MultiStepViewer = ({
 
         {/* Main content */}
         <div className="flex-1 px-4 lg:px-8 py-6 lg:py-8 max-w-[860px] mx-auto w-full">
-          {/* Step header */}
+          {/* Funnel title — desktop only (mobile shows above step bar) */}
+          <h1 className="hidden lg:block font-heading font-extrabold tracking-tight leading-tight mb-6" style={{ fontSize: "clamp(22px, 3vw, 34px)", letterSpacing: "-0.02em", color: sc.text }}>
+            {funnel.title}
+          </h1>
           {activeStep && (
             <div className="space-y-5">
               <div style={{ paddingBottom: "12px", borderBottom: `1px solid ${sc.border}`, marginBottom: "16px" }}>
