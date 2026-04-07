@@ -636,15 +636,19 @@ const PublicFunnel = () => {
       </div>
 
       {/* Main content */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-heading font-extrabold text-white tracking-tight leading-tight">{funnel.title}</h1>
-          {funnel.description && <p className="text-[15px] text-white/40 mt-3 max-w-xl mx-auto leading-relaxed">{funnel.description}</p>}
-        </div>
-
-        {/* Multi-step funnel viewer — full width with left sidebar */}
-        {isMultiStep ? (
+      {isMultiStep ? (
+        /* Multi-step: full width, sidebar is inside the viewer */
+        <div>
+          {/* Title */}
+          <div className="text-center py-6 px-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <h1
+              className="font-heading font-extrabold text-white tracking-tight leading-tight"
+              style={{ fontSize: "clamp(20px, 3vw, 36px)", letterSpacing: "-0.02em" }}
+            >
+              {funnel.title}
+            </h1>
+            {funnel.description && <p className="mt-2 max-w-xl mx-auto" style={{ fontSize: "15px", color: "rgba(255,255,255,0.4)", lineHeight: "1.6" }}>{funnel.description}</p>}
+          </div>
           <MultiStepViewer
             funnel={funnel}
             steps={funnelSteps}
@@ -653,7 +657,19 @@ const PublicFunnel = () => {
             priceOptions={priceOptions}
             VideoPlayer={CustomVideoPlayer}
           />
-        ) : (
+        </div>
+      ) : (
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Title */}
+        <div className="text-center mb-8">
+          <h1
+            className="font-heading font-extrabold text-white tracking-tight leading-tight"
+            style={{ fontSize: "clamp(20px, 3vw, 36px)", letterSpacing: "-0.02em" }}
+          >
+            {funnel.title}
+          </h1>
+          {funnel.description && <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.4)", lineHeight: "1.6" }} className="mt-3 max-w-xl mx-auto">{funnel.description}</p>}
+        </div>
           <>
         {/* Lead form before video */}
         {showLeadFormNow && <LeadFormCard className="max-w-md mx-auto mb-8" />}
