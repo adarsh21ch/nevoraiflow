@@ -528,7 +528,7 @@ const FunnelEditor = () => {
                     {/* Bottom row: type badge + unlock rule + actions */}
                     <div className="flex items-center justify-between pl-[52px]">
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)" }}>
+                        <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground">
                           {meta.label}
                         </span>
                         {idx > 0 && (
@@ -556,24 +556,7 @@ const FunnelEditor = () => {
           {flowSteps.length > 0 && (
             <button
               onClick={() => setStepTypeSelectorOpen(true)}
-              className="w-full mt-3 rounded-[14px] py-5 text-center transition-all"
-              style={{
-                border: "2px dashed rgba(255,255,255,0.1)",
-                background: "transparent",
-                color: "rgba(255,255,255,0.4)",
-                fontSize: "14px",
-                fontWeight: 600,
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.borderColor = "rgba(34,197,94,0.4)";
-                e.currentTarget.style.color = "#22c55e";
-                e.currentTarget.style.background = "rgba(34,197,94,0.04)";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-                e.currentTarget.style.color = "rgba(255,255,255,0.4)";
-                e.currentTarget.style.background = "transparent";
-              }}
+              className="w-full mt-3 rounded-[14px] py-5 text-center transition-all border-2 border-dashed border-border text-muted-foreground font-semibold text-sm hover:border-primary/40 hover:text-primary hover:bg-primary/5"
             >
               <Plus size={16} className="inline mr-1.5" />
               Add Step
@@ -862,7 +845,7 @@ const FunnelEditor = () => {
               >
                 <s.icon size={15} className={wizardStep === i ? "text-primary" : ""} />
                 <div className="min-w-0">
-                  <p className="text-[10px] font-semibold tracking-[0.05em]" style={{ color: "rgba(255,255,255,0.3)" }}>{(s as any).num || i + 1}</p>
+                  <p className="text-[10px] font-semibold tracking-[0.05em] text-muted-foreground/50">{(s as any).num || i + 1}</p>
                   <p className="text-[13px] font-semibold leading-tight">{s.label}</p>
                 </div>
                 {i === lastStepIdx && funnel.is_published && <Check size={14} className="ml-auto text-emerald-500" />}
