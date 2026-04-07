@@ -31,7 +31,7 @@ export const HeroSection = () => {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 mb-8">
               <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
               <span className="text-xs text-muted-foreground font-medium">
-                Built for Network Marketers in India
+                Smart Video Funnels for Entrepreneurs
               </span>
             </div>
           </motion.div>
