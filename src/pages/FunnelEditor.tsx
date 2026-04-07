@@ -849,7 +849,7 @@ const FunnelEditor = () => {
   return (
     <DashboardLayout>
       <div className="flex gap-6 min-h-[calc(100vh-8rem)]">
-        {/* Sidebar nav */}
+        {/* Sidebar nav — desktop only */}
         {modeChosen && (
           <div className="hidden lg:flex flex-col gap-1 w-48 shrink-0">
             {visibleSteps.map((s, i) => (
@@ -872,27 +872,33 @@ const FunnelEditor = () => {
         )}
 
         {/* Main content */}
-        <div className="flex-1 max-w-2xl">
+        <div className="flex-1 max-w-2xl min-w-0">
           {/* Header */}
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-heading font-bold truncate">{funnel.title || "New Funnel"}</h1>
+              <h1 className="text-lg sm:text-xl font-heading font-bold truncate">{funnel.title || "New Funnel"}</h1>
               {lastSavedAt && <p className="text-xs text-muted-foreground">Auto-saved {lastSavedAt.toLocaleTimeString()}</p>}
             </div>
             {modeChosen && (
-              <Button variant="hero" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !funnel.title}>
-                {saveMutation.isPending ? "Saving..." : "Save Funnel"}
+              <Button variant="hero" size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !funnel.title} className="shrink-0 ml-2">
+                {saveMutation.isPending ? "Saving..." : "Save"}
               </Button>
             )}
           </div>
 
-          {/* Mobile step selector */}
+          {/* Mobile compact step selector — wrapping grid, no horizontal scroll */}
           {modeChosen && (
-            <div className="lg:hidden flex gap-1 overflow-x-auto pb-3 mb-3">
+            <div className="lg:hidden grid grid-cols-4 sm:grid-cols-5 gap-1.5 pb-3 mb-3">
               {visibleSteps.map((s, i) => (
                 <button key={i} onClick={() => setWizardStep(i)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all ${wizardStep === i ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                  <s.icon size={13} /> {s.label}
+                  className={`flex flex-col items-center gap-1 px-1.5 py-2 rounded-lg text-[10px] font-semibold transition-all ${
+                    wizardStep === i
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted/60 text-muted-foreground"
+                  }`}
+                >
+                  <s.icon size={14} />
+                  <span className="truncate w-full text-center leading-tight">{s.label.split(' ').slice(-1)[0]}</span>
                 </button>
               ))}
             </div>
@@ -908,19 +914,19 @@ const FunnelEditor = () => {
           )}
 
           {/* Content card */}
-          <div className="glass-card p-6 space-y-4">
+          <div className="glass-card p-4 sm:p-6 space-y-4">
             {renderWizardContent()}
           </div>
 
-          {/* Navigation */}
-          <div className="flex gap-3 mt-5">
-            {(modeChosen && wizardStep > 0) && <Button variant="outline" onClick={() => setWizardStep(wizardStep - 1)}>Previous</Button>}
+          {/* Navigation — always visible, no horizontal scroll needed */}
+          <div className="flex gap-3 mt-4">
+            {(modeChosen && wizardStep > 0) && <Button variant="outline" size="sm" onClick={() => setWizardStep(wizardStep - 1)}>Previous</Button>}
             <div className="flex-1" />
             {!modeChosen ? null : wizardStep < lastStepIdx ? (
-              <Button variant="default" onClick={() => setWizardStep(wizardStep + 1)}>Next</Button>
+              <Button variant="default" size="sm" onClick={() => setWizardStep(wizardStep + 1)}>Next</Button>
             ) : (
-              <Button variant="hero" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !funnel.title}>
-                {saveMutation.isPending ? "Saving..." : isEdit ? "Update Funnel" : "Create Funnel"}
+              <Button variant="hero" size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !funnel.title}>
+                {saveMutation.isPending ? "Saving..." : isEdit ? "Update" : "Create Funnel"}
               </Button>
             )}
           </div>
