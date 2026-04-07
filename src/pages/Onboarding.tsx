@@ -56,7 +56,7 @@ const Onboarding = () => {
         <div className="glass-card p-8">
           {step === 1 && (
             <div className="space-y-4">
-              <Label className="text-base font-heading font-semibold">What network marketing company are you with?</Label>
+              <Label className="text-base font-heading font-semibold">What company or brand are you with?</Label>
               <div className="grid grid-cols-2 gap-3">
                 {companies.map((c) => (
                   <button key={c} onClick={() => setData({ ...data, company: c })}
