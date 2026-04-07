@@ -46,6 +46,7 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
+        <UpgradeBanner />
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-heading font-bold">Dashboard</h1>
