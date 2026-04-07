@@ -647,26 +647,36 @@ const PublicFunnel = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#09090b]">
+    <div className="min-h-screen" style={{ background: tc.bg }}>
       {/* Header */}
       <div
         className="flex items-center justify-between sticky top-0 z-50"
         style={{
           height: "52px",
-          padding: "0 20px",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-          background: "rgba(0,0,0,0.3)",
+          padding: "0 16px",
+          borderBottom: `1px solid ${tc.borderSubtle}`,
+          background: tc.headerBg,
           backdropFilter: "blur(8px)",
         }}
       >
         <div className="flex items-center gap-2">
           <img src={logoImg} alt="Nevorai Flow" className="h-6 w-6" />
-          <span className="font-heading font-bold text-white text-[15px]" style={{ letterSpacing: "-0.02em" }}>Nevorai</span>
+          <span className="font-heading font-bold text-[15px]" style={{ color: tc.text, letterSpacing: "-0.02em" }}>Nevorai</span>
           <span className="font-heading font-extrabold text-primary text-[15px]" style={{ letterSpacing: "-0.03em", fontStyle: "italic", transform: "skewX(-4deg)", display: "inline-block", marginLeft: "-2px" }}>Flow</span>
         </div>
-        <button onClick={handleShare} className="text-white/30 hover:text-white/60 transition-colors p-2 rounded-lg hover:bg-white/5 text-xs font-medium flex items-center gap-1.5">
-          <Share2 size={14} /> Share
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={togglePubTheme}
+            className="p-2 rounded-lg transition-colors"
+            style={{ color: tc.shareText }}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          <button onClick={handleShare} className="p-2 rounded-lg transition-colors text-xs font-medium flex items-center gap-1.5" style={{ color: tc.shareText }}>
+            <Share2 size={14} /> Share
+          </button>
+        </div>
       </div>
 
       {/* Main content */}
