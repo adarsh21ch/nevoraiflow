@@ -481,7 +481,7 @@ export const MultiStepViewer = ({
                 ) : isLocked ? (
                   <Lock size={11} style={{ color: sc.iconLocked }} />
                 ) : (
-                  <Icon size={13} className={isActive ? "text-green-400" : ""} style={!isActive ? { color: "rgba(255,255,255,0.5)" } : {}} />
+                  <Icon size={13} className={isActive ? "text-green-400" : ""} style={!isActive ? { color: sc.iconDim } : {}} />
                 )}
               </div>
               <div className="min-w-0 flex-1">
