@@ -391,7 +391,7 @@ export const MultiStepViewer = ({
     >
       {/* Creator badge */}
       {creatorProfile?.full_name && (
-        <div className="flex items-center gap-3 pb-4 mb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex items-center gap-3 pb-4 mb-4" style={{ borderBottom: `1px solid ${sc.border}` }}>
           <div className="w-[38px] h-[38px] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ border: "2px solid rgba(34,197,94,0.3)" }}>
             {creatorProfile.avatar_url ? (
               <img src={creatorProfile.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -402,7 +402,7 @@ export const MultiStepViewer = ({
             )}
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-[13px] text-white truncate" style={{ fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif" }}>
+            <p className="font-semibold text-[13px] truncate" style={{ color: sc.text, fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif" }}>
               {creatorProfile.full_name}
             </p>
             {creatorProfile.kyc_status === "approved" && (
