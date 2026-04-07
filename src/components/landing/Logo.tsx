@@ -1,18 +1,30 @@
-import { brand } from "@/config/brand";
 import logoImg from "@/assets/logo.png";
 
 export const Logo = ({ size = "default" }: { size?: "sm" | "default" | "lg" }) => {
   const sizes = {
-    sm: { text: "text-lg", img: "w-7 h-7" },
-    default: { text: "text-xl", img: "w-8 h-8" },
-    lg: { text: "text-2xl", img: "w-10 h-10" },
+    sm: { text: "text-[15px]", img: "w-6 h-6" },
+    default: { text: "text-[18px]", img: "w-7 h-7" },
+    lg: { text: "text-[22px]", img: "w-9 h-9" },
   };
 
   return (
-    <div className={`flex items-center gap-2 font-heading font-bold ${sizes[size].text}`}>
+    <div className={`flex items-center gap-2 ${sizes[size].text}`}>
       <img src={logoImg} alt="Nevorai Flow" className={`${sizes[size].img} object-contain`} />
-      <span className="text-foreground">{brand.nameShort}</span>
-      <span className="gradient-text font-bold">{brand.nameAccent}</span>
+      <span className="font-heading font-bold text-foreground tracking-tight" style={{ letterSpacing: "-0.02em" }}>
+        Nevorai
+      </span>
+      <span
+        className="font-heading font-extrabold text-primary"
+        style={{
+          letterSpacing: "-0.03em",
+          fontStyle: "italic",
+          transform: "skewX(-4deg)",
+          display: "inline-block",
+          marginLeft: "-2px",
+        }}
+      >
+        Flow
+      </span>
     </div>
   );
 };

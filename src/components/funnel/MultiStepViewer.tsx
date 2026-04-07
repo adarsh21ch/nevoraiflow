@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import {
   Play, Lock, Check, CheckCircle2, Circle, ExternalLink,
   Calendar, CreditCard, ClipboardList, UserCheck, ChevronRight,
-  Loader2, MessageCircle, Phone as PhoneIcon, BadgeCheck, Info
+  Loader2, MessageCircle, Phone as PhoneIcon, BadgeCheck, Info, Sparkles
 } from "lucide-react";
 
 interface FunnelStep {
@@ -54,6 +54,15 @@ const STEP_ICONS: Record<string, React.ComponentType<any>> = {
   booking: Calendar,
 };
 
+const STEP_TYPE_LABELS: Record<string, string> = {
+  video: "Video",
+  lead_form: "Lead Form",
+  cta: "CTA / Link",
+  payment: "Payment",
+  manual_approval: "Manual Approval",
+  booking: "Booking",
+};
+
 const UNLOCK_HINTS: Record<string, (value?: string | null) => string> = {
   auto: () => "This step is available now.",
   watch_complete: () => "Watch the previous video fully to unlock this step.",
@@ -94,7 +103,6 @@ export const MultiStepViewer = ({
   const sessionId = useRef(getSessionId(funnel.id));
   const progressSaveTimer = useRef<ReturnType<typeof setInterval>>();
 
-  // Load existing progress
   useEffect(() => {
     const loadProgress = async () => {
       const { data } = await supabase
@@ -256,7 +264,6 @@ export const MultiStepViewer = ({
     }
   }, [steps, progressMap, completeStep, updateStepProgress]);
 
-  // Persist progress every 5 seconds
   useEffect(() => {
     progressSaveTimer.current = setInterval(() => {
       const activeStep = steps[activeStepIndex];
@@ -327,8 +334,8 @@ export const MultiStepViewer = ({
   const activeStep = steps[activeStepIndex];
   const activeProgress = activeStep ? progressMap[activeStep.id] : null;
   const completedCount = steps.filter((s) => getStepStatus(s.id) === "completed").length;
+  const progressPct = steps.length > 0 ? (completedCount / steps.length) * 100 : 0;
 
-  // Get unlock hint for current step
   const getUnlockHint = (step: FunnelStep, idx: number): string | null => {
     if (idx === 0) return null;
     const status = getStepStatus(step.id);
@@ -340,70 +347,147 @@ export const MultiStepViewer = ({
     return null;
   };
 
-  // Journey sidebar for desktop
+  // Check if next step just got unlocked
+  const nextStepUnlocked = activeStep &&
+    activeProgress?.status === "completed" &&
+    activeStepIndex + 1 < steps.length &&
+    getStepStatus(steps[activeStepIndex + 1].id) !== "locked";
+
+  /* ─── LEFT SIDEBAR (Desktop) ─── */
   const JourneySidebar = () => (
-    <div className="space-y-1">
-      {/* Creator info */}
+    <div
+      className="hidden lg:flex flex-col w-[280px] min-w-[280px] shrink-0 h-[calc(100vh-52px)] sticky top-[52px] overflow-y-auto border-r"
+      style={{
+        background: "#0f1117",
+        borderColor: "rgba(255,255,255,0.06)",
+        padding: "24px 16px",
+      }}
+    >
+      {/* Creator badge */}
       {creatorProfile?.full_name && (
-        <div className="flex items-center gap-3 p-3 mb-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-          <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 overflow-hidden ring-2 ring-primary/20">
+        <div className="flex items-center gap-3 pb-4 mb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="w-[38px] h-[38px] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ border: "2px solid rgba(34,197,94,0.3)" }}>
             {creatorProfile.avatar_url ? (
               <img src={creatorProfile.avatar_url} alt="" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-primary font-bold text-xs">{creatorProfile.full_name.charAt(0).toUpperCase()}</span>
+              <div className="w-full h-full bg-primary/15 flex items-center justify-center">
+                <span className="text-primary font-bold text-sm">{creatorProfile.full_name.charAt(0).toUpperCase()}</span>
+              </div>
             )}
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-1">
-              <span className="font-semibold text-white text-xs truncate">{creatorProfile.full_name}</span>
-              {creatorProfile.kyc_status === "approved" && <BadgeCheck size={12} className="text-primary flex-shrink-0" />}
-            </div>
+            <p className="font-semibold text-[13px] text-white truncate" style={{ fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif" }}>
+              {creatorProfile.full_name}
+            </p>
+            {creatorProfile.kyc_status === "approved" && (
+              <span className="flex items-center gap-1 text-[10px] font-semibold text-green-400">
+                <BadgeCheck size={10} /> Verified
+              </span>
+            )}
           </div>
         </div>
       )}
 
-      <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-2 px-1">Journey</p>
-      {steps.map((step, idx) => {
-        const status = getStepStatus(step.id);
-        const Icon = STEP_ICONS[step.step_type] || Circle;
-        const isActive = idx === activeStepIndex;
-        const isLocked = status === "locked";
-        const isCompleted = status === "completed";
+      {/* Progress */}
+      <div className="pb-4 mb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] mb-2" style={{ color: "rgba(255,255,255,0.35)" }}>
+          Journey Progress
+        </p>
+        <div className="h-1 rounded-full overflow-hidden mb-1.5" style={{ background: "rgba(255,255,255,0.08)" }}>
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${progressPct}%`, background: "linear-gradient(90deg, #22c55e, #16a34a)" }}
+          />
+        </div>
+        <p className="text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>
+          {completedCount} / {steps.length} completed
+        </p>
+      </div>
 
-        return (
-          <button
-            key={step.id}
-            onClick={() => !isLocked && setActiveStepIndex(idx)}
-            disabled={isLocked}
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all text-left ${
-              isActive
-                ? "bg-primary/15 text-primary border border-primary/20"
-                : isCompleted
-                ? "text-green-400/80 hover:bg-white/[0.03]"
-                : isLocked
-                ? "text-white/20 cursor-not-allowed"
-                : "text-white/50 hover:bg-white/[0.04] hover:text-white/70"
-            }`}
-          >
-            {isCompleted ? (
-              <CheckCircle2 size={14} className="text-green-400 shrink-0" />
-            ) : isLocked ? (
-              <Lock size={12} className="shrink-0" />
-            ) : (
-              <Icon size={14} className="shrink-0" />
-            )}
-            <span className="truncate">{step.title || `Step ${idx + 1}`}</span>
-          </button>
-        );
-      })}
+      {/* Steps */}
+      <p className="text-[10px] font-bold uppercase tracking-[0.1em] mb-3 px-1" style={{ color: "rgba(255,255,255,0.3)" }}>
+        Journey
+      </p>
+      <div className="space-y-1 flex-1">
+        {steps.map((step, idx) => {
+          const status = getStepStatus(step.id);
+          const Icon = STEP_ICONS[step.step_type] || Circle;
+          const isActive = idx === activeStepIndex;
+          const isLocked = status === "locked";
+          const isCompleted = status === "completed";
+          const isInProgress = status === "in_progress";
+
+          return (
+            <button
+              key={step.id}
+              onClick={() => !isLocked && setActiveStepIndex(idx)}
+              disabled={isLocked}
+              className="w-full flex items-start gap-3 text-left transition-all"
+              style={{
+                padding: "12px 14px",
+                borderRadius: "12px",
+                border: isCompleted
+                  ? "1px solid rgba(34,197,94,0.25)"
+                  : isActive
+                  ? "1px solid rgba(34,197,94,0.3)"
+                  : "1px solid transparent",
+                borderLeft: isCompleted ? "3px solid #22c55e" : isActive ? "3px solid #22c55e" : "3px solid transparent",
+                background: isCompleted
+                  ? "rgba(34,197,94,0.1)"
+                  : isActive
+                  ? "rgba(34,197,94,0.08)"
+                  : isLocked
+                  ? "transparent"
+                  : "rgba(255,255,255,0.03)",
+                cursor: isLocked ? "not-allowed" : "pointer",
+                opacity: isLocked ? 0.4 : 1,
+                marginBottom: "4px",
+              }}
+            >
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                style={{
+                  background: isCompleted ? "rgba(34,197,94,0.2)" : isActive ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.06)",
+                }}
+              >
+                {isCompleted ? (
+                  <Check size={13} className="text-green-400" />
+                ) : isLocked ? (
+                  <Lock size={11} style={{ color: "rgba(255,255,255,0.25)" }} />
+                ) : (
+                  <Icon size={13} className={isActive ? "text-green-400" : ""} style={!isActive ? { color: "rgba(255,255,255,0.5)" } : {}} />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p
+                  className="font-semibold leading-tight truncate"
+                  style={{
+                    fontSize: "13px",
+                    color: isLocked ? "rgba(255,255,255,0.25)" : "#f1f5f9",
+                    fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif",
+                  }}
+                >
+                  {step.title || `Step ${idx + 1}`}
+                </p>
+                <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.45)", marginTop: "2px" }}>
+                  {STEP_TYPE_LABELS[step.step_type] || step.step_type}
+                  {" · "}
+                  {isCompleted ? "Completed" : isInProgress ? "In Progress" : isActive ? "Available" : isLocked ? "Locked" : "Available"}
+                </p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Contact buttons */}
       {funnel.show_contact_buttons && (
-        <div className="mt-4 pt-3 border-t border-white/[0.06] space-y-2">
+        <div className="mt-4 pt-3 space-y-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
           {funnel.contact_whatsapp && (
             <button
               onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}
-              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium bg-[#25d366]/10 text-[#25d366] hover:bg-[#25d366]/20 transition-all"
+              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all"
+              style={{ background: "rgba(37,211,102,0.1)", color: "#25d366" }}
             >
               <MessageCircle size={14} /> WhatsApp
             </button>
@@ -411,7 +495,8 @@ export const MultiStepViewer = ({
           {funnel.contact_phone && (
             <button
               onClick={() => window.open(`tel:${funnel.contact_phone}`)}
-              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium bg-white/[0.04] text-white/60 hover:bg-white/[0.08] transition-all"
+              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all"
+              style={{ background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.6)" }}
             >
               <PhoneIcon size={14} /> Call
             </button>
@@ -421,311 +506,348 @@ export const MultiStepViewer = ({
     </div>
   );
 
+  /* ─── MOBILE STEP BAR ─── */
+  const MobileStepBar = () => (
+    <div
+      className="lg:hidden flex gap-2 overflow-x-auto py-3 px-4"
+      style={{
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+        background: "rgba(255,255,255,0.02)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+      }}
+    >
+      {steps.map((step, idx) => {
+        const status = getStepStatus(step.id);
+        const isActive = idx === activeStepIndex;
+        const isLocked = status === "locked";
+        const isCompleted = status === "completed";
+
+        return (
+          <button
+            key={step.id}
+            onClick={() => !isLocked && setActiveStepIndex(idx)}
+            disabled={isLocked}
+            className="flex items-center gap-1.5 shrink-0 transition-all"
+            style={{
+              padding: "6px 14px",
+              borderRadius: "100px",
+              fontSize: "12px",
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+              border: isActive
+                ? "1px solid rgba(34,197,94,0.4)"
+                : isCompleted
+                ? "1px solid rgba(34,197,94,0.25)"
+                : "1px solid rgba(255,255,255,0.08)",
+              background: isActive
+                ? "rgba(34,197,94,0.15)"
+                : isCompleted
+                ? "rgba(34,197,94,0.08)"
+                : "rgba(255,255,255,0.03)",
+              color: isActive
+                ? "#22c55e"
+                : isCompleted
+                ? "#4ade80"
+                : isLocked
+                ? "rgba(255,255,255,0.25)"
+                : "rgba(255,255,255,0.6)",
+              cursor: isLocked ? "not-allowed" : "pointer",
+              opacity: isLocked ? 0.5 : 1,
+            }}
+          >
+            {isCompleted ? <Check size={12} /> : isLocked ? <Lock size={10} /> : <Circle size={10} />}
+            {step.title || `Step ${idx + 1}`}
+          </button>
+        );
+      })}
+      <style>{`.lg\\:hidden::-webkit-scrollbar { display: none; }`}</style>
+    </div>
+  );
+
   return (
-    <div className="lg:grid lg:grid-cols-[1fr_220px] lg:gap-6">
-      {/* Main content */}
-      <div className="space-y-5">
-        {/* Progress overview */}
-        <div className="flex items-center gap-2 px-1">
-          <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-500"
-              style={{ width: `${steps.length > 0 ? (completedCount / steps.length) * 100 : 0}%` }}
-            />
-          </div>
-          <span className="text-[11px] text-white/40 font-medium tabular-nums">{completedCount}/{steps.length}</span>
-        </div>
+    <div className="flex min-h-[calc(100vh-52px)]">
+      {/* LEFT sidebar — desktop */}
+      <JourneySidebar />
 
-        {/* Mobile step list (horizontal scroll) */}
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide lg:hidden">
-          {steps.map((step, idx) => {
-            const status = getStepStatus(step.id);
-            const Icon = STEP_ICONS[step.step_type] || Circle;
-            const isActive = idx === activeStepIndex;
-            const isLocked = status === "locked";
-            const isCompleted = status === "completed";
+      {/* Mobile step bar */}
+      <div className="flex flex-col flex-1 min-w-0">
+        <MobileStepBar />
 
-            return (
-              <button
-                key={step.id}
-                onClick={() => !isLocked && setActiveStepIndex(idx)}
-                disabled={isLocked}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 border ${
-                  isActive
-                    ? "bg-primary/15 border-primary/30 text-primary"
-                    : isCompleted
-                    ? "bg-green-500/10 border-green-500/20 text-green-400"
-                    : isLocked
-                    ? "bg-white/[0.02] border-white/[0.06] text-white/25 cursor-not-allowed"
-                    : "bg-white/[0.04] border-white/[0.08] text-white/60 hover:bg-white/[0.06]"
-                }`}
-              >
-                {isCompleted ? (
-                  <CheckCircle2 size={14} className="text-green-400" />
-                ) : isLocked ? (
-                  <Lock size={12} />
-                ) : (
-                  <Icon size={14} />
-                )}
-                <span className="max-w-[120px] truncate">{step.title || `Step ${idx + 1}`}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Active step content */}
-        {activeStep && (
-          <div className="space-y-4">
-            {/* Step header */}
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Step {activeStepIndex + 1} of {steps.length}</span>
-                {activeProgress?.status === "completed" && (
-                  <span className="text-[10px] font-medium text-green-400 flex items-center gap-1"><Check size={10} /> Completed</span>
+        {/* Main content */}
+        <div className="flex-1 px-4 lg:px-8 py-6 lg:py-8 max-w-[860px] mx-auto w-full">
+          {/* Step header */}
+          {activeStep && (
+            <div className="space-y-5">
+              <div style={{ paddingBottom: "12px", borderBottom: "1px solid rgba(255,255,255,0.06)", marginBottom: "16px" }}>
+                <div className="flex items-center gap-3 mb-1">
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: "rgba(255,255,255,0.4)",
+                    }}
+                  >
+                    Step {activeStepIndex + 1} of {steps.length}
+                  </span>
+                  {activeProgress?.status === "completed" && (
+                    <span className="flex items-center gap-1 text-[10px] font-semibold text-green-400">
+                      <Check size={10} /> Completed
+                    </span>
+                  )}
+                  {activeProgress?.status === "in_progress" && (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(251,146,60,0.15)", color: "#fb923c" }}>
+                      In Progress
+                    </span>
+                  )}
+                </div>
+                <h2
+                  className="font-heading font-bold text-white"
+                  style={{ fontSize: "20px", fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif" }}
+                >
+                  {activeStep.title || `Step ${activeStepIndex + 1}`}
+                </h2>
+                {activeStep.description && (
+                  <p className="mt-1" style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)" }}>{activeStep.description}</p>
                 )}
               </div>
-              <h2 className="text-xl font-heading font-bold text-white">{activeStep.title || `Step ${activeStepIndex + 1}`}</h2>
-              {activeStep.description && <p className="text-sm text-white/40 mt-1">{activeStep.description}</p>}
-            </div>
 
-            {/* Unlock hint for locked steps */}
-            {getStepStatus(activeStep.id) === "locked" && (
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                <Info size={16} className="text-amber-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-amber-300">Step Locked</p>
-                  <p className="text-xs text-amber-300/70 mt-0.5">{getUnlockHint(activeStep, activeStepIndex)}</p>
+              {/* Unlock hint for locked steps */}
+              {getStepStatus(activeStep.id) === "locked" && (
+                <div className="flex items-start gap-3 p-4 rounded-xl" style={{ background: "rgba(251,146,60,0.1)", border: "1px solid rgba(251,146,60,0.2)" }}>
+                  <Lock size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-300">Step Locked</p>
+                    <p className="text-xs mt-0.5" style={{ color: "rgba(251,191,36,0.7)" }}>{getUnlockHint(activeStep, activeStepIndex)}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Inline hint about what unlocks next */}
+              {activeStepIndex + 1 < steps.length && getStepStatus(activeStep.id) !== "completed" && getStepStatus(steps[activeStepIndex + 1].id) === "locked" && (
+                <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <Info size={13} className="shrink-0 mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }} />
+                  <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", lineHeight: "1.5" }}>
+                    <span style={{ color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>Next:</span> {getUnlockHint(steps[activeStepIndex + 1], activeStepIndex + 1)}
+                  </p>
+                </div>
+              )}
+
+              {/* Step type content */}
+              {activeStep.step_type === "video" && activeStep.video_url && (
+                <div className="space-y-3">
+                  <VideoPlayer
+                    src={activeStep.video_url}
+                    poster={activeStep.video_thumbnail || undefined}
+                    allowSeek={funnel.allow_seek !== false}
+                    allowSpeed={funnel.allow_speed_change !== false}
+                    autoplay={true}
+                    initialTime={activeProgress?.last_position_seconds || 0}
+                    onTimeUpdate={(ct: number, dur: number) => handleVideoTimeUpdate(activeStepIndex, ct, dur)}
+                  />
+                </div>
+              )}
+
+              {activeStep.step_type === "video" && !activeStep.video_url && (
+                <div className="aspect-video rounded-2xl flex items-center justify-center" style={{ background: "#141419", border: "1px solid rgba(255,255,255,0.04)" }}>
+                  <div className="text-center">
+                    <Play size={40} style={{ color: "rgba(255,255,255,0.2)" }} className="mx-auto mb-2" />
+                    <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)" }}>Video not available</p>
+                  </div>
+                </div>
+              )}
+
+              {activeStep.step_type === "lead_form" && (
+                <div className="rounded-2xl p-6" style={{ background: "#141419", border: "1px solid #27272a" }}>
+                  {leadSubmitted || activeProgress?.status === "completed" ? (
+                    <div className="text-center py-6">
+                      <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
+                      <h3 className="font-heading font-bold text-white">Details Submitted</h3>
+                      <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }} className="mt-1">Thank you for your information.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="text-lg font-heading font-bold mb-4 text-white">Fill in your details</h3>
+                      <form onSubmit={(e) => { e.preventDefault(); handleLeadSubmit(activeStepIndex); }} className="space-y-3">
+                        <input type="text" name="website" value={leadForm.website} onChange={(e) => setLeadForm({ ...leadForm, website: e.target.value })} style={{ position: "absolute", left: "-9999px" }} tabIndex={-1} autoComplete="off" />
+                        {formConfig?.show_name && <Input placeholder="Full Name" value={leadForm.name} onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })} required={formConfig.name_required} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />}
+                        {formConfig?.show_phone && (
+                          <div className="flex gap-2">
+                            <div className="flex items-center px-3 bg-[#09090b] border border-[#27272a] rounded-xl text-sm text-white/40 shrink-0 h-12">+91</div>
+                            <Input placeholder="Phone number" value={leadForm.phone} onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })} required={formConfig.phone_required} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
+                          </div>
+                        )}
+                        {formConfig?.show_email && <Input type="email" placeholder="Email" value={leadForm.email} onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })} required={formConfig.email_required} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />}
+                        {formConfig?.show_city && <Input placeholder="City" value={leadForm.city} onChange={(e) => setLeadForm({ ...leadForm, city: e.target.value })} required={formConfig.city_required} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />}
+                        <Button type="submit" className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl">Submit →</Button>
+                      </form>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {(activeStep.step_type === "cta" || activeStep.step_type === "booking") && (
+                <div className="rounded-2xl p-6 text-center" style={{ background: "#141419", border: "1px solid #27272a" }}>
+                  {activeProgress?.status === "completed" ? (
+                    <>
+                      <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
+                      <h3 className="font-heading font-bold text-white">Step Completed</h3>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-lg font-heading font-bold text-white mb-2">{activeStep.cta_text || (activeStep.step_type === "booking" ? "Book Your Call" : "Continue")}</h3>
+                      {activeStep.description && <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.4)" }} className="mb-4">{activeStep.description}</p>}
+                      <Button
+                        className="h-14 px-8 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20"
+                        onClick={() => handleCtaClick(activeStepIndex)}
+                      >
+                        {activeStep.cta_text || (activeStep.step_type === "booking" ? "Book Now" : "Continue")} →
+                      </Button>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {activeStep.step_type === "payment" && (
+                <div className="rounded-2xl p-6" style={{ background: "#141419", border: "1px solid #27272a" }}>
+                  {paymentSubmitted || activeProgress?.status === "completed" ? (
+                    <div className="text-center py-6">
+                      <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
+                      <h3 className="font-heading font-bold text-white">Payment Submitted</h3>
+                      <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }} className="mt-1">Your payment is being reviewed.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="text-lg font-heading font-semibold mb-4 text-white">Complete Payment</h3>
+                      {priceOptions.length > 0 && (
+                        <div className="space-y-2 mb-4">
+                          {priceOptions.map((opt: any) => (
+                            <button key={opt.id} onClick={() => setPaymentProof({ ...paymentProof, amount: opt.amount })}
+                              className={`w-full p-3 rounded-xl border text-left transition-all ${paymentProof.amount === opt.amount ? "border-primary bg-primary/10" : "border-[#27272a] bg-[#09090b]"}`}>
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium text-white">{opt.label}</span>
+                                <span className="font-heading font-bold text-white">₹{opt.amount.toLocaleString("en-IN")}</span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {funnel.upi_id && (
+                        <div className="p-3 bg-[#09090b] rounded-xl mb-4">
+                          <span className="text-xs" style={{ color: "#94a3b8" }}>Pay via UPI</span>
+                          <div className="flex items-center gap-2 mt-1">
+                            <code className="text-sm text-primary flex-1">{funnel.upi_id}</code>
+                            <Button variant="ghost" size="sm" style={{ color: "#94a3b8" }} onClick={() => { navigator.clipboard.writeText(funnel.upi_id!); toast.success("UPI ID copied!"); }}>Copy</Button>
+                          </div>
+                        </div>
+                      )}
+                      <div className="space-y-3">
+                        <Input placeholder="UPI Transaction ID" value={paymentProof.upi_transaction_id} onChange={(e) => setPaymentProof({ ...paymentProof, upi_transaction_id: e.target.value })} className="bg-[#09090b] border-[#27272a] text-white h-12 rounded-xl" />
+                        <Button className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl" onClick={() => handlePaymentSubmit(activeStepIndex)}>
+                          I've Made the Payment
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {activeStep.step_type === "manual_approval" && (
+                <div className="rounded-2xl p-8 text-center" style={{ background: "#141419", border: "1px solid #27272a" }}>
+                  {activeProgress?.status === "completed" || activeProgress?.manually_unlocked ? (
+                    <>
+                      <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
+                      <h3 className="font-heading font-bold text-white">Step Unlocked</h3>
+                      <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }} className="mt-1">You've been approved to continue.</p>
+                    </>
+                  ) : (
+                    <>
+                      <Lock size={40} style={{ color: "rgba(255,255,255,0.2)" }} className="mx-auto mb-3" />
+                      <h3 className="font-heading font-bold text-white">Awaiting Approval</h3>
+                      <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.4)" }} className="mt-2">{activeStep.description || "The creator will unlock this step for you after review."}</p>
+                      {funnel.contact_whatsapp && (
+                        <Button className="mt-4 bg-[#25d366] hover:bg-[#20b858] text-white" onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}>
+                          <MessageCircle size={16} /> Contact on WhatsApp
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Next Step Banner */}
+              {nextStepUnlocked && (
+                <button
+                  onClick={() => setActiveStepIndex(activeStepIndex + 1)}
+                  className="w-full flex items-center justify-between transition-all"
+                  style={{
+                    background: "rgba(34,197,94,0.1)",
+                    border: "1px solid rgba(34,197,94,0.25)",
+                    borderRadius: "12px",
+                    padding: "14px 18px",
+                    cursor: "pointer",
+                    marginTop: "16px",
+                  }}
+                >
+                  <span className="flex items-center gap-2 text-sm font-semibold text-green-400">
+                    <Sparkles size={16} /> Next step unlocked!
+                  </span>
+                  <span className="flex items-center gap-1 text-sm font-medium text-green-400">
+                    Continue to Step {activeStepIndex + 2} <ChevronRight size={16} />
+                  </span>
+                </button>
+              )}
+
+              {/* Completed step continue button (if next is available but not via banner) */}
+              {activeProgress?.status === "completed" && !nextStepUnlocked && activeStepIndex + 1 < steps.length && getStepStatus(steps[activeStepIndex + 1].id) !== "locked" && (
+                <Button
+                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold"
+                  onClick={() => setActiveStepIndex(activeStepIndex + 1)}
+                >
+                  Next Step <ChevronRight size={16} />
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Mobile: Creator + Contact at bottom */}
+          <div className="lg:hidden mt-6 space-y-3">
+            {creatorProfile?.full_name && (
+              <div className="flex items-center gap-3 py-3 px-1">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ border: "2px solid rgba(34,197,94,0.3)" }}>
+                  {creatorProfile.avatar_url ? (
+                    <img src={creatorProfile.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-primary/15 flex items-center justify-center">
+                      <span className="text-primary font-bold text-sm">{creatorProfile.full_name.charAt(0).toUpperCase()}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-white text-sm truncate">{creatorProfile.full_name}</span>
+                    {creatorProfile.kyc_status === "approved" && <BadgeCheck size={15} className="text-primary flex-shrink-0" />}
+                  </div>
                 </div>
               </div>
             )}
-
-            {/* Inline hint for current active (non-locked) steps about what unlocks next */}
-            {activeStepIndex + 1 < steps.length && getStepStatus(activeStep.id) !== "completed" && getStepStatus(steps[activeStepIndex + 1].id) === "locked" && (
-              <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-                <Info size={13} className="text-white/30 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-white/40 leading-relaxed">
-                  <span className="text-white/60 font-medium">Next:</span> {getUnlockHint(steps[activeStepIndex + 1], activeStepIndex + 1)}
-                </p>
-              </div>
-            )}
-
-            {/* Step type content */}
-            {activeStep.step_type === "video" && activeStep.video_url && (
-              <div className="space-y-3">
-                <VideoPlayer
-                  src={activeStep.video_url}
-                  poster={activeStep.video_thumbnail || undefined}
-                  allowSeek={funnel.allow_seek !== false}
-                  allowSpeed={funnel.allow_speed_change !== false}
-                  autoplay={true}
-                  initialTime={activeProgress?.last_position_seconds || 0}
-                  onTimeUpdate={(ct: number, dur: number) => handleVideoTimeUpdate(activeStepIndex, ct, dur)}
-                />
-                {activeProgress?.status === "completed" && activeStepIndex + 1 < steps.length && (
-                  <Button
-                    className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold"
-                    onClick={() => {
-                      const nextIdx = activeStepIndex + 1;
-                      if (getStepStatus(steps[nextIdx].id) !== "locked") {
-                        setActiveStepIndex(nextIdx);
-                      }
-                    }}
-                  >
-                    Next Step <ChevronRight size={16} />
+            {funnel.show_contact_buttons && (funnel.contact_whatsapp || funnel.contact_phone) && (
+              <div className="flex gap-2">
+                {funnel.contact_whatsapp && (
+                  <Button className="flex-1 bg-[#25d366] hover:bg-[#20b858] text-white h-11 rounded-xl text-sm" onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}>
+                    <MessageCircle size={16} /> WhatsApp
+                  </Button>
+                )}
+                {funnel.contact_phone && (
+                  <Button className="flex-1 bg-white/[0.06] hover:bg-white/10 text-white border border-white/[0.06] h-11 rounded-xl text-sm" onClick={() => window.open(`tel:${funnel.contact_phone}`)}>
+                    <PhoneIcon size={16} /> Call
                   </Button>
                 )}
               </div>
             )}
-
-            {activeStep.step_type === "video" && !activeStep.video_url && (
-              <div className="aspect-video bg-[#141419] rounded-2xl flex items-center justify-center border border-white/[0.04]">
-                <div className="text-center">
-                  <Play size={40} className="text-white/20 mx-auto mb-2" />
-                  <p className="text-xs text-white/30">Video not available</p>
-                </div>
-              </div>
-            )}
-
-            {activeStep.step_type === "lead_form" && (
-              <div className="bg-[#141419] border border-[#27272a] rounded-2xl p-6">
-                {leadSubmitted || activeProgress?.status === "completed" ? (
-                  <div className="text-center py-6">
-                    <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
-                    <h3 className="font-heading font-bold text-white">Details Submitted</h3>
-                    <p className="text-xs text-white/40 mt-1">Thank you for your information.</p>
-                    {activeStepIndex + 1 < steps.length && getStepStatus(steps[activeStepIndex + 1].id) !== "locked" && (
-                      <Button className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl" onClick={() => setActiveStepIndex(activeStepIndex + 1)}>
-                        Continue <ChevronRight size={14} />
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    <h3 className="text-lg font-heading font-bold mb-4 text-white">Fill in your details</h3>
-                    <form onSubmit={(e) => { e.preventDefault(); handleLeadSubmit(activeStepIndex); }} className="space-y-3">
-                      <input type="text" name="website" value={leadForm.website} onChange={(e) => setLeadForm({ ...leadForm, website: e.target.value })} style={{ position: "absolute", left: "-9999px" }} tabIndex={-1} autoComplete="off" />
-                      {formConfig?.show_name && <Input placeholder="Full Name" value={leadForm.name} onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })} required={formConfig.name_required} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />}
-                      {formConfig?.show_phone && (
-                        <div className="flex gap-2">
-                          <div className="flex items-center px-3 bg-[#09090b] border border-[#27272a] rounded-xl text-sm text-white/40 shrink-0 h-12">+91</div>
-                          <Input placeholder="Phone number" value={leadForm.phone} onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })} required={formConfig.phone_required} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
-                        </div>
-                      )}
-                      {formConfig?.show_email && <Input type="email" placeholder="Email" value={leadForm.email} onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })} required={formConfig.email_required} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />}
-                      {formConfig?.show_city && <Input placeholder="City" value={leadForm.city} onChange={(e) => setLeadForm({ ...leadForm, city: e.target.value })} required={formConfig.city_required} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />}
-                      <Button type="submit" className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl">Submit →</Button>
-                    </form>
-                  </>
-                )}
-              </div>
-            )}
-
-            {(activeStep.step_type === "cta" || activeStep.step_type === "booking") && (
-              <div className="bg-[#141419] border border-[#27272a] rounded-2xl p-6 text-center">
-                {activeProgress?.status === "completed" ? (
-                  <>
-                    <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
-                    <h3 className="font-heading font-bold text-white">Step Completed</h3>
-                    {activeStepIndex + 1 < steps.length && getStepStatus(steps[activeStepIndex + 1].id) !== "locked" && (
-                      <Button className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl" onClick={() => setActiveStepIndex(activeStepIndex + 1)}>
-                        Continue <ChevronRight size={14} />
-                      </Button>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <h3 className="text-lg font-heading font-bold text-white mb-2">{activeStep.cta_text || (activeStep.step_type === "booking" ? "Book Your Call" : "Continue")}</h3>
-                    {activeStep.description && <p className="text-sm text-white/40 mb-4">{activeStep.description}</p>}
-                    <Button
-                      className="h-14 px-8 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20"
-                      onClick={() => handleCtaClick(activeStepIndex)}
-                    >
-                      {activeStep.cta_text || (activeStep.step_type === "booking" ? "Book Now" : "Continue")} →
-                    </Button>
-                  </>
-                )}
-              </div>
-            )}
-
-            {activeStep.step_type === "payment" && (
-              <div className="bg-[#141419] border border-[#27272a] rounded-2xl p-6">
-                {paymentSubmitted || activeProgress?.status === "completed" ? (
-                  <div className="text-center py-6">
-                    <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
-                    <h3 className="font-heading font-bold text-white">Payment Submitted</h3>
-                    <p className="text-xs text-white/40 mt-1">Your payment is being reviewed.</p>
-                    {activeStepIndex + 1 < steps.length && getStepStatus(steps[activeStepIndex + 1].id) !== "locked" && (
-                      <Button className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl" onClick={() => setActiveStepIndex(activeStepIndex + 1)}>
-                        Continue <ChevronRight size={14} />
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    <h3 className="text-lg font-heading font-semibold mb-4 text-white">Complete Payment</h3>
-                    {priceOptions.length > 0 && (
-                      <div className="space-y-2 mb-4">
-                        {priceOptions.map((opt: any) => (
-                          <button key={opt.id} onClick={() => setPaymentProof({ ...paymentProof, amount: opt.amount })}
-                            className={`w-full p-3 rounded-xl border text-left transition-all ${paymentProof.amount === opt.amount ? "border-primary bg-primary/10" : "border-[#27272a] bg-[#09090b]"}`}>
-                            <div className="flex justify-between items-center">
-                              <span className="font-medium text-white">{opt.label}</span>
-                              <span className="font-heading font-bold text-white">₹{opt.amount.toLocaleString("en-IN")}</span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {funnel.upi_id && (
-                      <div className="p-3 bg-[#09090b] rounded-xl mb-4">
-                        <span className="text-xs text-[#94a3b8]">Pay via UPI</span>
-                        <div className="flex items-center gap-2 mt-1">
-                          <code className="text-sm text-primary flex-1">{funnel.upi_id}</code>
-                          <Button variant="ghost" size="sm" className="text-[#94a3b8]" onClick={() => { navigator.clipboard.writeText(funnel.upi_id!); toast.success("UPI ID copied!"); }}>Copy</Button>
-                        </div>
-                      </div>
-                    )}
-                    <div className="space-y-3">
-                      <Input placeholder="UPI Transaction ID" value={paymentProof.upi_transaction_id} onChange={(e) => setPaymentProof({ ...paymentProof, upi_transaction_id: e.target.value })} className="bg-[#09090b] border-[#27272a] text-white h-12 rounded-xl" />
-                      <Button className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl" onClick={() => handlePaymentSubmit(activeStepIndex)}>
-                        I've Made the Payment
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            {activeStep.step_type === "manual_approval" && (
-              <div className="bg-[#141419] border border-[#27272a] rounded-2xl p-8 text-center">
-                {activeProgress?.status === "completed" || activeProgress?.manually_unlocked ? (
-                  <>
-                    <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
-                    <h3 className="font-heading font-bold text-white">Step Unlocked</h3>
-                    <p className="text-xs text-white/40 mt-1">You've been approved to continue.</p>
-                    {activeStepIndex + 1 < steps.length && getStepStatus(steps[activeStepIndex + 1].id) !== "locked" && (
-                      <Button className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl" onClick={() => setActiveStepIndex(activeStepIndex + 1)}>
-                        Continue <ChevronRight size={14} />
-                      </Button>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <Lock size={40} className="text-white/20 mx-auto mb-3" />
-                    <h3 className="font-heading font-bold text-white">Awaiting Approval</h3>
-                    <p className="text-sm text-white/40 mt-2">{activeStep.description || "The creator will unlock this step for you after review."}</p>
-                    {funnel.contact_whatsapp && (
-                      <Button className="mt-4 bg-[#25d366] hover:bg-[#20b858] text-white" onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}>
-                        <MessageCircle size={16} /> Contact on WhatsApp
-                      </Button>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
           </div>
-        )}
-
-        {/* Mobile: Creator + Contact at bottom */}
-        <div className="lg:hidden mt-4 space-y-3">
-          {creatorProfile?.full_name && (
-            <div className="flex items-center gap-3 py-3 px-1">
-              <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 overflow-hidden ring-2 ring-primary/20">
-                {creatorProfile.avatar_url ? (
-                  <img src={creatorProfile.avatar_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-primary font-bold text-sm">{creatorProfile.full_name.charAt(0).toUpperCase()}</span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-semibold text-white text-sm truncate">{creatorProfile.full_name}</span>
-                  {creatorProfile.kyc_status === "approved" && <BadgeCheck size={15} className="text-primary flex-shrink-0" />}
-                </div>
-              </div>
-            </div>
-          )}
-          {funnel.show_contact_buttons && (funnel.contact_whatsapp || funnel.contact_phone) && (
-            <div className="flex gap-2">
-              {funnel.contact_whatsapp && (
-                <Button className="flex-1 bg-[#25d366] hover:bg-[#20b858] text-white h-11 rounded-xl text-sm" onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}>
-                  <MessageCircle size={16} /> WhatsApp
-                </Button>
-              )}
-              {funnel.contact_phone && (
-                <Button className="flex-1 bg-white/[0.06] hover:bg-white/10 text-white border border-white/[0.06] h-11 rounded-xl text-sm" onClick={() => window.open(`tel:${funnel.contact_phone}`)}>
-                  <PhoneIcon size={16} /> Call
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Desktop sidebar — journey + creator + contact */}
-      <div className="hidden lg:block">
-        <div className="sticky top-24 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-          <JourneySidebar />
         </div>
       </div>
     </div>

@@ -14,39 +14,39 @@ const STEP_TYPES = [
     value: "lead_form",
     label: "Lead Form",
     icon: ClipboardList,
-    description: "Collect lead details before continuing",
+    description: "Collect their info before continuing",
     color: "text-emerald-400",
     bg: "bg-emerald-500/10",
-  },
-  {
-    value: "cta",
-    label: "CTA / Link",
-    icon: ExternalLink,
-    description: "Send the viewer to WhatsApp, website, or any action page",
-    color: "text-violet-400",
-    bg: "bg-violet-500/10",
-  },
-  {
-    value: "payment",
-    label: "Payment",
-    icon: CreditCard,
-    description: "Show payment instructions or collect payment proof",
-    color: "text-amber-400",
-    bg: "bg-amber-500/10",
   },
   {
     value: "booking",
     label: "Booking / Call",
     icon: Calendar,
-    description: "Ask the viewer to book or attend a call before continuing",
+    description: "Book a call or Zoom meeting",
     color: "text-pink-400",
     bg: "bg-pink-500/10",
   },
   {
+    value: "payment",
+    label: "Payment",
+    icon: CreditCard,
+    description: "Collect UPI payment proof",
+    color: "text-amber-400",
+    bg: "bg-amber-500/10",
+  },
+  {
+    value: "cta",
+    label: "CTA / Link",
+    icon: ExternalLink,
+    description: "Button + redirect to any URL",
+    color: "text-violet-400",
+    bg: "bg-violet-500/10",
+  },
+  {
     value: "manual_approval",
-    label: "Manual Approval",
+    label: "Manual Unlock",
     icon: UserCheck,
-    description: "Only unlock the next step when you approve manually",
+    description: "You approve manually before next step",
     color: "text-orange-400",
     bg: "bg-orange-500/10",
   },
@@ -61,28 +61,28 @@ interface StepTypeSelectorProps {
 export const StepTypeSelector = ({ open, onClose, onSelect }: StepTypeSelectorProps) => {
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md bg-card border-border">
+      <DialogContent className="sm:max-w-lg bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="font-heading text-lg">What should this step do?</DialogTitle>
+          <DialogTitle className="font-heading text-lg">Choose Step Type</DialogTitle>
           <DialogDescription className="text-muted-foreground text-sm">
-            Choose the type of step to add to your journey.
+            What do you want your prospect to do in this step?
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-2 mt-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
           {STEP_TYPES.map((type) => (
             <button
               key={type.value}
               onClick={() => { onSelect(type.value); onClose(); }}
-              className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-primary/40 hover:bg-primary/5 transition-all text-left group"
+              className="flex flex-col items-center gap-2 p-5 rounded-[14px] border border-border hover:border-primary/40 hover:bg-primary/[0.06] transition-all text-center group"
             >
-              <div className={`w-10 h-10 rounded-lg ${type.bg} flex items-center justify-center shrink-0`}>
-                <type.icon size={20} className={type.color} />
+              <div className={`w-11 h-11 rounded-xl ${type.bg} flex items-center justify-center`}>
+                <type.icon size={22} className={type.color} />
               </div>
-              <div className="min-w-0">
-                <p className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">
+              <div>
+                <p className="font-bold text-[14px] text-foreground group-hover:text-primary transition-colors" style={{ fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif" }}>
                   {type.label}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
                   {type.description}
                 </p>
               </div>
