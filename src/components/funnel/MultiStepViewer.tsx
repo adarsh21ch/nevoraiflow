@@ -495,7 +495,7 @@ export const MultiStepViewer = ({
                 >
                   {step.title || `Step ${idx + 1}`}
                 </p>
-                <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.45)", marginTop: "2px" }}>
+                <p style={{ fontSize: "11px", color: sc.textMuted, marginTop: "2px" }}>
                   {STEP_TYPE_LABELS[step.step_type] || step.step_type}
                   {" · "}
                   {isCompleted ? "Completed" : isInProgress ? "In Progress" : isActive ? "Available" : isLocked ? "Locked" : "Available"}
