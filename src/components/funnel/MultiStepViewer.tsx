@@ -653,10 +653,10 @@ export const MultiStepViewer = ({
 
               {/* Inline hint about what unlocks next */}
               {activeStepIndex + 1 < steps.length && getStepStatus(activeStep.id) !== "completed" && getStepStatus(steps[activeStepIndex + 1].id) === "locked" && (
-                <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                  <Info size={13} className="shrink-0 mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }} />
-                  <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", lineHeight: "1.5" }}>
-                    <span style={{ color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>Next:</span> {getUnlockHint(steps[activeStepIndex + 1], activeStepIndex + 1)}
+                <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl" style={{ background: sc.itemBg, border: `1px solid ${sc.border}` }}>
+                  <Info size={13} className="shrink-0 mt-0.5" style={{ color: sc.textDimmer }} />
+                  <p style={{ fontSize: "12px", color: sc.textMuted, lineHeight: "1.5" }}>
+                    <span style={{ color: sc.text, fontWeight: 600 }}>Next:</span> {getUnlockHint(steps[activeStepIndex + 1], activeStepIndex + 1)}
                   </p>
                 </div>
               )}
