@@ -60,11 +60,9 @@ const SINGLE_STEPS = [
   { icon: Video, label: "Video", num: "2" },
   { icon: Settings, label: "Video Settings", num: "3" },
   { icon: ClipboardList, label: "Lead Capture", num: "4" },
-  { icon: Mic, label: "Audio Note", num: "5" },
-  { icon: MessageCircle, label: "Contact Info", num: "6" },
-  { icon: IndianRupee, label: "Payment", num: "7" },
-  { icon: Radio, label: "Broadcast", num: "8" },
-  { icon: Rocket, label: "Publish", num: "9" },
+  { icon: MessageCircle, label: "Contact Info", num: "5" },
+  { icon: IndianRupee, label: "Payment", num: "6" },
+  { icon: Rocket, label: "Publish", num: "7" },
 ];
 
 const MULTI_STEPS = [
@@ -73,8 +71,7 @@ const MULTI_STEPS = [
   { icon: Settings, label: "Video Settings", num: "3" },
   { icon: MessageCircle, label: "Contact Info", num: "4" },
   { icon: IndianRupee, label: "Payment", num: "5" },
-  { icon: Radio, label: "Broadcast", num: "6" },
-  { icon: Rocket, label: "Publish", num: "7" },
+  { icon: Rocket, label: "Publish", num: "6" },
 ];
 
 const UNLOCK_LABELS: Record<string, string> = {
@@ -115,6 +112,7 @@ const FunnelEditor = () => {
 
   // Journey preview collapsible (mobile)
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [audioNoteEnabled, setAudioNoteEnabled] = useState(false);
 
   const [funnel, setFunnel] = useState({
     title: "", slug: "", description: "", visibility: "public", intent_type: "lead",
@@ -182,6 +180,7 @@ const FunnelEditor = () => {
         is_published: f.is_published || false,
       }));
       setModeChosen(true);
+      if (f.audio_note_url) setAudioNoteEnabled(true);
       if (f.video_asset_id) {
         supabase.from("video_assets").select("id, title, public_url").eq("id", f.video_asset_id).single().then(({ data }) => {
           if (data) setSelectedVideo({ id: data.id, title: data.title, url: data.public_url });
@@ -355,15 +354,11 @@ const FunnelEditor = () => {
     const idx = wizardStep - offset;
     if (idx === 0) return renderControlsStep();
     if (!isMulti && idx === 1) return renderLeadFormStep();
-    const audioIdx = isMulti ? -1 : 2;
-    const whatsappIdx = isMulti ? 1 : 3;
-    const paymentIdx = isMulti ? 2 : 4;
-    const broadcastIdx = isMulti ? 3 : 5;
-    const publishIdx = isMulti ? 4 : 6;
-    if (idx === audioIdx) return renderAudioStep();
+    const whatsappIdx = isMulti ? 1 : 2;
+    const paymentIdx = isMulti ? 2 : 3;
+    const publishIdx = isMulti ? 3 : 4;
     if (idx === whatsappIdx) return renderWhatsappStep();
     if (idx === paymentIdx) return renderPaymentStep();
-    if (idx === broadcastIdx) return renderBroadcastStep();
     if (idx === publishIdx) return renderPublishStep();
     return null;
   };
@@ -461,6 +456,45 @@ const FunnelEditor = () => {
           <Button variant="hero" size="sm" onClick={() => setVideoPickerOpen(true)}>Select Video</Button>
         </div>
       )}
+
+      {/* Audio Note — inline toggle */}
+      <div className="mt-6 border-t border-border pt-5">
+        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
+          <div>
+            <Label className="font-semibold flex items-center gap-2"><Mic size={15} /> Add Audio Note</Label>
+            <p className="text-xs text-muted-foreground mt-0.5">Add a personal audio message for your prospects</p>
+          </div>
+          <Switch checked={audioNoteEnabled} onCheckedChange={setAudioNoteEnabled} />
+        </div>
+        {audioNoteEnabled && (
+          <div className="space-y-4 mt-4">
+            <div className="border-2 border-dashed border-border rounded-xl p-6 text-center">
+              <Mic size={24} className="text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Upload audio (MP3/WAV, max 10MB)</p>
+            </div>
+            <div className="p-4 bg-muted/50 rounded-xl">
+              <Label className="font-semibold">When to Play</Label>
+              <Select value={funnel.audio_note_timing} onValueChange={(v) => update("audio_note_timing", v)}>
+                <SelectTrigger className="mt-1.5 bg-muted border-border"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  <SelectItem value="before">Before video starts</SelectItem>
+                  <SelectItem value="after">After video ends</SelectItem>
+                  <SelectItem value="at_cta">When CTA appears</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
+              <div><Label className="font-semibold">Autoplay Audio</Label><p className="text-xs text-muted-foreground mt-0.5">Play automatically when triggered</p></div>
+              <Switch checked={funnel.audio_note_autoplay} onCheckedChange={(v) => update("audio_note_autoplay", v)} />
+            </div>
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
+              <div><Label className="font-semibold">Pause Video During Audio</Label><p className="text-xs text-muted-foreground mt-0.5">Lock video until audio completes</p></div>
+              <Switch checked={funnel.audio_lock_video} onCheckedChange={(v) => update("audio_lock_video", v)} />
+            </div>
+          </div>
+        )}
+      </div>
+
       <VideoPickerModal open={videoPickerOpen} onClose={() => setVideoPickerOpen(false)} onSelect={(videoId, title, publicUrl) => { setSelectedVideo({ id: videoId, title, url: publicUrl }); setVideoPickerOpen(false); }} />
     </>
   );
