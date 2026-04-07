@@ -1,49 +1,30 @@
 import { motion } from "framer-motion";
-import {
-  ShieldOff,
-  SlidersHorizontal,
-  BarChart3,
-  UserPlus,
-  Route,
-  Zap,
-} from "lucide-react";
+import { X, Check } from "lucide-react";
 
-const benefits = [
+const rows = [
   {
-    icon: ShieldOff,
-    title: "Distraction-Free Viewing",
-    problem: "YouTube, Drive & WhatsApp flood viewers with suggested videos, comments, and competing content.",
-    solution: "Clean, branded experience — no recommendations, no noise, no distractions. Your viewer stays focused on your message.",
+    yt: "Viewers get distracted with recommendations, comments, and other videos",
+    nf: "Distraction-free experience — no recommendations, no noise, full focus",
   },
   {
-    icon: SlidersHorizontal,
-    title: "Controlled Watch Experience",
-    problem: "Viewers skip ahead, miss key points, and never follow the sequence you intended.",
-    solution: "Control seeking, enforce watch order, and ensure viewers complete important content before moving forward.",
+    yt: "Viewers can skip content and miss key information",
+    nf: "Control watching — restrict skipping, ensure content is consumed properly",
   },
   {
-    icon: BarChart3,
-    title: "Viewer Progress Tracking",
-    problem: "With YouTube or WhatsApp, you have zero idea who watched, how much, or where they dropped off.",
-    solution: "Track who watched, how far they got, and where they dropped off — so you can follow up with confidence.",
+    yt: "No visibility into who watched, how much, or where they dropped off",
+    nf: "Track viewer behavior — know exactly who watched, how far, and engagement level",
   },
   {
-    icon: UserPlus,
-    title: "Built-In Lead Capture",
-    problem: "Sharing video links gives you views, but zero prospect data — no names, no numbers, no follow-ups.",
-    solution: "Capture name, phone, email, and city directly — turning every viewer into a trackable, contactable lead.",
+    yt: "Videos are random — no structured journey or conversion flow",
+    nf: "Turn videos into structured funnels with steps, actions, and progression",
   },
   {
-    icon: Route,
-    title: "Videos Become Journeys",
-    problem: "A normal video is just content. It has no structure, no next step, and no conversion path.",
-    solution: "Convert videos into guided step-by-step funnels that unlock actions, next steps, and conversions intentionally.",
+    yt: "No built-in lead capture or follow-up system",
+    nf: "Capture leads directly — collect name, phone, email, and more",
   },
   {
-    icon: Zap,
-    title: "Built for Conversion",
-    problem: "Platforms give you views and vanity metrics — not business results or structured follow-up.",
-    solution: "Drive action: capture leads, guide decisions, collect payments, and create conversion-ready journeys.",
+    yt: "Views don't equal business results",
+    nf: "Built for conversion — guide users toward action, payment, or next steps",
   },
 ];
 
@@ -53,8 +34,9 @@ export const WhyNevorai = () => {
       <div className="absolute inset-0 gradient-bg-subtle" />
 
       <div className="container relative z-10">
+        {/* Header */}
         <motion.div
-          className="text-center mb-6"
+          className="text-center mb-14"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -65,47 +47,66 @@ export const WhyNevorai = () => {
             </span>
           </div>
           <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4">
-            Why Not Just Use YouTube or{" "}
-            <span className="gradient-text">WhatsApp?</span>
+            Why Not Just Use <span className="gradient-text">YouTube?</span>
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto text-base md:text-lg leading-relaxed">
-            Because random video sharing creates random results.
-            <br className="hidden sm:block" />
-            <span className="text-foreground font-medium">
-              Nevorai Flow gives you structure, control, and conversion.
-            </span>
+          <p className="text-muted-foreground max-w-xl mx-auto text-base md:text-lg leading-relaxed">
+            Because views don't mean control, data, or conversions.
           </p>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto mt-14">
-          {benefits.map((b, i) => (
-            <motion.div
-              key={b.title}
-              className="glass-card-hover p-6 group cursor-default flex flex-col"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.07 }}
-            >
-              <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors shrink-0">
-                <b.icon className="text-primary" size={20} />
-              </div>
-              <h3 className="text-sm font-heading font-semibold mb-3">
-                {b.title}
-              </h3>
-              <p className="text-xs text-destructive/70 leading-relaxed mb-2">
-                <span className="font-medium text-destructive">Problem:</span>{" "}
-                {b.problem}
-              </p>
-              <p className="text-xs text-muted-foreground leading-relaxed mt-auto">
-                <span className="font-medium text-success">With Nevorai:</span>{" "}
-                {b.solution}
-              </p>
-            </motion.div>
-          ))}
+        {/* Column Headers */}
+        <div className="max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 gap-3 md:gap-5 mb-4">
+            <div className="rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-center">
+              <span className="font-heading font-bold text-sm md:text-base text-destructive">
+                ❌ YouTube
+              </span>
+            </div>
+            <div className="rounded-xl bg-success/10 border border-success/20 px-4 py-3 text-center">
+              <span className="font-heading font-bold text-sm md:text-base text-success">
+                ✅ Nevorai Flow
+              </span>
+            </div>
+          </div>
+
+          {/* Rows */}
+          <div className="flex flex-col gap-3">
+            {rows.map((row, i) => (
+              <motion.div
+                key={i}
+                className="grid grid-cols-2 gap-3 md:gap-5"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.06 }}
+              >
+                {/* YouTube side */}
+                <div className="rounded-xl border border-destructive/10 bg-destructive/[0.04] p-4 flex items-start gap-3">
+                  <X
+                    size={18}
+                    className="text-destructive shrink-0 mt-0.5"
+                  />
+                  <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
+                    {row.yt}
+                  </p>
+                </div>
+
+                {/* Nevorai side */}
+                <div className="rounded-xl border border-success/15 bg-success/[0.06] p-4 flex items-start gap-3">
+                  <Check
+                    size={18}
+                    className="text-success shrink-0 mt-0.5"
+                  />
+                  <p className="text-xs md:text-sm text-foreground leading-relaxed font-medium">
+                    {row.nf}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
 
-        {/* Bottom reinforcement */}
+        {/* Bottom CTA reinforcement */}
         <motion.div
           className="text-center mt-14"
           initial={{ opacity: 0, y: 20 }}
@@ -113,11 +114,10 @@ export const WhyNevorai = () => {
           viewport={{ once: true }}
         >
           <p className="text-lg md:text-xl font-heading font-semibold text-foreground">
-            Turn Random Videos Into{" "}
-            <span className="gradient-text">Structured Funnels.</span>
-          </p>
-          <p className="text-sm text-muted-foreground mt-2">
-            No distractions. No guesswork. Just results.
+            YouTube gives views.{" "}
+            <span className="gradient-text">
+              Nevorai Flow gives control + data + conversion.
+            </span>
           </p>
         </motion.div>
       </div>
