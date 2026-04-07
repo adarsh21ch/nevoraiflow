@@ -25,6 +25,7 @@ import ProfilePage from "./pages/ProfilePage";
 import KYCPage from "./pages/KYCPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import SettingsPage from "./pages/SettingsPage";
+import BillingPage from "./pages/BillingPage";
 import LivePage from "./pages/LivePage";
 import LiveDetailPage from "./pages/LiveDetailPage";
 import PublicLivePage from "./pages/PublicLivePage";
