@@ -89,6 +89,7 @@ const App = () => (
               <Route path="/kyc" element={<ProtectedRoute><KYCPage /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/billing" element={<ProtectedRoute><BillingPage /></ProtectedRoute>} />
               <Route path="/upgrade" element={<ProtectedRoute><PricingFullPage /></ProtectedRoute>} />
 
               {/* Admin */}
