@@ -89,7 +89,7 @@ const LiveDetailPage = () => {
   const isLive = session.status === "live";
   const isScheduled = session.status === "scheduled";
   const isEnded = session.status === "ended";
-  const publicUrl = `${window.location.origin}/live/${session.slug}`;
+  const publicUrl = `${window.location.origin}/s/${session.slug}`;
 
   return (
     <DashboardLayout>

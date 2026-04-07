@@ -366,7 +366,7 @@ const LivePage = () => {
                       <Eye size={14} />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/live/${s.slug}`);
+                      navigator.clipboard.writeText(`${window.location.origin}/s/${s.slug}`);
                       toast.success("Link copied!");
                     }}>
                       <Copy size={14} />
