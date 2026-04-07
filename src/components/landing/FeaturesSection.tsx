@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Video, ClipboardList, MessageCircle, IndianRupee, BarChart3, Radio } from "lucide-react";
+import { Video, ClipboardList, MessageCircle, Route, BarChart3, Radio } from "lucide-react";
 
 const features = [
   {
