@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import {
   Play, Pause, MessageCircle, Phone as PhoneIcon, Lock, Check,
   AlertTriangle, BadgeCheck, MapPin, Instagram, Volume2, VolumeX,
-  Maximize, Minimize, Share2, Loader2, Gauge
+  Maximize, Minimize, Share2, Loader2, Gauge, Sun, Moon
 } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 import { MultiStepViewer } from "@/components/funnel/MultiStepViewer";
