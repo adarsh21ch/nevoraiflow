@@ -585,12 +585,12 @@ const PublicFunnel = () => {
   // Password gate
   if (funnel.visibility === "password" && !passwordUnlocked) {
     return (
-      <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4">
-        <div className="bg-[#141419] border border-[#27272a] rounded-2xl p-8 w-full max-w-sm text-center">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: tc.bg }}>
+        <div className="rounded-2xl p-8 w-full max-w-sm text-center" style={{ background: tc.bgCard, border: `1px solid ${tc.border}` }}>
           <Lock size={32} className="text-primary mx-auto mb-4" />
-          <h2 className="text-lg font-heading font-semibold mb-2 text-white">{funnel.title}</h2>
-          <p className="text-sm text-[#94a3b8] mb-4">This funnel is password protected.</p>
-          <Input type="password" placeholder="Enter password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="bg-[#09090b] border-[#27272a] text-white mb-3" />
+          <h2 className="text-lg font-heading font-semibold mb-2" style={{ color: tc.text }}>{funnel.title}</h2>
+          <p className="text-sm mb-4" style={{ color: tc.textMuted }}>This funnel is password protected.</p>
+          <Input type="password" placeholder="Enter password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} style={{ background: tc.inputBg, borderColor: tc.inputBorder, color: tc.inputText }} className="mb-3" />
           <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => setPasswordUnlocked(true)}>Unlock</Button>
         </div>
       </div>
