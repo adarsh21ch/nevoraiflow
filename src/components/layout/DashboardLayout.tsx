@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { WhatsAppSupportFAB } from "@/components/WhatsAppSupportFAB";
 import { Logo } from "@/components/landing/Logo";
 import {
   LayoutDashboard, Layers, Video, Users, IndianRupee, BarChart3,
@@ -25,6 +26,7 @@ const navItems = [
 
 const bottomItems = [
   { icon: User, label: "Profile", path: "/profile" },
+  { icon: CreditCard, label: "Billing", path: "/billing" },
   { icon: FileCheck, label: "Get Verified", path: "/kyc" },
   { icon: Bell, label: "Notifications", path: "/notifications" },
   { icon: Settings, label: "Settings", path: "/settings" },
@@ -142,6 +144,8 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
           );
         })}
       </nav>
+
+      <WhatsAppSupportFAB />
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { UpgradeBanner } from "@/components/UpgradeBanner";
 import { Layers, Users, Eye, IndianRupee, TrendingUp, Radio, Plus, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -45,6 +46,7 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
+        <UpgradeBanner />
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-heading font-bold">Dashboard</h1>
