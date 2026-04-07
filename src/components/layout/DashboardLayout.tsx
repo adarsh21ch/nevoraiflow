@@ -16,6 +16,7 @@ import { useTheme } from "@/hooks/useTheme";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: Layers, label: "Funnels", path: "/funnels" },
+  { icon: Radio, label: "Broadcast", path: "/broadcast" },
   { icon: Video, label: "Videos", path: "/videos" },
   { icon: Users, label: "Leads", path: "/leads" },
   { icon: IndianRupee, label: "Payments", path: "/payments" },
