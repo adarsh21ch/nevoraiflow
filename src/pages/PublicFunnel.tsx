@@ -829,11 +829,12 @@ const PublicFunnel = () => {
           </div>
         )}
 
-        {/* Footer — clean Nevorai Flow branding */}
+        {/* Footer */}
         <div className="mt-16 pt-6 border-t border-white/[0.04] text-center">
           <p className="text-[11px] text-white/20">© {new Date().getFullYear()} Nevorai Flow · All rights reserved</p>
         </div>
       </div>
+      )}
 
       {/* CTA pulse animation */}
       <style>{`
