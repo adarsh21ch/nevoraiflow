@@ -55,7 +55,7 @@ const App = () => (
               <Route path="/pricing" element={<PricingFullPage />} />
               <Route path="/f/:slug" element={<PublicFunnel />} />
               <Route path="/video/:id" element={<PublicVideoPage />} />
-              <Route path="/live/:slug" element={<PublicLivePage />} />
+              <Route path="/s/:slug" element={<PublicLivePage />} />
 
               {/* Auth Required */}
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
