@@ -455,6 +455,45 @@ const FunnelEditor = () => {
           <Button variant="hero" size="sm" onClick={() => setVideoPickerOpen(true)}>Select Video</Button>
         </div>
       )}
+
+      {/* Audio Note — inline toggle */}
+      <div className="mt-6 border-t border-border pt-5">
+        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
+          <div>
+            <Label className="font-semibold flex items-center gap-2"><Mic size={15} /> Add Audio Note</Label>
+            <p className="text-xs text-muted-foreground mt-0.5">Add a personal audio message for your prospects</p>
+          </div>
+          <Switch checked={audioNoteEnabled} onCheckedChange={setAudioNoteEnabled} />
+        </div>
+        {audioNoteEnabled && (
+          <div className="space-y-4 mt-4">
+            <div className="border-2 border-dashed border-border rounded-xl p-6 text-center">
+              <Mic size={24} className="text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Upload audio (MP3/WAV, max 10MB)</p>
+            </div>
+            <div className="p-4 bg-muted/50 rounded-xl">
+              <Label className="font-semibold">When to Play</Label>
+              <Select value={funnel.audio_note_timing} onValueChange={(v) => update("audio_note_timing", v)}>
+                <SelectTrigger className="mt-1.5 bg-muted border-border"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  <SelectItem value="before">Before video starts</SelectItem>
+                  <SelectItem value="after">After video ends</SelectItem>
+                  <SelectItem value="at_cta">When CTA appears</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
+              <div><Label className="font-semibold">Autoplay Audio</Label><p className="text-xs text-muted-foreground mt-0.5">Play automatically when triggered</p></div>
+              <Switch checked={funnel.audio_note_autoplay} onCheckedChange={(v) => update("audio_note_autoplay", v)} />
+            </div>
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
+              <div><Label className="font-semibold">Pause Video During Audio</Label><p className="text-xs text-muted-foreground mt-0.5">Lock video until audio completes</p></div>
+              <Switch checked={funnel.audio_lock_video} onCheckedChange={(v) => update("audio_lock_video", v)} />
+            </div>
+          </div>
+        )}
+      </div>
+
       <VideoPickerModal open={videoPickerOpen} onClose={() => setVideoPickerOpen(false)} onSelect={(videoId, title, publicUrl) => { setSelectedVideo({ id: videoId, title, url: publicUrl }); setVideoPickerOpen(false); }} />
     </>
   );
