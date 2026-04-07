@@ -27,7 +27,7 @@ export const Footer = () => {
           <div>
             <Logo size="sm" />
             <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-              The video funnel platform built for network marketers in India.
+              The smart video funnel platform for digital entrepreneurs.
             </p>
           </div>
           {Object.entries(links).map(([title, items]) => (
