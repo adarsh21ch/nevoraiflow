@@ -926,14 +926,6 @@ const FunnelEditor = () => {
           </div>
         </div>
 
-        {/* Desktop journey preview (multi mode only) */}
-        {isMulti && modeChosen && flowSteps.length > 0 && (
-          <div className="hidden lg:block w-56 shrink-0">
-            <div className="sticky top-24 p-4 border border-border rounded-xl bg-card/50">
-              <JourneyPreview steps={flowSteps} />
-            </div>
-          </div>
-        )}
       </div>
     </DashboardLayout>
   );
