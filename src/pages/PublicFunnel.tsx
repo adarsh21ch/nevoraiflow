@@ -768,7 +768,6 @@ const PublicFunnel = () => {
                 </div>
               )}
 
-              {/* CTA Button */}
               <div className={showLeadFormSidebar && !leadSubmitted ? "lg:hidden" : ""}>
                 {ctaEnabled && showCta && (
                   <Button
@@ -779,7 +778,7 @@ const PublicFunnel = () => {
                   </Button>
                 )}
                 {ctaEnabled && funnel.lock_cta && !showCta && videoPlaying && (
-                  <Button disabled className="w-full h-14 text-base rounded-xl bg-white/[0.04] text-white/30 cursor-not-allowed border border-white/[0.06]">
+                  <Button disabled className="w-full h-14 text-base rounded-xl cursor-not-allowed" style={{ background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)", color: tc.textDimmer, border: `1px solid ${tc.borderSubtle}` }}>
                     🔒 {funnel.cta_text || "Get Started"} — unlocks in {Math.floor(ctaTimingLeft / 60)}:{(ctaTimingLeft % 60).toString().padStart(2, "0")}
                   </Button>
                 )}
