@@ -1,5 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.49.1/cors";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 const RAZORPAY_KEY_ID = Deno.env.get("RAZORPAY_KEY_ID")!;
 const RAZORPAY_KEY_SECRET = Deno.env.get("RAZORPAY_KEY_SECRET")!;
@@ -36,7 +40,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { action, plan_key, amount, receipt } = await req.json();
+    const body = await req.json();
+    const { action } = body;
 
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -44,7 +49,7 @@ Deno.serve(async (req) => {
     );
 
     if (action === "create_order") {
-      // Create a Razorpay order for one-time payment
+      const { amount, plan_key } = body;
       if (!amount || !plan_key) {
         return new Response(JSON.stringify({ error: "amount and plan_key required" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -55,9 +60,9 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: rzpHeaders(),
         body: JSON.stringify({
-          amount: Math.round(amount * 100), // paise
+          amount: Math.round(amount * 100),
           currency: "INR",
-          receipt: receipt || `order_${user.id}_${Date.now()}`,
+          receipt: `order_${user.id.slice(0, 8)}_${Date.now()}`,
           notes: { user_id: user.id, plan_key },
         }),
       });
@@ -72,7 +77,6 @@ Deno.serve(async (req) => {
 
       const order = await orderRes.json();
 
-      // Log the order creation
       await serviceClient.from("payment_audit_logs").insert({
         user_id: user.id,
         event_type: "order_created",
@@ -91,35 +95,32 @@ Deno.serve(async (req) => {
     }
 
     if (action === "verify_payment") {
-      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json().catch(() => ({}));
-      
-      // Re-parse body since we already consumed it
-      const body = { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan_key };
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan_key: verifyPlanKey } = body;
 
-      if (!body.razorpay_order_id || !body.razorpay_payment_id || !body.razorpay_signature) {
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
         return new Response(JSON.stringify({ error: "Missing payment verification fields" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Verify signature
+      // Verify HMAC signature
       const encoder = new TextEncoder();
       const key = await crypto.subtle.importKey(
         "raw", encoder.encode(RAZORPAY_KEY_SECRET),
         { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
       );
-      const data = encoder.encode(`${body.razorpay_order_id}|${body.razorpay_payment_id}`);
-      const sig = await crypto.subtle.sign("HMAC", key, data);
+      const sigData = encoder.encode(`${razorpay_order_id}|${razorpay_payment_id}`);
+      const sig = await crypto.subtle.sign("HMAC", key, sigData);
       const expectedSig = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, "0")).join("");
 
-      if (expectedSig !== body.razorpay_signature) {
+      if (expectedSig !== razorpay_signature) {
         await serviceClient.from("payment_audit_logs").insert({
           user_id: user.id,
           event_type: "payment_verification_failed",
-          razorpay_order_id: body.razorpay_order_id,
-          razorpay_payment_id: body.razorpay_payment_id,
+          razorpay_order_id,
+          razorpay_payment_id,
           source: "frontend",
-          idempotency_key: `verify_fail_${body.razorpay_payment_id}`,
+          idempotency_key: `verify_fail_${razorpay_payment_id}`,
         });
         return new Response(JSON.stringify({ error: "Signature mismatch" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -127,11 +128,12 @@ Deno.serve(async (req) => {
       }
 
       // Fetch plan details
+      const pKey = verifyPlanKey || "pro_monthly";
       const { data: planData } = await serviceClient.from("admin_subscription_plans")
-        .select("*").eq("plan_key", plan_key).eq("is_active", true).single();
+        .select("*").eq("plan_key", pKey).eq("is_active", true).maybeSingle();
 
       const now = new Date();
-      let expiresAt = null;
+      let expiresAt: string | null = null;
       if (planData?.duration_days) {
         expiresAt = new Date(now.getTime() + planData.duration_days * 86400000).toISOString();
       }
@@ -142,44 +144,46 @@ Deno.serve(async (req) => {
         .eq("user_id", user.id)
         .eq("status", "active");
 
-      // Create new subscription record
+      // Create new subscription
       await serviceClient.from("user_subscriptions").insert({
         user_id: user.id,
-        plan_key: plan_key,
+        plan_key: pKey,
         tier: planData?.tier || "pro",
         status: "active",
         billing_type: planData?.billing_type || "one_time",
-        amount_paid: Math.round((planData?.price_inr || amount) as number),
-        razorpay_order_id: body.razorpay_order_id,
-        razorpay_payment_id: body.razorpay_payment_id,
+        amount_paid: planData?.price_inr || 0,
+        razorpay_order_id,
+        razorpay_payment_id,
         started_at: now.toISOString(),
         expires_at: expiresAt,
       });
 
-      // Log success
       await serviceClient.from("payment_audit_logs").insert({
         user_id: user.id,
         event_type: "payment_verified",
-        razorpay_order_id: body.razorpay_order_id,
-        razorpay_payment_id: body.razorpay_payment_id,
-        payload: { plan_key, tier: planData?.tier },
+        razorpay_order_id,
+        razorpay_payment_id,
+        payload: { plan_key: pKey, tier: planData?.tier },
         source: "frontend",
-        idempotency_key: `verify_${body.razorpay_payment_id}`,
+        idempotency_key: `verify_${razorpay_payment_id}`,
       });
 
-      return new Response(JSON.stringify({ success: true, plan_key, tier: planData?.tier }), {
+      return new Response(JSON.stringify({ success: true, plan_key: pKey, tier: planData?.tier }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (action === "get_config") {
-      // Return public Razorpay key and plan info
       const { data: plans } = await serviceClient.from("admin_subscription_plans")
         .select("*").eq("is_active", true).order("price_inr");
 
       const { data: settings } = await serviceClient.from("platform_settings")
         .select("key, value")
-        .in("key", ["support_whatsapp", "support_message_template", "razorpay_monthly_price", "razorpay_onetime_price", "razorpay_onetime_validity_days", "razorpay_onetime_is_lifetime"]);
+        .in("key", [
+          "support_whatsapp", "support_message_template",
+          "razorpay_monthly_price", "razorpay_onetime_price",
+          "razorpay_onetime_validity_days", "razorpay_onetime_is_lifetime",
+        ]);
 
       const settingsMap: Record<string, string> = {};
       settings?.forEach((s: any) => { settingsMap[s.key] = s.value; });
