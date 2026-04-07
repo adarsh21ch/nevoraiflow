@@ -60,11 +60,9 @@ const SINGLE_STEPS = [
   { icon: Video, label: "Video", num: "2" },
   { icon: Settings, label: "Video Settings", num: "3" },
   { icon: ClipboardList, label: "Lead Capture", num: "4" },
-  { icon: Mic, label: "Audio Note", num: "5" },
-  { icon: MessageCircle, label: "Contact Info", num: "6" },
-  { icon: IndianRupee, label: "Payment", num: "7" },
-  { icon: Radio, label: "Broadcast", num: "8" },
-  { icon: Rocket, label: "Publish", num: "9" },
+  { icon: MessageCircle, label: "Contact Info", num: "5" },
+  { icon: IndianRupee, label: "Payment", num: "6" },
+  { icon: Rocket, label: "Publish", num: "7" },
 ];
 
 const MULTI_STEPS = [
@@ -73,8 +71,7 @@ const MULTI_STEPS = [
   { icon: Settings, label: "Video Settings", num: "3" },
   { icon: MessageCircle, label: "Contact Info", num: "4" },
   { icon: IndianRupee, label: "Payment", num: "5" },
-  { icon: Radio, label: "Broadcast", num: "6" },
-  { icon: Rocket, label: "Publish", num: "7" },
+  { icon: Rocket, label: "Publish", num: "6" },
 ];
 
 const UNLOCK_LABELS: Record<string, string> = {
