@@ -42,10 +42,8 @@ export const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
-            Turn Videos Into{" "}
-            <span className="gradient-text">Leads.</span>
-            <br />
-            Automatically.
+            Turn Random Videos Into{" "}
+            <span className="gradient-text">Structured Funnels.</span>
           </motion.h1>
 
           <motion.p
