@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import {
   Play, Pause, MessageCircle, Phone as PhoneIcon, Lock, Check,
   AlertTriangle, BadgeCheck, MapPin, Instagram, Volume2, VolumeX,
-  Maximize, Minimize, Share2, Loader2, Gauge
+  Maximize, Minimize, Share2, Loader2, Gauge, Sun, Moon
 } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 import { MultiStepViewer } from "@/components/funnel/MultiStepViewer";
@@ -426,6 +426,40 @@ const PublicFunnel = () => {
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordUnlocked, setPasswordUnlocked] = useState(false);
+  const [pubTheme, setPubTheme] = useState<"dark" | "light">(() => {
+    const saved = localStorage.getItem("nevorai-public-theme");
+    return saved === "light" ? "light" : "dark";
+  });
+  const isDark = pubTheme === "dark";
+  const togglePubTheme = () => {
+    setPubTheme((t) => {
+      const next = t === "dark" ? "light" : "dark";
+      localStorage.setItem("nevorai-public-theme", next);
+      return next;
+    });
+  };
+
+  // Theme-aware color helpers
+  const tc = {
+    bg: isDark ? "#09090b" : "#ffffff",
+    bgCard: isDark ? "#141419" : "#f8f9fa",
+    border: isDark ? "#27272a" : "#e5e7eb",
+    borderSubtle: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+    text: isDark ? "#ffffff" : "#0f172a",
+    textMuted: isDark ? "#94a3b8" : "#64748b",
+    textDim: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.5)",
+    textDimmer: isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.3)",
+    inputBg: isDark ? "#09090b" : "#f1f5f9",
+    inputBorder: isDark ? "#27272a" : "#d1d5db",
+    inputText: isDark ? "#ffffff" : "#0f172a",
+    placeholder: isDark ? "#64748b" : "#9ca3af",
+    headerBg: isDark ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.8)",
+    shareText: isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.4)",
+    shareHover: isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.7)",
+    contactBg: isDark ? "rgba(9,9,11,0.95)" : "rgba(255,255,255,0.95)",
+    footerText: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.25)",
+    footerBorder: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.06)",
+  };
 
   // Single combined fetch
   const { data: bundle, isLoading } = useQuery({
@@ -534,16 +568,16 @@ const PublicFunnel = () => {
   });
 
   if (isLoading) return (
-    <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: tc.bg }}>
       <Loader2 size={32} className="text-primary animate-spin" />
     </div>
   );
 
   if (!canView) return (
-    <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: tc.bg }}>
       <div className="text-center">
-        <h1 className="text-xl font-heading font-bold mb-2 text-white">Funnel Not Found</h1>
-        <p className="text-sm text-[#94a3b8]">This funnel doesn't exist or has been unpublished.</p>
+        <h1 className="text-xl font-heading font-bold mb-2" style={{ color: tc.text }}>Funnel Not Found</h1>
+        <p className="text-sm" style={{ color: tc.textMuted }}>This funnel doesn't exist or has been unpublished.</p>
       </div>
     </div>
   );
@@ -551,12 +585,12 @@ const PublicFunnel = () => {
   // Password gate
   if (funnel.visibility === "password" && !passwordUnlocked) {
     return (
-      <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4">
-        <div className="bg-[#141419] border border-[#27272a] rounded-2xl p-8 w-full max-w-sm text-center">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: tc.bg }}>
+        <div className="rounded-2xl p-8 w-full max-w-sm text-center" style={{ background: tc.bgCard, border: `1px solid ${tc.border}` }}>
           <Lock size={32} className="text-primary mx-auto mb-4" />
-          <h2 className="text-lg font-heading font-semibold mb-2 text-white">{funnel.title}</h2>
-          <p className="text-sm text-[#94a3b8] mb-4">This funnel is password protected.</p>
-          <Input type="password" placeholder="Enter password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="bg-[#09090b] border-[#27272a] text-white mb-3" />
+          <h2 className="text-lg font-heading font-semibold mb-2" style={{ color: tc.text }}>{funnel.title}</h2>
+          <p className="text-sm mb-4" style={{ color: tc.textMuted }}>This funnel is password protected.</p>
+          <Input type="password" placeholder="Enter password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} style={{ background: tc.inputBg, borderColor: tc.inputBorder, color: tc.inputText }} className="mb-3" />
           <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => setPasswordUnlocked(true)}>Unlock</Button>
         </div>
       </div>
@@ -578,28 +612,28 @@ const PublicFunnel = () => {
   };
 
   const LeadFormCard = ({ className = "" }: { className?: string }) => (
-    <div className={`bg-[#141419] border border-[#27272a] rounded-2xl p-6 ${className}`}>
-      <h3 className="text-lg font-heading font-bold mb-1 text-white">{funnel.cta_text || "Register Now"}</h3>
-      <p className="text-xs text-[#94a3b8] mb-5">Fill in your details to continue</p>
+    <div className={`rounded-2xl p-6 ${className}`} style={{ background: tc.bgCard, border: `1px solid ${tc.border}` }}>
+      <h3 className="text-lg font-heading font-bold mb-1" style={{ color: tc.text }}>{funnel.cta_text || "Register Now"}</h3>
+      <p className="text-xs mb-5" style={{ color: tc.textMuted }}>Fill in your details to continue</p>
       <form onSubmit={(e) => { e.preventDefault(); submitLead.mutate(); }} className="space-y-3">
         <input type="text" name="website" value={leadForm.website} onChange={(e) => setLeadForm({ ...leadForm, website: e.target.value })} style={{ position: "absolute", left: "-9999px" }} tabIndex={-1} autoComplete="off" />
         {formConfig?.show_name && (
-          <Input placeholder="Full Name" value={leadForm.name} onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })} required={formConfig.name_required || false} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
+          <Input placeholder="Full Name" value={leadForm.name} onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })} required={formConfig.name_required || false} style={{ background: tc.inputBg, borderColor: tc.inputBorder, color: tc.inputText }} className="h-12 rounded-xl" />
         )}
         {formConfig?.show_phone && (
           <div className="flex gap-2">
-            <div className="flex items-center px-3 bg-[#09090b] border border-[#27272a] rounded-xl text-sm text-white/40 shrink-0 h-12">+91</div>
-            <Input placeholder="Phone number" value={leadForm.phone} onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })} required={formConfig.phone_required || false} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
+            <div className="flex items-center px-3 rounded-xl text-sm shrink-0 h-12" style={{ background: tc.inputBg, border: `1px solid ${tc.inputBorder}`, color: tc.textDim }}>+91</div>
+            <Input placeholder="Phone number" value={leadForm.phone} onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })} required={formConfig.phone_required || false} style={{ background: tc.inputBg, borderColor: tc.inputBorder, color: tc.inputText }} className="h-12 rounded-xl" />
           </div>
         )}
         {formConfig?.show_email && (
-          <Input type="email" placeholder="Email" value={leadForm.email} onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })} required={formConfig.email_required || false} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
+          <Input type="email" placeholder="Email" value={leadForm.email} onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })} required={formConfig.email_required || false} style={{ background: tc.inputBg, borderColor: tc.inputBorder, color: tc.inputText }} className="h-12 rounded-xl" />
         )}
         {formConfig?.show_city && (
-          <Input placeholder="City" value={leadForm.city} onChange={(e) => setLeadForm({ ...leadForm, city: e.target.value })} required={formConfig.city_required || false} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
+          <Input placeholder="City" value={leadForm.city} onChange={(e) => setLeadForm({ ...leadForm, city: e.target.value })} required={formConfig.city_required || false} style={{ background: tc.inputBg, borderColor: tc.inputBorder, color: tc.inputText }} className="h-12 rounded-xl" />
         )}
         {formConfig?.show_custom && (
-          <Input placeholder={formConfig.custom_field_label || "Additional Info"} value={leadForm.custom_value} onChange={(e) => setLeadForm({ ...leadForm, custom_value: e.target.value })} required={formConfig.custom_required || false} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
+          <Input placeholder={formConfig.custom_field_label || "Additional Info"} value={leadForm.custom_value} onChange={(e) => setLeadForm({ ...leadForm, custom_value: e.target.value })} required={formConfig.custom_required || false} style={{ background: tc.inputBg, borderColor: tc.inputBorder, color: tc.inputText }} className="h-12 rounded-xl" />
         )}
         <Button
           type="submit"
@@ -613,41 +647,49 @@ const PublicFunnel = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#09090b]">
+    <div className="min-h-screen" style={{ background: tc.bg }}>
       {/* Header */}
       <div
         className="flex items-center justify-between sticky top-0 z-50"
         style={{
           height: "52px",
-          padding: "0 20px",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-          background: "rgba(0,0,0,0.3)",
+          padding: "0 16px",
+          borderBottom: `1px solid ${tc.borderSubtle}`,
+          background: tc.headerBg,
           backdropFilter: "blur(8px)",
         }}
       >
         <div className="flex items-center gap-2">
           <img src={logoImg} alt="Nevorai Flow" className="h-6 w-6" />
-          <span className="font-heading font-bold text-white text-[15px]" style={{ letterSpacing: "-0.02em" }}>Nevorai</span>
+          <span className="font-heading font-bold text-[15px]" style={{ color: tc.text, letterSpacing: "-0.02em" }}>Nevorai</span>
           <span className="font-heading font-extrabold text-primary text-[15px]" style={{ letterSpacing: "-0.03em", fontStyle: "italic", transform: "skewX(-4deg)", display: "inline-block", marginLeft: "-2px" }}>Flow</span>
         </div>
-        <button onClick={handleShare} className="text-white/30 hover:text-white/60 transition-colors p-2 rounded-lg hover:bg-white/5 text-xs font-medium flex items-center gap-1.5">
-          <Share2 size={14} /> Share
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={togglePubTheme}
+            className="p-2 rounded-lg transition-colors"
+            style={{ color: tc.shareText }}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          <button onClick={handleShare} className="p-2 rounded-lg transition-colors text-xs font-medium flex items-center gap-1.5" style={{ color: tc.shareText }}>
+            <Share2 size={14} /> Share
+          </button>
+        </div>
       </div>
 
       {/* Main content */}
       {isMultiStep ? (
-        /* Multi-step: full width, sidebar is inside the viewer */
         <div>
-          {/* Title */}
-          <div className="text-center py-6 px-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="text-center py-6 px-4" style={{ borderBottom: `1px solid ${tc.borderSubtle}` }}>
             <h1
-              className="font-heading font-extrabold text-white tracking-tight leading-tight"
-              style={{ fontSize: "clamp(20px, 3vw, 36px)", letterSpacing: "-0.02em" }}
+              className="font-heading font-extrabold tracking-tight leading-tight"
+              style={{ fontSize: "clamp(20px, 3vw, 36px)", letterSpacing: "-0.02em", color: tc.text }}
             >
               {funnel.title}
             </h1>
-            {funnel.description && <p className="mt-2 max-w-xl mx-auto" style={{ fontSize: "15px", color: "rgba(255,255,255,0.4)", lineHeight: "1.6" }}>{funnel.description}</p>}
+            {funnel.description && <p className="mt-2 max-w-xl mx-auto" style={{ fontSize: "15px", color: tc.textDim, lineHeight: "1.6" }}>{funnel.description}</p>}
           </div>
           <MultiStepViewer
             funnel={funnel}
@@ -656,19 +698,19 @@ const PublicFunnel = () => {
             formConfig={formConfig}
             priceOptions={priceOptions}
             VideoPlayer={CustomVideoPlayer}
+            isDark={isDark}
           />
         </div>
       ) : (
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Title */}
         <div className="text-center mb-8">
           <h1
-            className="font-heading font-extrabold text-white tracking-tight leading-tight"
-            style={{ fontSize: "clamp(20px, 3vw, 36px)", letterSpacing: "-0.02em" }}
+            className="font-heading font-extrabold tracking-tight leading-tight"
+            style={{ fontSize: "clamp(20px, 3vw, 36px)", letterSpacing: "-0.02em", color: tc.text }}
           >
             {funnel.title}
           </h1>
-          {funnel.description && <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.4)", lineHeight: "1.6" }} className="mt-3 max-w-xl mx-auto">{funnel.description}</p>}
+          {funnel.description && <p style={{ fontSize: "15px", color: tc.textDim, lineHeight: "1.6" }} className="mt-3 max-w-xl mx-auto">{funnel.description}</p>}
         </div>
           <>
         {/* Lead form before video */}
@@ -691,8 +733,8 @@ const PublicFunnel = () => {
                 />
               )}
               {!videoUrl && (
-                <div className="aspect-video bg-[#141419] rounded-2xl flex items-center justify-center border border-white/[0.04]">
-                  <Play size={48} className="text-white/20" />
+                <div className="aspect-video rounded-2xl flex items-center justify-center" style={{ background: tc.bgCard, border: `1px solid ${tc.borderSubtle}` }}>
+                  <Play size={48} style={{ color: tc.textDimmer }} />
                 </div>
               )}
 
@@ -708,10 +750,10 @@ const PublicFunnel = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-heading font-semibold text-white text-sm truncate">{creatorProfile.full_name}</span>
+                      <span className="font-heading font-semibold text-sm truncate" style={{ color: tc.text }}>{creatorProfile.full_name}</span>
                       {isVerified && <BadgeCheck size={15} className="text-primary flex-shrink-0" />}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-white/35 mt-0.5">
+                    <div className="flex items-center gap-3 text-xs mt-0.5" style={{ color: tc.textDimmer }}>
                       {creatorProfile.city && <span className="flex items-center gap-1"><MapPin size={10} /> {creatorProfile.city}</span>}
                       {creatorProfile.instagram_url && (
                         <a
@@ -726,7 +768,6 @@ const PublicFunnel = () => {
                 </div>
               )}
 
-              {/* CTA Button */}
               <div className={showLeadFormSidebar && !leadSubmitted ? "lg:hidden" : ""}>
                 {ctaEnabled && showCta && (
                   <Button
@@ -737,7 +778,7 @@ const PublicFunnel = () => {
                   </Button>
                 )}
                 {ctaEnabled && funnel.lock_cta && !showCta && videoPlaying && (
-                  <Button disabled className="w-full h-14 text-base rounded-xl bg-white/[0.04] text-white/30 cursor-not-allowed border border-white/[0.06]">
+                  <Button disabled className="w-full h-14 text-base rounded-xl cursor-not-allowed" style={{ background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)", color: tc.textDimmer, border: `1px solid ${tc.borderSubtle}` }}>
                     🔒 {funnel.cta_text || "Get Started"} — unlocks in {Math.floor(ctaTimingLeft / 60)}:{(ctaTimingLeft % 60).toString().padStart(2, "0")}
                   </Button>
                 )}
@@ -767,35 +808,36 @@ const PublicFunnel = () => {
 
         {/* Payment Section */}
         {funnel.payment_enabled && leadSubmitted && !paymentSubmitted && (
-          <div className="bg-[#141419] border border-[#27272a] rounded-2xl p-6 max-w-md mx-auto mt-6">
-            <h3 className="text-lg font-heading font-semibold mb-4 text-white">Complete Payment</h3>
+          <div className="rounded-2xl p-6 max-w-md mx-auto mt-6" style={{ background: tc.bgCard, border: `1px solid ${tc.border}` }}>
+            <h3 className="text-lg font-heading font-semibold mb-4" style={{ color: tc.text }}>Complete Payment</h3>
             {priceOptions.length > 0 && (
               <div className="space-y-2 mb-4">
                 {priceOptions.map((opt: any) => (
                   <button key={opt.id} onClick={() => setPaymentProof({ ...paymentProof, amount: opt.amount })}
-                    className={`w-full p-3 rounded-xl border text-left transition-all ${paymentProof.amount === opt.amount ? "border-primary bg-primary/10" : "border-[#27272a] bg-[#09090b]"}`}>
+                    className={`w-full p-3 rounded-xl border text-left transition-all ${paymentProof.amount === opt.amount ? "border-primary bg-primary/10" : ""}`}
+                    style={paymentProof.amount !== opt.amount ? { borderColor: tc.border, background: tc.inputBg } : {}}>
                     <div className="flex justify-between items-center">
-                      <span className="font-medium text-white">{opt.label}</span>
-                      <span className="font-heading font-bold text-white">₹{opt.amount.toLocaleString("en-IN")}</span>
+                      <span className="font-medium" style={{ color: tc.text }}>{opt.label}</span>
+                      <span className="font-heading font-bold" style={{ color: tc.text }}>₹{opt.amount.toLocaleString("en-IN")}</span>
                     </div>
-                    {opt.description && <p className="text-xs text-[#94a3b8] mt-1">{opt.description}</p>}
+                    {opt.description && <p className="text-xs mt-1" style={{ color: tc.textMuted }}>{opt.description}</p>}
                   </button>
                 ))}
               </div>
             )}
             {funnel.upi_id && (
-              <div className="p-3 bg-[#09090b] rounded-xl mb-4">
-                <Label className="text-xs text-[#94a3b8]">Pay via UPI</Label>
+              <div className="p-3 rounded-xl mb-4" style={{ background: tc.inputBg }}>
+                <Label className="text-xs" style={{ color: tc.textMuted }}>Pay via UPI</Label>
                 <div className="flex items-center gap-2 mt-1">
                   <code className="text-sm text-primary flex-1">{funnel.upi_id}</code>
-                  <Button variant="ghost" size="sm" className="text-[#94a3b8]" onClick={() => { navigator.clipboard.writeText(funnel.upi_id!); toast.success("UPI ID copied!"); }}>Copy</Button>
+                  <Button variant="ghost" size="sm" style={{ color: tc.textMuted }} onClick={() => { navigator.clipboard.writeText(funnel.upi_id!); toast.success("UPI ID copied!"); }}>Copy</Button>
                 </div>
               </div>
             )}
             {funnel.qr_code_url && <img src={funnel.qr_code_url} alt="QR Code" className="w-48 h-48 mx-auto mb-4 rounded-xl" />}
-            {funnel.payment_instructions && <p className="text-sm text-[#94a3b8] mb-4">{funnel.payment_instructions}</p>}
+            {funnel.payment_instructions && <p className="text-sm mb-4" style={{ color: tc.textMuted }}>{funnel.payment_instructions}</p>}
             <div className="space-y-3">
-              <Input placeholder="UPI Transaction ID (optional)" value={paymentProof.upi_transaction_id} onChange={(e) => setPaymentProof({ ...paymentProof, upi_transaction_id: e.target.value })} className="bg-[#09090b] border-[#27272a] text-white h-12 rounded-xl" />
+              <Input placeholder="UPI Transaction ID (optional)" value={paymentProof.upi_transaction_id} onChange={(e) => setPaymentProof({ ...paymentProof, upi_transaction_id: e.target.value })} style={{ background: tc.inputBg, borderColor: tc.inputBorder, color: tc.inputText }} className="h-12 rounded-xl" />
               <Button className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl" onClick={() => submitPayment.mutate()} disabled={submitPayment.isPending}>
                 {submitPayment.isPending ? "Submitting..." : "I've Made the Payment"}
               </Button>
@@ -804,24 +846,23 @@ const PublicFunnel = () => {
         )}
 
         {paymentSubmitted && (
-          <div className="bg-[#141419] border border-[#27272a] rounded-2xl p-6 text-center max-w-md mx-auto mt-6">
+          <div className="rounded-2xl p-6 text-center max-w-md mx-auto mt-6" style={{ background: tc.bgCard, border: `1px solid ${tc.border}` }}>
             <Check size={32} className="text-green-500 mx-auto mb-3" />
-            <h3 className="font-heading font-semibold text-white">Payment Under Review</h3>
-            <p className="text-sm text-[#94a3b8] mt-1">Your payment proof has been submitted. You'll be notified once it's verified.</p>
+            <h3 className="font-heading font-semibold" style={{ color: tc.text }}>Payment Under Review</h3>
+            <p className="text-sm mt-1" style={{ color: tc.textMuted }}>Your payment proof has been submitted. You'll be notified once it's verified.</p>
           </div>
         )}
         </>
 
-        {/* Contact Buttons */}
         {funnel.show_contact_buttons && (leadSubmitted || !funnel.show_contact_after_cta) && (
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#09090b]/95 backdrop-blur-xl border-t border-white/[0.06] flex gap-3 justify-center z-50">
+          <div className="fixed bottom-0 left-0 right-0 p-4 backdrop-blur-xl flex gap-3 justify-center z-50" style={{ background: tc.contactBg, borderTop: `1px solid ${tc.borderSubtle}` }}>
             {funnel.contact_whatsapp && (
               <Button className="bg-[#25d366] hover:bg-[#20b858] text-white" onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}>
                 <MessageCircle size={16} /> WhatsApp
               </Button>
             )}
             {funnel.contact_phone && (
-              <Button className="bg-white/[0.06] hover:bg-white/10 text-white border border-white/[0.06]" onClick={() => window.open(`tel:${funnel.contact_phone}`)}>
+              <Button style={{ background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)", color: tc.text, border: `1px solid ${tc.borderSubtle}` }} onClick={() => window.open(`tel:${funnel.contact_phone}`)}>
                 <PhoneIcon size={16} /> Call
               </Button>
             )}
@@ -829,8 +870,8 @@ const PublicFunnel = () => {
         )}
 
         {/* Footer */}
-        <div className="mt-16 pt-6 border-t border-white/[0.04] text-center">
-          <p className="text-[11px] text-white/20">© {new Date().getFullYear()} Nevorai Flow · All rights reserved</p>
+        <div className="mt-16 pt-6 text-center" style={{ borderTop: `1px solid ${tc.footerBorder}` }}>
+          <p className="text-[11px]" style={{ color: tc.footerText }}>© {new Date().getFullYear()} Nevorai Flow · All rights reserved</p>
         </div>
       </div>
       )}

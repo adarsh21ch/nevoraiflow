@@ -43,6 +43,7 @@ interface MultiStepViewerProps {
   formConfig: any;
   priceOptions: any[];
   VideoPlayer: React.ComponentType<any>;
+  isDark?: boolean;
 }
 
 const STEP_ICONS: Record<string, React.ComponentType<any>> = {
@@ -92,6 +93,7 @@ export const MultiStepViewer = ({
   formConfig,
   priceOptions,
   VideoPlayer,
+  isDark = true,
 }: MultiStepViewerProps) => {
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [progressMap, setProgressMap] = useState<Record<string, StepProgress>>({});
@@ -353,19 +355,43 @@ export const MultiStepViewer = ({
     activeStepIndex + 1 < steps.length &&
     getStepStatus(steps[activeStepIndex + 1].id) !== "locked";
 
+  /* ─── Theme colors for sidebar ─── */
+  const sc = {
+    bg: isDark ? "#0f1117" : "#f8f9fa",
+    border: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)",
+    text: isDark ? "#f1f5f9" : "#0f172a",
+    textMuted: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.5)",
+    textDim: isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.4)",
+    textDimmer: isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)",
+    textLocked: isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)",
+    iconDim: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.4)",
+    iconLocked: isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.2)",
+    progressBg: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
+    progressText: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.45)",
+    itemBg: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
+    itemIconBg: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+    cardBg: isDark ? "#141419" : "#ffffff",
+    cardBorder: isDark ? "#27272a" : "#e5e7eb",
+    inputBg: isDark ? "#09090b" : "#f1f5f9",
+    stepBarBg: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)",
+    stepBarBorder: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
+    stepBarActive: isDark ? "rgba(34,197,94,0.15)" : "rgba(34,197,94,0.1)",
+    stepBarInactive: isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)",
+  };
+
   /* ─── LEFT SIDEBAR (Desktop) ─── */
   const JourneySidebar = () => (
     <div
       className="hidden lg:flex flex-col w-[280px] min-w-[280px] shrink-0 h-[calc(100vh-52px)] sticky top-[52px] overflow-y-auto border-r"
       style={{
-        background: "#0f1117",
-        borderColor: "rgba(255,255,255,0.06)",
+        background: sc.bg,
+        borderColor: sc.border,
         padding: "24px 16px",
       }}
     >
       {/* Creator badge */}
       {creatorProfile?.full_name && (
-        <div className="flex items-center gap-3 pb-4 mb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex items-center gap-3 pb-4 mb-4" style={{ borderBottom: `1px solid ${sc.border}` }}>
           <div className="w-[38px] h-[38px] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ border: "2px solid rgba(34,197,94,0.3)" }}>
             {creatorProfile.avatar_url ? (
               <img src={creatorProfile.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -376,7 +402,7 @@ export const MultiStepViewer = ({
             )}
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-[13px] text-white truncate" style={{ fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif" }}>
+            <p className="font-semibold text-[13px] truncate" style={{ color: sc.text, fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif" }}>
               {creatorProfile.full_name}
             </p>
             {creatorProfile.kyc_status === "approved" && (
@@ -389,23 +415,23 @@ export const MultiStepViewer = ({
       )}
 
       {/* Progress */}
-      <div className="pb-4 mb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] mb-2" style={{ color: "rgba(255,255,255,0.35)" }}>
+      <div className="pb-4 mb-4" style={{ borderBottom: `1px solid ${sc.border}` }}>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] mb-2" style={{ color: sc.textDim }}>
           Journey Progress
         </p>
-        <div className="h-1 rounded-full overflow-hidden mb-1.5" style={{ background: "rgba(255,255,255,0.08)" }}>
+        <div className="h-1 rounded-full overflow-hidden mb-1.5" style={{ background: sc.progressBg }}>
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{ width: `${progressPct}%`, background: "linear-gradient(90deg, #22c55e, #16a34a)" }}
           />
         </div>
-        <p className="text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>
+        <p className="text-[12px] font-medium" style={{ color: sc.progressText }}>
           {completedCount} / {steps.length} completed
         </p>
       </div>
 
       {/* Steps */}
-      <p className="text-[10px] font-bold uppercase tracking-[0.1em] mb-3 px-1" style={{ color: "rgba(255,255,255,0.3)" }}>
+      <p className="text-[10px] font-bold uppercase tracking-[0.1em] mb-3 px-1" style={{ color: sc.textDimmer }}>
         Journey
       </p>
       <div className="space-y-1 flex-1">
@@ -430,7 +456,7 @@ export const MultiStepViewer = ({
                   ? "1px solid rgba(34,197,94,0.25)"
                   : isActive
                   ? "1px solid rgba(34,197,94,0.3)"
-                  : "1px solid transparent",
+                  : `1px solid transparent`,
                 borderLeft: isCompleted ? "3px solid #22c55e" : isActive ? "3px solid #22c55e" : "3px solid transparent",
                 background: isCompleted
                   ? "rgba(34,197,94,0.1)"
@@ -438,24 +464,24 @@ export const MultiStepViewer = ({
                   ? "rgba(34,197,94,0.08)"
                   : isLocked
                   ? "transparent"
-                  : "rgba(255,255,255,0.03)",
+                  : sc.itemBg,
                 cursor: isLocked ? "not-allowed" : "pointer",
-                opacity: isLocked ? 0.4 : 1,
+                opacity: isLocked ? 0.5 : 1,
                 marginBottom: "4px",
               }}
             >
               <div
                 className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
                 style={{
-                  background: isCompleted ? "rgba(34,197,94,0.2)" : isActive ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.06)",
+                  background: isCompleted ? "rgba(34,197,94,0.2)" : isActive ? "rgba(34,197,94,0.15)" : sc.itemIconBg,
                 }}
               >
                 {isCompleted ? (
                   <Check size={13} className="text-green-400" />
                 ) : isLocked ? (
-                  <Lock size={11} style={{ color: "rgba(255,255,255,0.25)" }} />
+                  <Lock size={11} style={{ color: sc.iconLocked }} />
                 ) : (
-                  <Icon size={13} className={isActive ? "text-green-400" : ""} style={!isActive ? { color: "rgba(255,255,255,0.5)" } : {}} />
+                  <Icon size={13} className={isActive ? "text-green-400" : ""} style={!isActive ? { color: sc.iconDim } : {}} />
                 )}
               </div>
               <div className="min-w-0 flex-1">
@@ -463,13 +489,13 @@ export const MultiStepViewer = ({
                   className="font-semibold leading-tight truncate"
                   style={{
                     fontSize: "13px",
-                    color: isLocked ? "rgba(255,255,255,0.25)" : "#f1f5f9",
+                    color: isLocked ? sc.textLocked : sc.text,
                     fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif",
                   }}
                 >
                   {step.title || `Step ${idx + 1}`}
                 </p>
-                <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.45)", marginTop: "2px" }}>
+                <p style={{ fontSize: "11px", color: sc.textMuted, marginTop: "2px" }}>
                   {STEP_TYPE_LABELS[step.step_type] || step.step_type}
                   {" · "}
                   {isCompleted ? "Completed" : isInProgress ? "In Progress" : isActive ? "Available" : isLocked ? "Locked" : "Available"}
@@ -482,7 +508,7 @@ export const MultiStepViewer = ({
 
       {/* Contact buttons */}
       {funnel.show_contact_buttons && (
-        <div className="mt-4 pt-3 space-y-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="mt-4 pt-3 space-y-2" style={{ borderTop: `1px solid ${sc.border}` }}>
           {funnel.contact_whatsapp && (
             <button
               onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}
@@ -496,7 +522,7 @@ export const MultiStepViewer = ({
             <button
               onClick={() => window.open(`tel:${funnel.contact_phone}`)}
               className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all"
-              style={{ background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.6)" }}
+              style={{ background: sc.itemBg, color: sc.textMuted }}
             >
               <PhoneIcon size={14} /> Call
             </button>
@@ -513,8 +539,8 @@ export const MultiStepViewer = ({
       style={{
         scrollbarWidth: "none",
         msOverflowStyle: "none",
-        background: "rgba(255,255,255,0.02)",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        background: sc.stepBarBg,
+        borderBottom: `1px solid ${sc.border}`,
       }}
     >
       {steps.map((step, idx) => {
@@ -539,19 +565,19 @@ export const MultiStepViewer = ({
                 ? "1px solid rgba(34,197,94,0.4)"
                 : isCompleted
                 ? "1px solid rgba(34,197,94,0.25)"
-                : "1px solid rgba(255,255,255,0.08)",
+                : `1px solid ${sc.stepBarBorder}`,
               background: isActive
-                ? "rgba(34,197,94,0.15)"
+                ? sc.stepBarActive
                 : isCompleted
                 ? "rgba(34,197,94,0.08)"
-                : "rgba(255,255,255,0.03)",
+                : sc.stepBarBg,
               color: isActive
                 ? "#22c55e"
                 : isCompleted
                 ? "#4ade80"
                 : isLocked
-                ? "rgba(255,255,255,0.25)"
-                : "rgba(255,255,255,0.6)",
+                ? sc.textLocked
+                : sc.stepBarInactive,
               cursor: isLocked ? "not-allowed" : "pointer",
               opacity: isLocked ? 0.5 : 1,
             }}
@@ -579,7 +605,7 @@ export const MultiStepViewer = ({
           {/* Step header */}
           {activeStep && (
             <div className="space-y-5">
-              <div style={{ paddingBottom: "12px", borderBottom: "1px solid rgba(255,255,255,0.06)", marginBottom: "16px" }}>
+              <div style={{ paddingBottom: "12px", borderBottom: `1px solid ${sc.border}`, marginBottom: "16px" }}>
                 <div className="flex items-center gap-3 mb-1">
                   <span
                     style={{
@@ -587,7 +613,7 @@ export const MultiStepViewer = ({
                       fontWeight: 700,
                       letterSpacing: "0.1em",
                       textTransform: "uppercase",
-                      color: "rgba(255,255,255,0.4)",
+                      color: sc.textMuted,
                     }}
                   >
                     Step {activeStepIndex + 1} of {steps.length}
@@ -604,13 +630,13 @@ export const MultiStepViewer = ({
                   )}
                 </div>
                 <h2
-                  className="font-heading font-bold text-white"
-                  style={{ fontSize: "20px", fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif" }}
+                  className="font-heading font-bold"
+                  style={{ fontSize: "20px", fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif", color: sc.text }}
                 >
                   {activeStep.title || `Step ${activeStepIndex + 1}`}
                 </h2>
                 {activeStep.description && (
-                  <p className="mt-1" style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)" }}>{activeStep.description}</p>
+                  <p className="mt-1" style={{ fontSize: "14px", color: sc.textMuted }}>{activeStep.description}</p>
                 )}
               </div>
 
@@ -627,10 +653,10 @@ export const MultiStepViewer = ({
 
               {/* Inline hint about what unlocks next */}
               {activeStepIndex + 1 < steps.length && getStepStatus(activeStep.id) !== "completed" && getStepStatus(steps[activeStepIndex + 1].id) === "locked" && (
-                <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                  <Info size={13} className="shrink-0 mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }} />
-                  <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", lineHeight: "1.5" }}>
-                    <span style={{ color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>Next:</span> {getUnlockHint(steps[activeStepIndex + 1], activeStepIndex + 1)}
+                <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl" style={{ background: sc.itemBg, border: `1px solid ${sc.border}` }}>
+                  <Info size={13} className="shrink-0 mt-0.5" style={{ color: sc.textDimmer }} />
+                  <p style={{ fontSize: "12px", color: sc.textMuted, lineHeight: "1.5" }}>
+                    <span style={{ color: sc.text, fontWeight: 600 }}>Next:</span> {getUnlockHint(steps[activeStepIndex + 1], activeStepIndex + 1)}
                   </p>
                 </div>
               )}
@@ -651,36 +677,36 @@ export const MultiStepViewer = ({
               )}
 
               {activeStep.step_type === "video" && !activeStep.video_url && (
-                <div className="aspect-video rounded-2xl flex items-center justify-center" style={{ background: "#141419", border: "1px solid rgba(255,255,255,0.04)" }}>
+                <div className="aspect-video rounded-2xl flex items-center justify-center" style={{ background: sc.cardBg, border: `1px solid ${sc.border}` }}>
                   <div className="text-center">
-                    <Play size={40} style={{ color: "rgba(255,255,255,0.2)" }} className="mx-auto mb-2" />
-                    <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)" }}>Video not available</p>
+                    <Play size={40} style={{ color: sc.textDimmer }} className="mx-auto mb-2" />
+                    <p style={{ fontSize: "12px", color: sc.textDimmer }}>Video not available</p>
                   </div>
                 </div>
               )}
 
               {activeStep.step_type === "lead_form" && (
-                <div className="rounded-2xl p-6" style={{ background: "#141419", border: "1px solid #27272a" }}>
+                <div className="rounded-2xl p-6" style={{ background: sc.cardBg, border: `1px solid ${sc.cardBorder}` }}>
                   {leadSubmitted || activeProgress?.status === "completed" ? (
                     <div className="text-center py-6">
                       <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
-                      <h3 className="font-heading font-bold text-white">Details Submitted</h3>
-                      <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }} className="mt-1">Thank you for your information.</p>
+                      <h3 className="font-heading font-bold" style={{ color: sc.text }}>Details Submitted</h3>
+                      <p style={{ fontSize: "12px", color: sc.textMuted }} className="mt-1">Thank you for your information.</p>
                     </div>
                   ) : (
                     <>
-                      <h3 className="text-lg font-heading font-bold mb-4 text-white">Fill in your details</h3>
+                      <h3 className="text-lg font-heading font-bold mb-4" style={{ color: sc.text }}>Fill in your details</h3>
                       <form onSubmit={(e) => { e.preventDefault(); handleLeadSubmit(activeStepIndex); }} className="space-y-3">
                         <input type="text" name="website" value={leadForm.website} onChange={(e) => setLeadForm({ ...leadForm, website: e.target.value })} style={{ position: "absolute", left: "-9999px" }} tabIndex={-1} autoComplete="off" />
-                        {formConfig?.show_name && <Input placeholder="Full Name" value={leadForm.name} onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })} required={formConfig.name_required} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />}
+                        {formConfig?.show_name && <Input placeholder="Full Name" value={leadForm.name} onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })} required={formConfig.name_required} style={{ background: sc.inputBg, borderColor: sc.cardBorder, color: sc.text }} className="h-12 rounded-xl" />}
                         {formConfig?.show_phone && (
                           <div className="flex gap-2">
-                            <div className="flex items-center px-3 bg-[#09090b] border border-[#27272a] rounded-xl text-sm text-white/40 shrink-0 h-12">+91</div>
-                            <Input placeholder="Phone number" value={leadForm.phone} onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })} required={formConfig.phone_required} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />
+                            <div className="flex items-center px-3 rounded-xl text-sm shrink-0 h-12" style={{ background: sc.inputBg, border: `1px solid ${sc.cardBorder}`, color: sc.textMuted }}>+91</div>
+                            <Input placeholder="Phone number" value={leadForm.phone} onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })} required={formConfig.phone_required} style={{ background: sc.inputBg, borderColor: sc.cardBorder, color: sc.text }} className="h-12 rounded-xl" />
                           </div>
                         )}
-                        {formConfig?.show_email && <Input type="email" placeholder="Email" value={leadForm.email} onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })} required={formConfig.email_required} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />}
-                        {formConfig?.show_city && <Input placeholder="City" value={leadForm.city} onChange={(e) => setLeadForm({ ...leadForm, city: e.target.value })} required={formConfig.city_required} className="bg-[#09090b] border-[#27272a] text-white placeholder:text-[#64748b] h-12 rounded-xl" />}
+                        {formConfig?.show_email && <Input type="email" placeholder="Email" value={leadForm.email} onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })} required={formConfig.email_required} style={{ background: sc.inputBg, borderColor: sc.cardBorder, color: sc.text }} className="h-12 rounded-xl" />}
+                        {formConfig?.show_city && <Input placeholder="City" value={leadForm.city} onChange={(e) => setLeadForm({ ...leadForm, city: e.target.value })} required={formConfig.city_required} style={{ background: sc.inputBg, borderColor: sc.cardBorder, color: sc.text }} className="h-12 rounded-xl" />}
                         <Button type="submit" className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl">Submit →</Button>
                       </form>
                     </>
@@ -689,16 +715,16 @@ export const MultiStepViewer = ({
               )}
 
               {(activeStep.step_type === "cta" || activeStep.step_type === "booking") && (
-                <div className="rounded-2xl p-6 text-center" style={{ background: "#141419", border: "1px solid #27272a" }}>
+                <div className="rounded-2xl p-6 text-center" style={{ background: sc.cardBg, border: `1px solid ${sc.cardBorder}` }}>
                   {activeProgress?.status === "completed" ? (
                     <>
                       <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
-                      <h3 className="font-heading font-bold text-white">Step Completed</h3>
+                      <h3 className="font-heading font-bold" style={{ color: sc.text }}>Step Completed</h3>
                     </>
                   ) : (
                     <>
-                      <h3 className="text-lg font-heading font-bold text-white mb-2">{activeStep.cta_text || (activeStep.step_type === "booking" ? "Book Your Call" : "Continue")}</h3>
-                      {activeStep.description && <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.4)" }} className="mb-4">{activeStep.description}</p>}
+                      <h3 className="text-lg font-heading font-bold mb-2" style={{ color: sc.text }}>{activeStep.cta_text || (activeStep.step_type === "booking" ? "Book Your Call" : "Continue")}</h3>
+                      {activeStep.description && <p style={{ fontSize: "14px", color: sc.textMuted }} className="mb-4">{activeStep.description}</p>}
                       <Button
                         className="h-14 px-8 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20"
                         onClick={() => handleCtaClick(activeStepIndex)}
@@ -711,40 +737,41 @@ export const MultiStepViewer = ({
               )}
 
               {activeStep.step_type === "payment" && (
-                <div className="rounded-2xl p-6" style={{ background: "#141419", border: "1px solid #27272a" }}>
+                <div className="rounded-2xl p-6" style={{ background: sc.cardBg, border: `1px solid ${sc.cardBorder}` }}>
                   {paymentSubmitted || activeProgress?.status === "completed" ? (
                     <div className="text-center py-6">
                       <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
-                      <h3 className="font-heading font-bold text-white">Payment Submitted</h3>
-                      <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }} className="mt-1">Your payment is being reviewed.</p>
+                      <h3 className="font-heading font-bold" style={{ color: sc.text }}>Payment Submitted</h3>
+                      <p style={{ fontSize: "12px", color: sc.textMuted }} className="mt-1">Your payment is being reviewed.</p>
                     </div>
                   ) : (
                     <>
-                      <h3 className="text-lg font-heading font-semibold mb-4 text-white">Complete Payment</h3>
+                      <h3 className="text-lg font-heading font-semibold mb-4" style={{ color: sc.text }}>Complete Payment</h3>
                       {priceOptions.length > 0 && (
                         <div className="space-y-2 mb-4">
                           {priceOptions.map((opt: any) => (
                             <button key={opt.id} onClick={() => setPaymentProof({ ...paymentProof, amount: opt.amount })}
-                              className={`w-full p-3 rounded-xl border text-left transition-all ${paymentProof.amount === opt.amount ? "border-primary bg-primary/10" : "border-[#27272a] bg-[#09090b]"}`}>
+                              className={`w-full p-3 rounded-xl border text-left transition-all ${paymentProof.amount === opt.amount ? "border-primary bg-primary/10" : ""}`}
+                              style={paymentProof.amount !== opt.amount ? { borderColor: sc.cardBorder, background: sc.inputBg } : {}}>
                               <div className="flex justify-between items-center">
-                                <span className="font-medium text-white">{opt.label}</span>
-                                <span className="font-heading font-bold text-white">₹{opt.amount.toLocaleString("en-IN")}</span>
+                                <span className="font-medium" style={{ color: sc.text }}>{opt.label}</span>
+                                <span className="font-heading font-bold" style={{ color: sc.text }}>₹{opt.amount.toLocaleString("en-IN")}</span>
                               </div>
                             </button>
                           ))}
                         </div>
                       )}
                       {funnel.upi_id && (
-                        <div className="p-3 bg-[#09090b] rounded-xl mb-4">
-                          <span className="text-xs" style={{ color: "#94a3b8" }}>Pay via UPI</span>
+                        <div className="p-3 rounded-xl mb-4" style={{ background: sc.inputBg }}>
+                          <span className="text-xs" style={{ color: sc.textMuted }}>Pay via UPI</span>
                           <div className="flex items-center gap-2 mt-1">
                             <code className="text-sm text-primary flex-1">{funnel.upi_id}</code>
-                            <Button variant="ghost" size="sm" style={{ color: "#94a3b8" }} onClick={() => { navigator.clipboard.writeText(funnel.upi_id!); toast.success("UPI ID copied!"); }}>Copy</Button>
+                            <Button variant="ghost" size="sm" style={{ color: sc.textMuted }} onClick={() => { navigator.clipboard.writeText(funnel.upi_id!); toast.success("UPI ID copied!"); }}>Copy</Button>
                           </div>
                         </div>
                       )}
                       <div className="space-y-3">
-                        <Input placeholder="UPI Transaction ID" value={paymentProof.upi_transaction_id} onChange={(e) => setPaymentProof({ ...paymentProof, upi_transaction_id: e.target.value })} className="bg-[#09090b] border-[#27272a] text-white h-12 rounded-xl" />
+                        <Input placeholder="UPI Transaction ID" value={paymentProof.upi_transaction_id} onChange={(e) => setPaymentProof({ ...paymentProof, upi_transaction_id: e.target.value })} style={{ background: sc.inputBg, borderColor: sc.cardBorder, color: sc.text }} className="h-12 rounded-xl" />
                         <Button className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl" onClick={() => handlePaymentSubmit(activeStepIndex)}>
                           I've Made the Payment
                         </Button>
@@ -755,18 +782,18 @@ export const MultiStepViewer = ({
               )}
 
               {activeStep.step_type === "manual_approval" && (
-                <div className="rounded-2xl p-8 text-center" style={{ background: "#141419", border: "1px solid #27272a" }}>
+                <div className="rounded-2xl p-8 text-center" style={{ background: sc.cardBg, border: `1px solid ${sc.cardBorder}` }}>
                   {activeProgress?.status === "completed" || activeProgress?.manually_unlocked ? (
                     <>
                       <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
-                      <h3 className="font-heading font-bold text-white">Step Unlocked</h3>
-                      <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }} className="mt-1">You've been approved to continue.</p>
+                      <h3 className="font-heading font-bold" style={{ color: sc.text }}>Step Unlocked</h3>
+                      <p style={{ fontSize: "12px", color: sc.textMuted }} className="mt-1">You've been approved to continue.</p>
                     </>
                   ) : (
                     <>
-                      <Lock size={40} style={{ color: "rgba(255,255,255,0.2)" }} className="mx-auto mb-3" />
-                      <h3 className="font-heading font-bold text-white">Awaiting Approval</h3>
-                      <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.4)" }} className="mt-2">{activeStep.description || "The creator will unlock this step for you after review."}</p>
+                      <Lock size={40} style={{ color: sc.textDimmer }} className="mx-auto mb-3" />
+                      <h3 className="font-heading font-bold" style={{ color: sc.text }}>Awaiting Approval</h3>
+                      <p style={{ fontSize: "14px", color: sc.textMuted }} className="mt-2">{activeStep.description || "The creator will unlock this step for you after review."}</p>
                       {funnel.contact_whatsapp && (
                         <Button className="mt-4 bg-[#25d366] hover:bg-[#20b858] text-white" onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}>
                           <MessageCircle size={16} /> Contact on WhatsApp
