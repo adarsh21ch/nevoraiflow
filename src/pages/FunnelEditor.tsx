@@ -528,7 +528,7 @@ const FunnelEditor = () => {
                     {/* Bottom row: type badge + unlock rule + actions */}
                     <div className="flex items-center justify-between pl-[52px]">
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)" }}>
+                        <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground">
                           {meta.label}
                         </span>
                         {idx > 0 && (
