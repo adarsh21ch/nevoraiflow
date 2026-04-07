@@ -25,7 +25,9 @@ import ProfilePage from "./pages/ProfilePage";
 import KYCPage from "./pages/KYCPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import SettingsPage from "./pages/SettingsPage";
-import BroadcastPage from "./pages/BroadcastPage";
+import LivePage from "./pages/LivePage";
+import LiveDetailPage from "./pages/LiveDetailPage";
+import PublicLivePage from "./pages/PublicLivePage";
 import PricingFullPage from "./pages/PricingFullPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminVideosPage from "./pages/AdminVideosPage";
@@ -53,6 +55,7 @@ const App = () => (
               <Route path="/pricing" element={<PricingFullPage />} />
               <Route path="/f/:slug" element={<PublicFunnel />} />
               <Route path="/video/:id" element={<PublicVideoPage />} />
+              <Route path="/s/:slug" element={<PublicLivePage />} />
 
               {/* Auth Required */}
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
@@ -65,7 +68,8 @@ const App = () => (
               <Route path="/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
               <Route path="/payments" element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
               <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
-              <Route path="/broadcast" element={<ProtectedRoute><BroadcastPage /></ProtectedRoute>} />
+              <Route path="/live" element={<ProtectedRoute><LivePage /></ProtectedRoute>} />
+              <Route path="/live/:id" element={<ProtectedRoute><LiveDetailPage /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
               <Route path="/kyc" element={<ProtectedRoute><KYCPage /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />

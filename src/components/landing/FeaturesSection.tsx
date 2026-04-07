@@ -29,8 +29,8 @@ const features = [
   },
   {
     icon: Radio,
-    title: "Live Broadcast",
-    description: "Schedule live sessions, go live with password protection, and enable replay for your team.",
+    title: "Live Sessions",
+    description: "Schedule live sessions, collect registrations with countdown pages, and share meeting links with your audience.",
   },
 ];
 

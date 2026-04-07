@@ -665,6 +665,169 @@ export type Database = {
           },
         ]
       }
+      live_registrations: {
+        Row: {
+          attended: boolean | null
+          attended_at: string | null
+          city: string | null
+          email: string | null
+          id: string
+          name: string | null
+          payment_screenshot_url: string | null
+          payment_status: string | null
+          phone: string | null
+          registered_at: string | null
+          session_id: string
+          status: string
+          upi_transaction_id: string | null
+        }
+        Insert: {
+          attended?: boolean | null
+          attended_at?: string | null
+          city?: string | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          payment_screenshot_url?: string | null
+          payment_status?: string | null
+          phone?: string | null
+          registered_at?: string | null
+          session_id: string
+          status?: string
+          upi_transaction_id?: string | null
+        }
+        Update: {
+          attended?: boolean | null
+          attended_at?: string | null
+          city?: string | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          payment_screenshot_url?: string | null
+          payment_status?: string | null
+          phone?: string | null
+          registered_at?: string | null
+          session_id?: string
+          status?: string
+          upi_transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_registrations_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_sessions: {
+        Row: {
+          access_type: string
+          attendee_count: number | null
+          cover_image_url: string | null
+          created_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          lead_form_enabled: boolean | null
+          max_attendees: number | null
+          meeting_url: string | null
+          owner_id: string
+          payment_amount: number | null
+          payment_instructions: string | null
+          qr_code_url: string | null
+          registration_count: number | null
+          replay_enabled: boolean | null
+          replay_expires_at: string | null
+          replay_url: string | null
+          scheduled_at: string | null
+          session_type: string
+          show_city: boolean | null
+          show_email: boolean | null
+          show_name: boolean | null
+          show_phone: boolean | null
+          slug: string
+          status: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string | null
+          upi_id: string | null
+        }
+        Insert: {
+          access_type?: string
+          attendee_count?: number | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          lead_form_enabled?: boolean | null
+          max_attendees?: number | null
+          meeting_url?: string | null
+          owner_id: string
+          payment_amount?: number | null
+          payment_instructions?: string | null
+          qr_code_url?: string | null
+          registration_count?: number | null
+          replay_enabled?: boolean | null
+          replay_expires_at?: string | null
+          replay_url?: string | null
+          scheduled_at?: string | null
+          session_type?: string
+          show_city?: boolean | null
+          show_email?: boolean | null
+          show_name?: boolean | null
+          show_phone?: boolean | null
+          slug: string
+          status?: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string | null
+          upi_id?: string | null
+        }
+        Update: {
+          access_type?: string
+          attendee_count?: number | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          lead_form_enabled?: boolean | null
+          max_attendees?: number | null
+          meeting_url?: string | null
+          owner_id?: string
+          payment_amount?: number | null
+          payment_instructions?: string | null
+          qr_code_url?: string | null
+          registration_count?: number | null
+          replay_enabled?: boolean | null
+          replay_expires_at?: string | null
+          replay_url?: string | null
+          scheduled_at?: string | null
+          session_type?: string
+          show_city?: boolean | null
+          show_email?: boolean | null
+          show_name?: boolean | null
+          show_phone?: boolean | null
+          slug?: string
+          status?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string | null
+          upi_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_sessions_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
