@@ -4,9 +4,9 @@ import { Link } from "react-router-dom";
 
 const links = {
   Product: [
-    { label: "Features", href: "#features" },
-    { label: "Pricing", href: "#pricing" },
-    { label: "FAQ", href: "#faq" },
+    { label: "Features", href: "/features" },
+    { label: "Pricing", href: "/pricing" },
+    { label: "FAQ", href: "/faq" },
   ],
   Company: [
     { label: "About", href: "/about" },
