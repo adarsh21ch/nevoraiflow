@@ -647,7 +647,7 @@ const PublicFunnel = () => {
   );
 
   return (
-    <div className="min-h-screen" style={{ background: tc.bg }}>
+    <div className="flex flex-col" style={{ background: tc.bg, minHeight: "100dvh" }}>
       {/* Header */}
       <div
         className="flex items-center justify-between sticky top-0 z-50"
@@ -691,7 +691,7 @@ const PublicFunnel = () => {
           isDark={isDark}
         />
       ) : (
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="flex-1 flex flex-col max-w-6xl mx-auto px-4 py-8 w-full">
         <div className="text-center mb-8">
           <h1
             className="font-heading font-extrabold tracking-tight leading-tight"
@@ -858,9 +858,12 @@ const PublicFunnel = () => {
           </div>
         )}
 
+        {/* Spacer to push footer down */}
+        <div className="flex-1" />
+
         {/* Footer */}
-        <div className="mt-16 pt-6 text-center" style={{ borderTop: `1px solid ${tc.footerBorder}` }}>
-          <p className="text-[11px]" style={{ color: tc.footerText }}>© {new Date().getFullYear()} Nevorai Flow · All rights reserved</p>
+        <div className="mt-16 pt-6 pb-8 text-center" style={{ borderTop: `1px solid ${tc.footerBorder}` }}>
+          <p className="text-[11px] tracking-wide" style={{ color: tc.footerText }}>© {new Date().getFullYear()} Nevorai Flow · All rights reserved</p>
         </div>
       </div>
       )}
