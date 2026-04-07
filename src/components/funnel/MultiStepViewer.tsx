@@ -43,6 +43,7 @@ interface MultiStepViewerProps {
   formConfig: any;
   priceOptions: any[];
   VideoPlayer: React.ComponentType<any>;
+  isDark?: boolean;
 }
 
 const STEP_ICONS: Record<string, React.ComponentType<any>> = {
