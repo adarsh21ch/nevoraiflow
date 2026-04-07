@@ -677,10 +677,10 @@ export const MultiStepViewer = ({
               )}
 
               {activeStep.step_type === "video" && !activeStep.video_url && (
-                <div className="aspect-video rounded-2xl flex items-center justify-center" style={{ background: "#141419", border: "1px solid rgba(255,255,255,0.04)" }}>
+                <div className="aspect-video rounded-2xl flex items-center justify-center" style={{ background: sc.cardBg, border: `1px solid ${sc.border}` }}>
                   <div className="text-center">
-                    <Play size={40} style={{ color: "rgba(255,255,255,0.2)" }} className="mx-auto mb-2" />
-                    <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)" }}>Video not available</p>
+                    <Play size={40} style={{ color: sc.textDimmer }} className="mx-auto mb-2" />
+                    <p style={{ fontSize: "12px", color: sc.textDimmer }}>Video not available</p>
                   </div>
                 </div>
               )}
