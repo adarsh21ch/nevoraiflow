@@ -565,9 +565,9 @@ export const MultiStepViewer = ({
                 ? "1px solid rgba(34,197,94,0.4)"
                 : isCompleted
                 ? "1px solid rgba(34,197,94,0.25)"
-                : "1px solid rgba(255,255,255,0.08)",
+                : `1px solid ${sc.stepBarBorder}`,
               background: isActive
-                ? "rgba(34,197,94,0.15)"
+                ? sc.stepBarActive
                 : isCompleted
                 ? "rgba(34,197,94,0.08)"
                 : "rgba(255,255,255,0.03)",
