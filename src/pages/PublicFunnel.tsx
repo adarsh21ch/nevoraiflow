@@ -703,15 +703,14 @@ const PublicFunnel = () => {
         </div>
       ) : (
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Title */}
         <div className="text-center mb-8">
           <h1
-            className="font-heading font-extrabold text-white tracking-tight leading-tight"
-            style={{ fontSize: "clamp(20px, 3vw, 36px)", letterSpacing: "-0.02em" }}
+            className="font-heading font-extrabold tracking-tight leading-tight"
+            style={{ fontSize: "clamp(20px, 3vw, 36px)", letterSpacing: "-0.02em", color: tc.text }}
           >
             {funnel.title}
           </h1>
-          {funnel.description && <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.4)", lineHeight: "1.6" }} className="mt-3 max-w-xl mx-auto">{funnel.description}</p>}
+          {funnel.description && <p style={{ fontSize: "15px", color: tc.textDim, lineHeight: "1.6" }} className="mt-3 max-w-xl mx-auto">{funnel.description}</p>}
         </div>
           <>
         {/* Lead form before video */}
