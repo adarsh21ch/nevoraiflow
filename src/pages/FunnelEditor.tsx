@@ -56,25 +56,25 @@ const generateSlug = (title: string) =>
 
 // ── Wizard step definitions per mode ──
 const SINGLE_STEPS = [
-  { icon: FileText, label: "Basics" },
-  { icon: Video, label: "Video" },
-  { icon: Settings, label: "Controls" },
-  { icon: ClipboardList, label: "Lead Form" },
-  { icon: Mic, label: "Audio" },
-  { icon: MessageCircle, label: "WhatsApp" },
-  { icon: IndianRupee, label: "Payment" },
-  { icon: Radio, label: "Broadcast" },
-  { icon: Rocket, label: "Publish" },
+  { icon: FileText, label: "Name & Info", num: "1" },
+  { icon: Video, label: "Video", num: "2" },
+  { icon: Settings, label: "Video Settings", num: "3" },
+  { icon: ClipboardList, label: "Lead Capture", num: "4" },
+  { icon: Mic, label: "Audio Note", num: "5" },
+  { icon: MessageCircle, label: "Contact Info", num: "6" },
+  { icon: IndianRupee, label: "Payment", num: "7" },
+  { icon: Radio, label: "Broadcast", num: "8" },
+  { icon: Rocket, label: "Publish", num: "9" },
 ];
 
 const MULTI_STEPS = [
-  { icon: FileText, label: "Basics" },
-  { icon: Layers, label: "Steps" },
-  { icon: Settings, label: "Controls" },
-  { icon: MessageCircle, label: "WhatsApp" },
-  { icon: IndianRupee, label: "Payment" },
-  { icon: Radio, label: "Broadcast" },
-  { icon: Rocket, label: "Publish" },
+  { icon: FileText, label: "Name & Info", num: "1" },
+  { icon: Layers, label: "Build Journey", num: "2" },
+  { icon: Settings, label: "Video Settings", num: "3" },
+  { icon: MessageCircle, label: "Contact Info", num: "4" },
+  { icon: IndianRupee, label: "Payment", num: "5" },
+  { icon: Radio, label: "Broadcast", num: "6" },
+  { icon: Rocket, label: "Publish", num: "7" },
 ];
 
 const UNLOCK_LABELS: Record<string, string> = {
