@@ -380,157 +380,163 @@ export const MultiStepViewer = ({
   };
 
   /* ─── LEFT SIDEBAR (Desktop) ─── */
-  const JourneySidebar = () => (
-    <div
-      className="hidden lg:flex flex-col w-[280px] min-w-[280px] shrink-0 h-[calc(100vh-52px)] sticky top-[52px] overflow-y-auto border-r"
-      style={{
-        background: sc.bg,
-        borderColor: sc.border,
-        padding: "24px 16px",
-      }}
-    >
-      {/* Creator badge */}
-      {creatorProfile?.full_name && (
-        <div className="flex items-center gap-3 pb-4 mb-4" style={{ borderBottom: `1px solid ${sc.border}` }}>
-          <div className="w-[38px] h-[38px] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ border: "2px solid rgba(34,197,94,0.3)" }}>
-            {creatorProfile.avatar_url ? (
-              <img src={creatorProfile.avatar_url} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-primary/15 flex items-center justify-center">
-                <span className="text-primary font-bold text-sm">{creatorProfile.full_name.charAt(0).toUpperCase()}</span>
-              </div>
-            )}
-          </div>
-          <div className="min-w-0">
-            <p className="font-semibold text-[13px] truncate" style={{ color: sc.text, fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif" }}>
-              {creatorProfile.full_name}
-            </p>
-            {creatorProfile.kyc_status === "approved" && (
-              <span className="flex items-center gap-1 text-[10px] font-semibold text-green-400">
-                <BadgeCheck size={10} /> Verified
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Progress */}
-      <div className="pb-4 mb-4" style={{ borderBottom: `1px solid ${sc.border}` }}>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] mb-2" style={{ color: sc.textDim }}>
-          Journey Progress
-        </p>
-        <div className="h-1 rounded-full overflow-hidden mb-1.5" style={{ background: sc.progressBg }}>
-          <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${progressPct}%`, background: "linear-gradient(90deg, #22c55e, #16a34a)" }}
-          />
-        </div>
-        <p className="text-[12px] font-medium" style={{ color: sc.progressText }}>
-          {completedCount} / {steps.length} completed
-        </p>
-      </div>
-
-      {/* Steps */}
-      <p className="text-[10px] font-bold uppercase tracking-[0.1em] mb-3 px-1" style={{ color: sc.textDimmer }}>
-        Journey
-      </p>
-      <div className="space-y-1 flex-1">
-        {steps.map((step, idx) => {
-          const status = getStepStatus(step.id);
-          const Icon = STEP_ICONS[step.step_type] || Circle;
-          const isActive = idx === activeStepIndex;
-          const isLocked = status === "locked";
-          const isCompleted = status === "completed";
-          const isInProgress = status === "in_progress";
-
-          return (
-            <button
-              key={step.id}
-              onClick={() => !isLocked && setActiveStepIndex(idx)}
-              disabled={isLocked}
-              className="w-full flex items-start gap-3 text-left transition-all"
-              style={{
-                padding: "12px 14px",
-                borderRadius: "12px",
-                border: isCompleted
-                  ? "1px solid rgba(34,197,94,0.25)"
-                  : isActive
-                  ? "1px solid rgba(34,197,94,0.3)"
-                  : `1px solid transparent`,
-                borderLeft: isCompleted ? "3px solid #22c55e" : isActive ? "3px solid #22c55e" : "3px solid transparent",
-                background: isCompleted
-                  ? "rgba(34,197,94,0.1)"
-                  : isActive
-                  ? "rgba(34,197,94,0.08)"
-                  : isLocked
-                  ? "transparent"
-                  : sc.itemBg,
-                cursor: isLocked ? "not-allowed" : "pointer",
-                opacity: isLocked ? 0.5 : 1,
-                marginBottom: "4px",
-              }}
-            >
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-                style={{
-                  background: isCompleted ? "rgba(34,197,94,0.2)" : isActive ? "rgba(34,197,94,0.15)" : sc.itemIconBg,
-                }}
-              >
-                {isCompleted ? (
-                  <Check size={13} className="text-green-400" />
-                ) : isLocked ? (
-                  <Lock size={11} style={{ color: sc.iconLocked }} />
+  const JourneySidebar = () => {
+    const hasContact = funnel.show_contact_buttons && (funnel.contact_whatsapp || funnel.contact_phone);
+    return (
+      <div
+        className="hidden lg:flex flex-col w-[280px] min-w-[280px] shrink-0 h-screen sticky top-0 border-r"
+        style={{ background: sc.bg, borderColor: sc.border }}
+      >
+        {/* Scrollable content area */}
+        <div className="flex-1 overflow-y-auto" style={{ padding: "20px 14px" }}>
+          {/* Creator badge */}
+          {creatorProfile?.full_name && (
+            <div className="flex items-center gap-3 pb-4 mb-4" style={{ borderBottom: `1px solid ${sc.border}` }}>
+              <div className="w-[40px] h-[40px] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ border: "2px solid rgba(34,197,94,0.35)", boxShadow: "0 0 0 3px rgba(34,197,94,0.08)" }}>
+                {creatorProfile.avatar_url ? (
+                  <img src={creatorProfile.avatar_url} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <Icon size={13} className={isActive ? "text-green-400" : ""} style={!isActive ? { color: sc.iconDim } : {}} />
+                  <div className="w-full h-full flex items-center justify-center" style={{ background: "rgba(34,197,94,0.12)" }}>
+                    <span className="text-primary font-bold text-sm">{creatorProfile.full_name.charAt(0).toUpperCase()}</span>
+                  </div>
                 )}
               </div>
-              <div className="min-w-0 flex-1">
-                <p
-                  className="font-semibold leading-tight truncate"
+              <div className="min-w-0">
+                <p className="font-semibold text-[13px] truncate" style={{ color: sc.text, fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif" }}>
+                  {creatorProfile.full_name}
+                </p>
+                {creatorProfile.kyc_status === "approved" && (
+                  <span className="flex items-center gap-1 text-[10px] font-semibold text-green-400">
+                    <BadgeCheck size={10} /> Verified
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Progress */}
+          <div className="pb-4 mb-4" style={{ borderBottom: `1px solid ${sc.border}` }}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.1em] mb-2.5" style={{ color: sc.textDim }}>
+              Journey Progress
+            </p>
+            <div className="h-1.5 rounded-full overflow-hidden mb-2" style={{ background: sc.progressBg }}>
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${progressPct}%`, background: "linear-gradient(90deg, #22c55e, #16a34a)" }}
+              />
+            </div>
+            <p className="text-[12px] font-semibold" style={{ color: sc.progressText }}>
+              {completedCount} / {steps.length} completed
+            </p>
+          </div>
+
+          {/* Steps */}
+          <p className="text-[10px] font-bold uppercase tracking-[0.1em] mb-3 px-1" style={{ color: sc.textDimmer }}>
+            Journey
+          </p>
+          <div className="space-y-1.5">
+            {steps.map((step, idx) => {
+              const status = getStepStatus(step.id);
+              const Icon = STEP_ICONS[step.step_type] || Circle;
+              const isActive = idx === activeStepIndex;
+              const isLocked = status === "locked";
+              const isCompleted = status === "completed";
+              const isInProgress = status === "in_progress";
+
+              return (
+                <button
+                  key={step.id}
+                  onClick={() => !isLocked && setActiveStepIndex(idx)}
+                  disabled={isLocked}
+                  className="w-full flex items-start gap-3 text-left transition-all"
                   style={{
-                    fontSize: "13px",
-                    color: isLocked ? sc.textLocked : sc.text,
-                    fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif",
+                    padding: "10px 12px",
+                    borderRadius: "12px",
+                    border: isCompleted
+                      ? "1px solid rgba(34,197,94,0.25)"
+                      : isActive
+                      ? "1px solid rgba(34,197,94,0.3)"
+                      : `1px solid transparent`,
+                    borderLeft: isCompleted ? "3px solid #22c55e" : isActive ? "3px solid #22c55e" : "3px solid transparent",
+                    background: isCompleted
+                      ? "rgba(34,197,94,0.1)"
+                      : isActive
+                      ? "rgba(34,197,94,0.08)"
+                      : isLocked
+                      ? "transparent"
+                      : sc.itemBg,
+                    cursor: isLocked ? "not-allowed" : "pointer",
+                    opacity: isLocked ? 0.55 : 1,
                   }}
                 >
-                  {step.title || `Step ${idx + 1}`}
-                </p>
-                <p style={{ fontSize: "11px", color: sc.textMuted, marginTop: "2px" }}>
-                  {STEP_TYPE_LABELS[step.step_type] || step.step_type}
-                  {" · "}
-                  {isCompleted ? "Completed" : isInProgress ? "In Progress" : isActive ? "Available" : isLocked ? "Locked" : "Available"}
-                </p>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Contact buttons */}
-      {funnel.show_contact_buttons && (
-        <div className="mt-4 pt-3 space-y-2" style={{ borderTop: `1px solid ${sc.border}` }}>
-          {funnel.contact_whatsapp && (
-            <button
-              onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}
-              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all"
-              style={{ background: "rgba(37,211,102,0.1)", color: "#25d366" }}
-            >
-              <MessageCircle size={14} /> WhatsApp
-            </button>
-          )}
-          {funnel.contact_phone && (
-            <button
-              onClick={() => window.open(`tel:${funnel.contact_phone}`)}
-              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all"
-              style={{ background: sc.itemBg, color: sc.textMuted }}
-            >
-              <PhoneIcon size={14} /> Call
-            </button>
-          )}
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                    style={{
+                      background: isCompleted ? "rgba(34,197,94,0.2)" : isActive ? "rgba(34,197,94,0.15)" : sc.itemIconBg,
+                    }}
+                  >
+                    {isCompleted ? (
+                      <Check size={13} className="text-green-400" />
+                    ) : isLocked ? (
+                      <Lock size={11} style={{ color: sc.iconLocked }} />
+                    ) : (
+                      <Icon size={13} className={isActive ? "text-green-400" : ""} style={!isActive ? { color: sc.iconDim } : {}} />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className="font-semibold leading-tight truncate"
+                      style={{
+                        fontSize: "13px",
+                        color: isLocked ? sc.textLocked : sc.text,
+                        fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif",
+                      }}
+                    >
+                      {step.title || `Step ${idx + 1}`}
+                    </p>
+                    <p style={{ fontSize: "11px", color: sc.textMuted, marginTop: "2px" }}>
+                      {STEP_TYPE_LABELS[step.step_type] || step.step_type}
+                      {" · "}
+                      {isCompleted ? "Completed" : isInProgress ? "In Progress" : isActive ? "Available" : isLocked ? "Locked" : "Available"}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      )}
-    </div>
-  );
+
+        {/* Contact buttons — pinned at bottom, always visible */}
+        {hasContact && (
+          <div className="shrink-0 px-3 py-3" style={{ borderTop: `1px solid ${sc.border}`, background: sc.bg }}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.1em] mb-2.5 px-1" style={{ color: sc.textDim }}>
+              Contact Creator
+            </p>
+            <div className="space-y-2">
+              {funnel.contact_whatsapp && (
+                <button
+                  onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all hover:opacity-90"
+                  style={{ background: "rgba(37,211,102,0.15)", color: "#25d366", border: "1px solid rgba(37,211,102,0.2)" }}
+                >
+                  <MessageCircle size={15} /> WhatsApp
+                </button>
+              )}
+              {funnel.contact_phone && (
+                <button
+                  onClick={() => window.open(`tel:${funnel.contact_phone}`)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all hover:opacity-90"
+                  style={{ background: sc.itemIconBg, color: sc.text, border: `1px solid ${sc.border}` }}
+                >
+                  <PhoneIcon size={15} /> Call
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   /* ─── MOBILE STEP BAR ─── */
   const MobileStepBar = () => (
