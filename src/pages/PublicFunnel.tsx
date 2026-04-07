@@ -568,16 +568,16 @@ const PublicFunnel = () => {
   });
 
   if (isLoading) return (
-    <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: tc.bg }}>
       <Loader2 size={32} className="text-primary animate-spin" />
     </div>
   );
 
   if (!canView) return (
-    <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: tc.bg }}>
       <div className="text-center">
-        <h1 className="text-xl font-heading font-bold mb-2 text-white">Funnel Not Found</h1>
-        <p className="text-sm text-[#94a3b8]">This funnel doesn't exist or has been unpublished.</p>
+        <h1 className="text-xl font-heading font-bold mb-2" style={{ color: tc.text }}>Funnel Not Found</h1>
+        <p className="text-sm" style={{ color: tc.textMuted }}>This funnel doesn't exist or has been unpublished.</p>
       </div>
     </div>
   );
