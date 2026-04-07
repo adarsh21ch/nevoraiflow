@@ -556,24 +556,7 @@ const FunnelEditor = () => {
           {flowSteps.length > 0 && (
             <button
               onClick={() => setStepTypeSelectorOpen(true)}
-              className="w-full mt-3 rounded-[14px] py-5 text-center transition-all"
-              style={{
-                border: "2px dashed rgba(255,255,255,0.1)",
-                background: "transparent",
-                color: "rgba(255,255,255,0.4)",
-                fontSize: "14px",
-                fontWeight: 600,
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.borderColor = "rgba(34,197,94,0.4)";
-                e.currentTarget.style.color = "#22c55e";
-                e.currentTarget.style.background = "rgba(34,197,94,0.04)";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-                e.currentTarget.style.color = "rgba(255,255,255,0.4)";
-                e.currentTarget.style.background = "transparent";
-              }}
+              className="w-full mt-3 rounded-[14px] py-5 text-center transition-all border-2 border-dashed border-border text-muted-foreground font-semibold text-sm hover:border-primary/40 hover:text-primary hover:bg-primary/5"
             >
               <Plus size={16} className="inline mr-1.5" />
               Add Step
