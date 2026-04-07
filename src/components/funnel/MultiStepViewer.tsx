@@ -431,7 +431,7 @@ export const MultiStepViewer = ({
       </div>
 
       {/* Steps */}
-      <p className="text-[10px] font-bold uppercase tracking-[0.1em] mb-3 px-1" style={{ color: "rgba(255,255,255,0.3)" }}>
+      <p className="text-[10px] font-bold uppercase tracking-[0.1em] mb-3 px-1" style={{ color: sc.textDimmer }}>
         Journey
       </p>
       <div className="space-y-1 flex-1">
