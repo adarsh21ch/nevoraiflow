@@ -959,6 +959,9 @@ export type Database = {
           bank_account_number: string | null
           bank_ifsc: string | null
           bank_name: string | null
+          city: string | null
+          doc_image_url: string | null
+          doc_type: string | null
           full_name: string
           id: string
           pan_doc_url: string | null
@@ -967,6 +970,7 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           selfie_url: string | null
+          state: string | null
           status: string | null
           submitted_at: string | null
           user_id: string
@@ -979,6 +983,9 @@ export type Database = {
           bank_account_number?: string | null
           bank_ifsc?: string | null
           bank_name?: string | null
+          city?: string | null
+          doc_image_url?: string | null
+          doc_type?: string | null
           full_name: string
           id?: string
           pan_doc_url?: string | null
@@ -987,6 +994,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           selfie_url?: string | null
+          state?: string | null
           status?: string | null
           submitted_at?: string | null
           user_id: string
@@ -999,6 +1007,9 @@ export type Database = {
           bank_account_number?: string | null
           bank_ifsc?: string | null
           bank_name?: string | null
+          city?: string | null
+          doc_image_url?: string | null
+          doc_type?: string | null
           full_name?: string
           id?: string
           pan_doc_url?: string | null
@@ -1007,6 +1018,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           selfie_url?: string | null
+          state?: string | null
           status?: string | null
           submitted_at?: string | null
           user_id?: string
