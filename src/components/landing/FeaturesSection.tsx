@@ -18,9 +18,9 @@ const features = [
     description: "Instantly message new leads on WhatsApp. Follow up before they forget your name.",
   },
   {
-    icon: IndianRupee,
-    title: "Payment Collection",
-    description: "Share your UPI QR code. Prospects pay and upload proof. You verify from your dashboard.",
+    icon: Route,
+    title: "Step-by-Step Journeys",
+    description: "Turn a normal video into a guided funnel experience with unlock rules, next steps, and structured progression.",
   },
   {
     icon: BarChart3,

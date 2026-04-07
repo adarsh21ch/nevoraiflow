@@ -52,7 +52,7 @@ export const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            {brand.description}
+            Build smart video funnels that capture leads, structure your content, and guide your audience step by step.
           </motion.p>
 
           <motion.div
