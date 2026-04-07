@@ -854,16 +854,15 @@ const PublicFunnel = () => {
         )}
         </>
 
-        {/* Contact Buttons */}
         {funnel.show_contact_buttons && (leadSubmitted || !funnel.show_contact_after_cta) && (
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#09090b]/95 backdrop-blur-xl border-t border-white/[0.06] flex gap-3 justify-center z-50">
+          <div className="fixed bottom-0 left-0 right-0 p-4 backdrop-blur-xl flex gap-3 justify-center z-50" style={{ background: tc.contactBg, borderTop: `1px solid ${tc.borderSubtle}` }}>
             {funnel.contact_whatsapp && (
               <Button className="bg-[#25d366] hover:bg-[#20b858] text-white" onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}>
                 <MessageCircle size={16} /> WhatsApp
               </Button>
             )}
             {funnel.contact_phone && (
-              <Button className="bg-white/[0.06] hover:bg-white/10 text-white border border-white/[0.06]" onClick={() => window.open(`tel:${funnel.contact_phone}`)}>
+              <Button style={{ background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)", color: tc.text, border: `1px solid ${tc.borderSubtle}` }} onClick={() => window.open(`tel:${funnel.contact_phone}`)}>
                 <PhoneIcon size={16} /> Call
               </Button>
             )}
@@ -871,8 +870,8 @@ const PublicFunnel = () => {
         )}
 
         {/* Footer */}
-        <div className="mt-16 pt-6 border-t border-white/[0.04] text-center">
-          <p className="text-[11px] text-white/20">© {new Date().getFullYear()} Nevorai Flow · All rights reserved</p>
+        <div className="mt-16 pt-6 text-center" style={{ borderTop: `1px solid ${tc.footerBorder}` }}>
+          <p className="text-[11px]" style={{ color: tc.footerText }}>© {new Date().getFullYear()} Nevorai Flow · All rights reserved</p>
         </div>
       </div>
       )}
