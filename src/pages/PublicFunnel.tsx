@@ -811,7 +811,6 @@ const PublicFunnel = () => {
           </div>
         )}
         </>
-        )}
 
         {/* Contact Buttons */}
         {funnel.show_contact_buttons && (leadSubmitted || !funnel.show_contact_after_cta) && (
