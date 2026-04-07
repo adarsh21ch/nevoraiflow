@@ -35,7 +35,7 @@ const features = [
   { name: "WhatsApp Auto-message", free: false, basic: true, pro: true },
   { name: "Audio Notes", free: false, basic: true, pro: true },
   { name: "UPI Payment Collection", free: false, basic: true, pro: true },
-  { name: "Live Broadcast", free: false, basic: false, pro: true },
+  { name: "Live Sessions", free: false, basic: false, pro: true },
   { name: "Video Sharing", free: false, basic: false, pro: true },
   { name: "Priority Support", free: false, basic: false, pro: true },
 ];

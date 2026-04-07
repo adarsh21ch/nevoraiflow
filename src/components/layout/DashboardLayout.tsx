@@ -127,8 +127,8 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
         {[
           { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
           { icon: Layers, label: "Funnels", path: "/funnels" },
+          { icon: Radio, label: "Live", path: "/live" },
           { icon: Video, label: "Videos", path: "/videos" },
-          { icon: Users, label: "Leads", path: "/leads" },
           { icon: User, label: "Profile", path: "/profile" },
         ].map((item) => {
           const active = location.pathname.startsWith(item.path);
