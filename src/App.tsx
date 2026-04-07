@@ -25,6 +25,7 @@ import ProfilePage from "./pages/ProfilePage";
 import KYCPage from "./pages/KYCPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import SettingsPage from "./pages/SettingsPage";
+import BroadcastPage from "./pages/BroadcastPage";
 import PricingFullPage from "./pages/PricingFullPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminVideosPage from "./pages/AdminVideosPage";
