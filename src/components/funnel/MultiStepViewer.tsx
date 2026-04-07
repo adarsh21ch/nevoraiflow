@@ -605,7 +605,7 @@ export const MultiStepViewer = ({
           {/* Step header */}
           {activeStep && (
             <div className="space-y-5">
-              <div style={{ paddingBottom: "12px", borderBottom: "1px solid rgba(255,255,255,0.06)", marginBottom: "16px" }}>
+              <div style={{ paddingBottom: "12px", borderBottom: `1px solid ${sc.border}`, marginBottom: "16px" }}>
                 <div className="flex items-center gap-3 mb-1">
                   <span
                     style={{
@@ -613,7 +613,7 @@ export const MultiStepViewer = ({
                       fontWeight: 700,
                       letterSpacing: "0.1em",
                       textTransform: "uppercase",
-                      color: "rgba(255,255,255,0.4)",
+                      color: sc.textMuted,
                     }}
                   >
                     Step {activeStepIndex + 1} of {steps.length}
@@ -630,13 +630,13 @@ export const MultiStepViewer = ({
                   )}
                 </div>
                 <h2
-                  className="font-heading font-bold text-white"
-                  style={{ fontSize: "20px", fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif" }}
+                  className="font-heading font-bold"
+                  style={{ fontSize: "20px", fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif", color: sc.text }}
                 >
                   {activeStep.title || `Step ${activeStepIndex + 1}`}
                 </h2>
                 {activeStep.description && (
-                  <p className="mt-1" style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)" }}>{activeStep.description}</p>
+                  <p className="mt-1" style={{ fontSize: "14px", color: sc.textMuted }}>{activeStep.description}</p>
                 )}
               </div>
 
