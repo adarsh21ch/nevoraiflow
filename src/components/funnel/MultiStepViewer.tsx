@@ -93,6 +93,7 @@ export const MultiStepViewer = ({
   formConfig,
   priceOptions,
   VideoPlayer,
+  isDark = true,
 }: MultiStepViewerProps) => {
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [progressMap, setProgressMap] = useState<Record<string, StepProgress>>({});
