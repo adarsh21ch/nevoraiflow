@@ -539,8 +539,8 @@ export const MultiStepViewer = ({
       style={{
         scrollbarWidth: "none",
         msOverflowStyle: "none",
-        background: "rgba(255,255,255,0.02)",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        background: sc.stepBarBg,
+        borderBottom: `1px solid ${sc.border}`,
       }}
     >
       {steps.map((step, idx) => {
