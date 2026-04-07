@@ -3,7 +3,7 @@ import { Logo } from "@/components/landing/Logo";
 import {
   LayoutDashboard, Layers, Video, Users, IndianRupee, BarChart3,
   User, Bell, Settings, LogOut, ChevronLeft, ChevronRight,
-  Shield, Cog, UserCheck, CreditCard, Sun, Moon, Radio,
+  Shield, Cog, UserCheck, CreditCard, Sun, Moon, Radio, FileCheck,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
