@@ -36,6 +36,13 @@ import AdminKYCPage from "./pages/AdminKYCPage";
 import AdminSubscriptionsPage from "./pages/AdminSubscriptionsPage";
 import AdminSettingsPage from "./pages/AdminSettingsPage";
 import NotFound from "./pages/NotFound";
+import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
+import FeaturesPage from "./pages/FeaturesPage";
+import FAQPage from "./pages/FAQPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import TermsPage from "./pages/TermsPage";
+import RefundPolicyPage from "./pages/RefundPolicyPage";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +60,13 @@ const App = () => (
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/auth/reset-password" element={<ResetPassword />} />
               <Route path="/pricing" element={<PricingFullPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/features" element={<FeaturesPage />} />
+              <Route path="/faq" element={<FAQPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/refund-policy" element={<RefundPolicyPage />} />
               <Route path="/f/:slug" element={<PublicFunnel />} />
               <Route path="/video/:id" element={<PublicVideoPage />} />
               <Route path="/s/:slug" element={<PublicLivePage />} />

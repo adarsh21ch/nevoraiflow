@@ -9,31 +9,31 @@ import {
 const faqs = [
   {
     q: "What is Nevorai Flow?",
-    a: "Nevorai Flow is a video funnel platform built specifically for network marketers and direct sellers. Upload a video, share a link, and automatically capture leads, collect payments, and grow your team.",
+    a: "Nevorai Flow is a smart video funnel platform for digital entrepreneurs, creators, and coaches. Upload a video, share a link, and automatically capture leads, track engagement, and guide your audience.",
   },
   {
     q: "Do I need any technical skills?",
     a: "Not at all! Nevorai Flow is designed for non-technical users. Just upload your video, configure your funnel in a few clicks, and share the link. It's that simple.",
   },
   {
-    q: "How do payments work?",
-    a: "Your prospects pay via UPI directly to your account. They upload a screenshot as proof, and you verify it from your dashboard. No middleman, no commissions.",
-  },
-  {
-    q: "Can I use this on my phone?",
-    a: "Yes! Nevorai Flow is fully mobile-optimized. Both you and your prospects can use it perfectly on any smartphone.",
-  },
-  {
     q: "Is there a free plan?",
     a: "Yes! You can start with our free plan — 2 funnels, 5 videos, and basic lead capture. Upgrade anytime when you're ready for more.",
   },
   {
-    q: "What network marketing companies does this work with?",
-    a: "Nevorai Flow works with every network marketing company — Forever Living, Amway, Herbalife, Modicare, Vestige, Mi Lifestyle, and any other company you're with.",
+    q: "Who is Nevorai Flow for?",
+    a: "Nevorai Flow is built for digital entrepreneurs, creators, coaches, educators, and anyone who uses video to grow their audience and business.",
+  },
+  {
+    q: "Can I track how much of a video someone watched?",
+    a: "Yes! You get viewer progress tracking — see who watched, how far they got, and where they dropped off. This helps you follow up with the right people.",
+  },
+  {
+    q: "Can I create step-by-step funnels?",
+    a: "Absolutely! Turn a single video into a multi-step guided journey with unlock rules, progression, and structured viewer flow.",
   },
   {
     q: "Can my team use this too?",
-    a: "Absolutely! Each team member creates their own account and funnels. On Pro plan, you can even share videos with your team members.",
+    a: "Yes! Each team member creates their own account and funnels. On Pro plan, you can even share videos with your team members.",
   },
   {
     q: "What if I need help?",
