@@ -426,6 +426,40 @@ const PublicFunnel = () => {
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordUnlocked, setPasswordUnlocked] = useState(false);
+  const [pubTheme, setPubTheme] = useState<"dark" | "light">(() => {
+    const saved = localStorage.getItem("nevorai-public-theme");
+    return saved === "light" ? "light" : "dark";
+  });
+  const isDark = pubTheme === "dark";
+  const togglePubTheme = () => {
+    setPubTheme((t) => {
+      const next = t === "dark" ? "light" : "dark";
+      localStorage.setItem("nevorai-public-theme", next);
+      return next;
+    });
+  };
+
+  // Theme-aware color helpers
+  const tc = {
+    bg: isDark ? "#09090b" : "#ffffff",
+    bgCard: isDark ? "#141419" : "#f8f9fa",
+    border: isDark ? "#27272a" : "#e5e7eb",
+    borderSubtle: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+    text: isDark ? "#ffffff" : "#0f172a",
+    textMuted: isDark ? "#94a3b8" : "#64748b",
+    textDim: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.5)",
+    textDimmer: isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.3)",
+    inputBg: isDark ? "#09090b" : "#f1f5f9",
+    inputBorder: isDark ? "#27272a" : "#d1d5db",
+    inputText: isDark ? "#ffffff" : "#0f172a",
+    placeholder: isDark ? "#64748b" : "#9ca3af",
+    headerBg: isDark ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.8)",
+    shareText: isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.4)",
+    shareHover: isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.7)",
+    contactBg: isDark ? "rgba(9,9,11,0.95)" : "rgba(255,255,255,0.95)",
+    footerText: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.25)",
+    footerBorder: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.06)",
+  };
 
   // Single combined fetch
   const { data: bundle, isLoading } = useQuery({
