@@ -597,14 +597,46 @@ export const MultiStepViewer = ({
     </div>
   );
 
+  const hasContact = funnel.show_contact_buttons && (funnel.contact_whatsapp || funnel.contact_phone);
+
   return (
     <div className="flex min-h-[calc(100vh-52px)]">
       {/* LEFT sidebar — desktop */}
       <JourneySidebar />
 
-      {/* Mobile step bar */}
+      {/* Mobile step bar + contact */}
       <div className="flex flex-col flex-1 min-w-0">
+        {/* Mobile: Funnel title */}
+        <div className="lg:hidden text-center py-4 px-4" style={{ borderBottom: `1px solid ${sc.border}` }}>
+          <h1 className="font-heading font-extrabold tracking-tight leading-tight" style={{ fontSize: "clamp(18px, 5vw, 28px)", letterSpacing: "-0.02em", color: sc.text }}>
+            {funnel.title}
+          </h1>
+        </div>
         <MobileStepBar />
+
+        {/* Mobile contact bar */}
+        {hasContact && (
+          <div className="lg:hidden flex gap-2 px-4 py-2.5" style={{ borderBottom: `1px solid ${sc.border}`, background: sc.bg }}>
+            {funnel.contact_whatsapp && (
+              <button
+                onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}
+                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-[12px] font-semibold"
+                style={{ background: "rgba(37,211,102,0.15)", color: "#25d366", border: "1px solid rgba(37,211,102,0.2)" }}
+              >
+                <MessageCircle size={14} /> WhatsApp
+              </button>
+            )}
+            {funnel.contact_phone && (
+              <button
+                onClick={() => window.open(`tel:${funnel.contact_phone}`)}
+                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-[12px] font-semibold"
+                style={{ background: sc.itemIconBg, color: sc.text, border: `1px solid ${sc.border}` }}
+              >
+                <PhoneIcon size={14} /> Call
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Main content */}
         <div className="flex-1 px-4 lg:px-8 py-6 lg:py-8 max-w-[860px] mx-auto w-full">
