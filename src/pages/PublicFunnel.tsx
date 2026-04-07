@@ -643,18 +643,16 @@ const PublicFunnel = () => {
           {funnel.description && <p className="text-[15px] text-white/40 mt-3 max-w-xl mx-auto leading-relaxed">{funnel.description}</p>}
         </div>
 
-        {/* Multi-step funnel viewer */}
+        {/* Multi-step funnel viewer — full width with left sidebar */}
         {isMultiStep ? (
-          <div className="max-w-5xl mx-auto">
-            <MultiStepViewer
-              funnel={funnel}
-              steps={funnelSteps}
-              creatorProfile={creatorProfile}
-              formConfig={formConfig}
-              priceOptions={priceOptions}
-              VideoPlayer={CustomVideoPlayer}
-            />
-          </div>
+          <MultiStepViewer
+            funnel={funnel}
+            steps={funnelSteps}
+            creatorProfile={creatorProfile}
+            formConfig={formConfig}
+            priceOptions={priceOptions}
+            VideoPlayer={CustomVideoPlayer}
+          />
         ) : (
           <>
         {/* Lead form before video */}
