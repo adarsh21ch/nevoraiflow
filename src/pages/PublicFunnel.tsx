@@ -647,7 +647,7 @@ const PublicFunnel = () => {
   );
 
   return (
-    <div className="min-h-screen" style={{ background: tc.bg }}>
+    <div className="flex flex-col" style={{ background: tc.bg, minHeight: "100dvh" }}>
       {/* Header */}
       <div
         className="flex items-center justify-between sticky top-0 z-50"
