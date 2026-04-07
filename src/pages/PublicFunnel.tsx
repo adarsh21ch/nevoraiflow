@@ -750,10 +750,10 @@ const PublicFunnel = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-heading font-semibold text-white text-sm truncate">{creatorProfile.full_name}</span>
+                      <span className="font-heading font-semibold text-sm truncate" style={{ color: tc.text }}>{creatorProfile.full_name}</span>
                       {isVerified && <BadgeCheck size={15} className="text-primary flex-shrink-0" />}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-white/35 mt-0.5">
+                    <div className="flex items-center gap-3 text-xs mt-0.5" style={{ color: tc.textDimmer }}>
                       {creatorProfile.city && <span className="flex items-center gap-1"><MapPin size={10} /> {creatorProfile.city}</span>}
                       {creatorProfile.instagram_url && (
                         <a
