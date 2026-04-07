@@ -808,35 +808,36 @@ const PublicFunnel = () => {
 
         {/* Payment Section */}
         {funnel.payment_enabled && leadSubmitted && !paymentSubmitted && (
-          <div className="bg-[#141419] border border-[#27272a] rounded-2xl p-6 max-w-md mx-auto mt-6">
-            <h3 className="text-lg font-heading font-semibold mb-4 text-white">Complete Payment</h3>
+          <div className="rounded-2xl p-6 max-w-md mx-auto mt-6" style={{ background: tc.bgCard, border: `1px solid ${tc.border}` }}>
+            <h3 className="text-lg font-heading font-semibold mb-4" style={{ color: tc.text }}>Complete Payment</h3>
             {priceOptions.length > 0 && (
               <div className="space-y-2 mb-4">
                 {priceOptions.map((opt: any) => (
                   <button key={opt.id} onClick={() => setPaymentProof({ ...paymentProof, amount: opt.amount })}
-                    className={`w-full p-3 rounded-xl border text-left transition-all ${paymentProof.amount === opt.amount ? "border-primary bg-primary/10" : "border-[#27272a] bg-[#09090b]"}`}>
+                    className={`w-full p-3 rounded-xl border text-left transition-all ${paymentProof.amount === opt.amount ? "border-primary bg-primary/10" : ""}`}
+                    style={paymentProof.amount !== opt.amount ? { borderColor: tc.border, background: tc.inputBg } : {}}>
                     <div className="flex justify-between items-center">
-                      <span className="font-medium text-white">{opt.label}</span>
-                      <span className="font-heading font-bold text-white">₹{opt.amount.toLocaleString("en-IN")}</span>
+                      <span className="font-medium" style={{ color: tc.text }}>{opt.label}</span>
+                      <span className="font-heading font-bold" style={{ color: tc.text }}>₹{opt.amount.toLocaleString("en-IN")}</span>
                     </div>
-                    {opt.description && <p className="text-xs text-[#94a3b8] mt-1">{opt.description}</p>}
+                    {opt.description && <p className="text-xs mt-1" style={{ color: tc.textMuted }}>{opt.description}</p>}
                   </button>
                 ))}
               </div>
             )}
             {funnel.upi_id && (
-              <div className="p-3 bg-[#09090b] rounded-xl mb-4">
-                <Label className="text-xs text-[#94a3b8]">Pay via UPI</Label>
+              <div className="p-3 rounded-xl mb-4" style={{ background: tc.inputBg }}>
+                <Label className="text-xs" style={{ color: tc.textMuted }}>Pay via UPI</Label>
                 <div className="flex items-center gap-2 mt-1">
                   <code className="text-sm text-primary flex-1">{funnel.upi_id}</code>
-                  <Button variant="ghost" size="sm" className="text-[#94a3b8]" onClick={() => { navigator.clipboard.writeText(funnel.upi_id!); toast.success("UPI ID copied!"); }}>Copy</Button>
+                  <Button variant="ghost" size="sm" style={{ color: tc.textMuted }} onClick={() => { navigator.clipboard.writeText(funnel.upi_id!); toast.success("UPI ID copied!"); }}>Copy</Button>
                 </div>
               </div>
             )}
             {funnel.qr_code_url && <img src={funnel.qr_code_url} alt="QR Code" className="w-48 h-48 mx-auto mb-4 rounded-xl" />}
-            {funnel.payment_instructions && <p className="text-sm text-[#94a3b8] mb-4">{funnel.payment_instructions}</p>}
+            {funnel.payment_instructions && <p className="text-sm mb-4" style={{ color: tc.textMuted }}>{funnel.payment_instructions}</p>}
             <div className="space-y-3">
-              <Input placeholder="UPI Transaction ID (optional)" value={paymentProof.upi_transaction_id} onChange={(e) => setPaymentProof({ ...paymentProof, upi_transaction_id: e.target.value })} className="bg-[#09090b] border-[#27272a] text-white h-12 rounded-xl" />
+              <Input placeholder="UPI Transaction ID (optional)" value={paymentProof.upi_transaction_id} onChange={(e) => setPaymentProof({ ...paymentProof, upi_transaction_id: e.target.value })} style={{ background: tc.inputBg, borderColor: tc.inputBorder, color: tc.inputText }} className="h-12 rounded-xl" />
               <Button className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl" onClick={() => submitPayment.mutate()} disabled={submitPayment.isPending}>
                 {submitPayment.isPending ? "Submitting..." : "I've Made the Payment"}
               </Button>
@@ -845,10 +846,10 @@ const PublicFunnel = () => {
         )}
 
         {paymentSubmitted && (
-          <div className="bg-[#141419] border border-[#27272a] rounded-2xl p-6 text-center max-w-md mx-auto mt-6">
+          <div className="rounded-2xl p-6 text-center max-w-md mx-auto mt-6" style={{ background: tc.bgCard, border: `1px solid ${tc.border}` }}>
             <Check size={32} className="text-green-500 mx-auto mb-3" />
-            <h3 className="font-heading font-semibold text-white">Payment Under Review</h3>
-            <p className="text-sm text-[#94a3b8] mt-1">Your payment proof has been submitted. You'll be notified once it's verified.</p>
+            <h3 className="font-heading font-semibold" style={{ color: tc.text }}>Payment Under Review</h3>
+            <p className="text-sm mt-1" style={{ color: tc.textMuted }}>Your payment proof has been submitted. You'll be notified once it's verified.</p>
           </div>
         )}
         </>
