@@ -124,7 +124,13 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
       </main>
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border flex justify-around py-2 z-50">
-        {[navItems[0], navItems[1], navItems[2], navItems[3]].map((item) => {
+        {[
+          { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+          { icon: Layers, label: "Funnels", path: "/funnels" },
+          { icon: Video, label: "Videos", path: "/videos" },
+          { icon: Users, label: "Leads", path: "/leads" },
+          { icon: User, label: "Profile", path: "/profile" },
+        ].map((item) => {
           const active = location.pathname.startsWith(item.path);
           return (
             <Link key={item.path} to={item.path}
@@ -134,10 +140,6 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
             </Link>
           );
         })}
-        <button onClick={toggleTheme} className="flex flex-col items-center gap-1 px-3 py-1.5 text-xs text-muted-foreground transition-colors">
-          {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-          <span>{theme === "dark" ? "Light" : "Dark"}</span>
-        </button>
       </nav>
     </div>
   );

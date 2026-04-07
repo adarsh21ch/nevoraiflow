@@ -2,18 +2,33 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useTheme } from "@/hooks/useTheme";
 import { useNavigate, Link } from "react-router-dom";
-import { Settings as SettingsIcon, Shield, CreditCard, LogOut } from "lucide-react";
+import { Shield, CreditCard, LogOut, Sun, Moon } from "lucide-react";
 
 const SettingsPage = () => {
   const { user, profile, signOut } = useAuth();
   const { subscription, tier } = useSubscription();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   return (
     <DashboardLayout>
       <div className="max-w-2xl space-y-6">
         <h1 className="text-2xl font-heading font-bold">Settings</h1>
+
+        <div className="glass-card p-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {theme === "dark" ? <Moon size={18} className="text-primary" /> : <Sun size={18} className="text-primary" />}
+            <div>
+              <p className="text-sm font-medium">Appearance</p>
+              <p className="text-xs text-muted-foreground">{theme === "dark" ? "Dark mode" : "Light mode"}</p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={toggleTheme}>
+            {theme === "dark" ? <><Sun size={14} className="mr-1.5" /> Light</> : <><Moon size={14} className="mr-1.5" /> Dark</>}
+          </Button>
+        </div>
 
         <div className="glass-card p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
