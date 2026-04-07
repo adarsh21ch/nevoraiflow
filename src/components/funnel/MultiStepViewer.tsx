@@ -456,7 +456,7 @@ export const MultiStepViewer = ({
                   ? "1px solid rgba(34,197,94,0.25)"
                   : isActive
                   ? "1px solid rgba(34,197,94,0.3)"
-                  : "1px solid transparent",
+                  : `1px solid transparent`,
                 borderLeft: isCompleted ? "3px solid #22c55e" : isActive ? "3px solid #22c55e" : "3px solid transparent",
                 background: isCompleted
                   ? "rgba(34,197,94,0.1)"
@@ -464,9 +464,9 @@ export const MultiStepViewer = ({
                   ? "rgba(34,197,94,0.08)"
                   : isLocked
                   ? "transparent"
-                  : "rgba(255,255,255,0.03)",
+                  : sc.itemBg,
                 cursor: isLocked ? "not-allowed" : "pointer",
-                opacity: isLocked ? 0.4 : 1,
+                opacity: isLocked ? 0.5 : 1,
                 marginBottom: "4px",
               }}
             >
