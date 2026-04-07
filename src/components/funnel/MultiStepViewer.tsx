@@ -508,7 +508,7 @@ export const MultiStepViewer = ({
 
       {/* Contact buttons */}
       {funnel.show_contact_buttons && (
-        <div className="mt-4 pt-3 space-y-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="mt-4 pt-3 space-y-2" style={{ borderTop: `1px solid ${sc.border}` }}>
           {funnel.contact_whatsapp && (
             <button
               onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}
