@@ -49,7 +49,7 @@ export const FeaturesSection = () => {
             Everything You Need to <span className="gradient-text">Grow</span>
           </h2>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            Purpose-built tools for network marketers who want to scale their business online.
+            Purpose-built tools for entrepreneurs who want to scale their business online.
           </p>
         </motion.div>
 

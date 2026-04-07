@@ -2,9 +2,9 @@ export const brand = {
   name: "Nevorai Flow",
   nameShort: "Nevorai",
   nameAccent: "Flow",
-  tagline: "Turn Videos Into Leads. Automatically.",
+  tagline: "Turn Random Videos Into Structured Funnels.",
   description:
-    "Build video funnels that capture leads, collect payments, and grow your network marketing team — all on autopilot.",
+    "Build smart video funnels that capture leads, collect payments, and guide your audience — all in one place.",
   domain: "nevorai.flow",
   supportEmail: "support@nevorai.com",
   social: {
