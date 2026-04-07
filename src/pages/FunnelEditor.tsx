@@ -112,6 +112,7 @@ const FunnelEditor = () => {
 
   // Journey preview collapsible (mobile)
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [audioNoteEnabled, setAudioNoteEnabled] = useState(false);
 
   const [funnel, setFunnel] = useState({
     title: "", slug: "", description: "", visibility: "public", intent_type: "lead",
