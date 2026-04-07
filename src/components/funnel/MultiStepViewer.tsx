@@ -489,7 +489,7 @@ export const MultiStepViewer = ({
                   className="font-semibold leading-tight truncate"
                   style={{
                     fontSize: "13px",
-                    color: isLocked ? "rgba(255,255,255,0.25)" : "#f1f5f9",
+                    color: isLocked ? sc.textLocked : sc.text,
                     fontFamily: "'Plus Jakarta Sans', var(--font-heading), sans-serif",
                   }}
                 >
