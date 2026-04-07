@@ -715,16 +715,16 @@ export const MultiStepViewer = ({
               )}
 
               {(activeStep.step_type === "cta" || activeStep.step_type === "booking") && (
-                <div className="rounded-2xl p-6 text-center" style={{ background: "#141419", border: "1px solid #27272a" }}>
+                <div className="rounded-2xl p-6 text-center" style={{ background: sc.cardBg, border: `1px solid ${sc.cardBorder}` }}>
                   {activeProgress?.status === "completed" ? (
                     <>
                       <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
-                      <h3 className="font-heading font-bold text-white">Step Completed</h3>
+                      <h3 className="font-heading font-bold" style={{ color: sc.text }}>Step Completed</h3>
                     </>
                   ) : (
                     <>
-                      <h3 className="text-lg font-heading font-bold text-white mb-2">{activeStep.cta_text || (activeStep.step_type === "booking" ? "Book Your Call" : "Continue")}</h3>
-                      {activeStep.description && <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.4)" }} className="mb-4">{activeStep.description}</p>}
+                      <h3 className="text-lg font-heading font-bold mb-2" style={{ color: sc.text }}>{activeStep.cta_text || (activeStep.step_type === "booking" ? "Book Your Call" : "Continue")}</h3>
+                      {activeStep.description && <p style={{ fontSize: "14px", color: sc.textMuted }} className="mb-4">{activeStep.description}</p>}
                       <Button
                         className="h-14 px-8 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20"
                         onClick={() => handleCtaClick(activeStepIndex)}
@@ -737,40 +737,41 @@ export const MultiStepViewer = ({
               )}
 
               {activeStep.step_type === "payment" && (
-                <div className="rounded-2xl p-6" style={{ background: "#141419", border: "1px solid #27272a" }}>
+                <div className="rounded-2xl p-6" style={{ background: sc.cardBg, border: `1px solid ${sc.cardBorder}` }}>
                   {paymentSubmitted || activeProgress?.status === "completed" ? (
                     <div className="text-center py-6">
                       <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
-                      <h3 className="font-heading font-bold text-white">Payment Submitted</h3>
-                      <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }} className="mt-1">Your payment is being reviewed.</p>
+                      <h3 className="font-heading font-bold" style={{ color: sc.text }}>Payment Submitted</h3>
+                      <p style={{ fontSize: "12px", color: sc.textMuted }} className="mt-1">Your payment is being reviewed.</p>
                     </div>
                   ) : (
                     <>
-                      <h3 className="text-lg font-heading font-semibold mb-4 text-white">Complete Payment</h3>
+                      <h3 className="text-lg font-heading font-semibold mb-4" style={{ color: sc.text }}>Complete Payment</h3>
                       {priceOptions.length > 0 && (
                         <div className="space-y-2 mb-4">
                           {priceOptions.map((opt: any) => (
                             <button key={opt.id} onClick={() => setPaymentProof({ ...paymentProof, amount: opt.amount })}
-                              className={`w-full p-3 rounded-xl border text-left transition-all ${paymentProof.amount === opt.amount ? "border-primary bg-primary/10" : "border-[#27272a] bg-[#09090b]"}`}>
+                              className={`w-full p-3 rounded-xl border text-left transition-all ${paymentProof.amount === opt.amount ? "border-primary bg-primary/10" : ""}`}
+                              style={paymentProof.amount !== opt.amount ? { borderColor: sc.cardBorder, background: sc.inputBg } : {}}>
                               <div className="flex justify-between items-center">
-                                <span className="font-medium text-white">{opt.label}</span>
-                                <span className="font-heading font-bold text-white">₹{opt.amount.toLocaleString("en-IN")}</span>
+                                <span className="font-medium" style={{ color: sc.text }}>{opt.label}</span>
+                                <span className="font-heading font-bold" style={{ color: sc.text }}>₹{opt.amount.toLocaleString("en-IN")}</span>
                               </div>
                             </button>
                           ))}
                         </div>
                       )}
                       {funnel.upi_id && (
-                        <div className="p-3 bg-[#09090b] rounded-xl mb-4">
-                          <span className="text-xs" style={{ color: "#94a3b8" }}>Pay via UPI</span>
+                        <div className="p-3 rounded-xl mb-4" style={{ background: sc.inputBg }}>
+                          <span className="text-xs" style={{ color: sc.textMuted }}>Pay via UPI</span>
                           <div className="flex items-center gap-2 mt-1">
                             <code className="text-sm text-primary flex-1">{funnel.upi_id}</code>
-                            <Button variant="ghost" size="sm" style={{ color: "#94a3b8" }} onClick={() => { navigator.clipboard.writeText(funnel.upi_id!); toast.success("UPI ID copied!"); }}>Copy</Button>
+                            <Button variant="ghost" size="sm" style={{ color: sc.textMuted }} onClick={() => { navigator.clipboard.writeText(funnel.upi_id!); toast.success("UPI ID copied!"); }}>Copy</Button>
                           </div>
                         </div>
                       )}
                       <div className="space-y-3">
-                        <Input placeholder="UPI Transaction ID" value={paymentProof.upi_transaction_id} onChange={(e) => setPaymentProof({ ...paymentProof, upi_transaction_id: e.target.value })} className="bg-[#09090b] border-[#27272a] text-white h-12 rounded-xl" />
+                        <Input placeholder="UPI Transaction ID" value={paymentProof.upi_transaction_id} onChange={(e) => setPaymentProof({ ...paymentProof, upi_transaction_id: e.target.value })} style={{ background: sc.inputBg, borderColor: sc.cardBorder, color: sc.text }} className="h-12 rounded-xl" />
                         <Button className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl" onClick={() => handlePaymentSubmit(activeStepIndex)}>
                           I've Made the Payment
                         </Button>
@@ -781,18 +782,18 @@ export const MultiStepViewer = ({
               )}
 
               {activeStep.step_type === "manual_approval" && (
-                <div className="rounded-2xl p-8 text-center" style={{ background: "#141419", border: "1px solid #27272a" }}>
+                <div className="rounded-2xl p-8 text-center" style={{ background: sc.cardBg, border: `1px solid ${sc.cardBorder}` }}>
                   {activeProgress?.status === "completed" || activeProgress?.manually_unlocked ? (
                     <>
                       <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
-                      <h3 className="font-heading font-bold text-white">Step Unlocked</h3>
-                      <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }} className="mt-1">You've been approved to continue.</p>
+                      <h3 className="font-heading font-bold" style={{ color: sc.text }}>Step Unlocked</h3>
+                      <p style={{ fontSize: "12px", color: sc.textMuted }} className="mt-1">You've been approved to continue.</p>
                     </>
                   ) : (
                     <>
-                      <Lock size={40} style={{ color: "rgba(255,255,255,0.2)" }} className="mx-auto mb-3" />
-                      <h3 className="font-heading font-bold text-white">Awaiting Approval</h3>
-                      <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.4)" }} className="mt-2">{activeStep.description || "The creator will unlock this step for you after review."}</p>
+                      <Lock size={40} style={{ color: sc.textDimmer }} className="mx-auto mb-3" />
+                      <h3 className="font-heading font-bold" style={{ color: sc.text }}>Awaiting Approval</h3>
+                      <p style={{ fontSize: "14px", color: sc.textMuted }} className="mt-2">{activeStep.description || "The creator will unlock this step for you after review."}</p>
                       {funnel.contact_whatsapp && (
                         <Button className="mt-4 bg-[#25d366] hover:bg-[#20b858] text-white" onClick={() => window.open(`https://wa.me/${funnel.contact_whatsapp?.replace(/\D/g, "")}`)}>
                           <MessageCircle size={16} /> Contact on WhatsApp
