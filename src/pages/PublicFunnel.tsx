@@ -614,15 +614,24 @@ const PublicFunnel = () => {
 
   return (
     <div className="min-h-screen bg-[#09090b]">
-      {/* Header — clean, premium Nevorai Flow branding */}
-      <div className="px-4 py-3 flex items-center justify-between border-b border-white/[0.06]">
-        <div className="flex items-center gap-2.5">
+      {/* Header */}
+      <div
+        className="flex items-center justify-between sticky top-0 z-50"
+        style={{
+          height: "52px",
+          padding: "0 20px",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          background: "rgba(0,0,0,0.3)",
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        <div className="flex items-center gap-2">
           <img src={logoImg} alt="Nevorai Flow" className="h-6 w-6" />
-          <span className="text-[13px] font-semibold text-white/40 tracking-wide">Nevorai</span>
-          <span className="text-[13px] font-bold text-primary/70 tracking-wide">Flow</span>
+          <span className="font-heading font-bold text-white text-[15px]" style={{ letterSpacing: "-0.02em" }}>Nevorai</span>
+          <span className="font-heading font-extrabold text-primary text-[15px]" style={{ letterSpacing: "-0.03em", fontStyle: "italic", transform: "skewX(-4deg)", display: "inline-block", marginLeft: "-2px" }}>Flow</span>
         </div>
-        <button onClick={handleShare} className="text-white/30 hover:text-white/60 transition-colors p-1.5 rounded-lg hover:bg-white/5">
-          <Share2 size={15} />
+        <button onClick={handleShare} className="text-white/30 hover:text-white/60 transition-colors p-2 rounded-lg hover:bg-white/5 text-xs font-medium flex items-center gap-1.5">
+          <Share2 size={14} /> Share
         </button>
       </div>
 
