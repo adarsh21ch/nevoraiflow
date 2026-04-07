@@ -522,7 +522,7 @@ export const MultiStepViewer = ({
             <button
               onClick={() => window.open(`tel:${funnel.contact_phone}`)}
               className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all"
-              style={{ background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.6)" }}
+              style={{ background: sc.itemBg, color: sc.textMuted }}
             >
               <PhoneIcon size={14} /> Call
             </button>
