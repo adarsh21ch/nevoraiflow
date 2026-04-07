@@ -614,39 +614,62 @@ const PublicFunnel = () => {
 
   return (
     <div className="min-h-screen bg-[#09090b]">
-      {/* Header — clean, premium Nevorai Flow branding */}
-      <div className="px-4 py-3 flex items-center justify-between border-b border-white/[0.06]">
-        <div className="flex items-center gap-2.5">
+      {/* Header */}
+      <div
+        className="flex items-center justify-between sticky top-0 z-50"
+        style={{
+          height: "52px",
+          padding: "0 20px",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          background: "rgba(0,0,0,0.3)",
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        <div className="flex items-center gap-2">
           <img src={logoImg} alt="Nevorai Flow" className="h-6 w-6" />
-          <span className="text-[13px] font-semibold text-white/40 tracking-wide">Nevorai</span>
-          <span className="text-[13px] font-bold text-primary/70 tracking-wide">Flow</span>
+          <span className="font-heading font-bold text-white text-[15px]" style={{ letterSpacing: "-0.02em" }}>Nevorai</span>
+          <span className="font-heading font-extrabold text-primary text-[15px]" style={{ letterSpacing: "-0.03em", fontStyle: "italic", transform: "skewX(-4deg)", display: "inline-block", marginLeft: "-2px" }}>Flow</span>
         </div>
-        <button onClick={handleShare} className="text-white/30 hover:text-white/60 transition-colors p-1.5 rounded-lg hover:bg-white/5">
-          <Share2 size={15} />
+        <button onClick={handleShare} className="text-white/30 hover:text-white/60 transition-colors p-2 rounded-lg hover:bg-white/5 text-xs font-medium flex items-center gap-1.5">
+          <Share2 size={14} /> Share
         </button>
       </div>
 
       {/* Main content */}
+      {isMultiStep ? (
+        /* Multi-step: full width, sidebar is inside the viewer */
+        <div>
+          {/* Title */}
+          <div className="text-center py-6 px-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <h1
+              className="font-heading font-extrabold text-white tracking-tight leading-tight"
+              style={{ fontSize: "clamp(20px, 3vw, 36px)", letterSpacing: "-0.02em" }}
+            >
+              {funnel.title}
+            </h1>
+            {funnel.description && <p className="mt-2 max-w-xl mx-auto" style={{ fontSize: "15px", color: "rgba(255,255,255,0.4)", lineHeight: "1.6" }}>{funnel.description}</p>}
+          </div>
+          <MultiStepViewer
+            funnel={funnel}
+            steps={funnelSteps}
+            creatorProfile={creatorProfile}
+            formConfig={formConfig}
+            priceOptions={priceOptions}
+            VideoPlayer={CustomVideoPlayer}
+          />
+        </div>
+      ) : (
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Title */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-heading font-extrabold text-white tracking-tight leading-tight">{funnel.title}</h1>
-          {funnel.description && <p className="text-[15px] text-white/40 mt-3 max-w-xl mx-auto leading-relaxed">{funnel.description}</p>}
+          <h1
+            className="font-heading font-extrabold text-white tracking-tight leading-tight"
+            style={{ fontSize: "clamp(20px, 3vw, 36px)", letterSpacing: "-0.02em" }}
+          >
+            {funnel.title}
+          </h1>
+          {funnel.description && <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.4)", lineHeight: "1.6" }} className="mt-3 max-w-xl mx-auto">{funnel.description}</p>}
         </div>
-
-        {/* Multi-step funnel viewer */}
-        {isMultiStep ? (
-          <div className="max-w-5xl mx-auto">
-            <MultiStepViewer
-              funnel={funnel}
-              steps={funnelSteps}
-              creatorProfile={creatorProfile}
-              formConfig={formConfig}
-              priceOptions={priceOptions}
-              VideoPlayer={CustomVideoPlayer}
-            />
-          </div>
-        ) : (
           <>
         {/* Lead form before video */}
         {showLeadFormNow && <LeadFormCard className="max-w-md mx-auto mb-8" />}
@@ -788,7 +811,6 @@ const PublicFunnel = () => {
           </div>
         )}
         </>
-        )}
 
         {/* Contact Buttons */}
         {funnel.show_contact_buttons && (leadSubmitted || !funnel.show_contact_after_cta) && (
@@ -806,11 +828,12 @@ const PublicFunnel = () => {
           </div>
         )}
 
-        {/* Footer — clean Nevorai Flow branding */}
+        {/* Footer */}
         <div className="mt-16 pt-6 border-t border-white/[0.04] text-center">
           <p className="text-[11px] text-white/20">© {new Date().getFullYear()} Nevorai Flow · All rights reserved</p>
         </div>
       </div>
+      )}
 
       {/* CTA pulse animation */}
       <style>{`

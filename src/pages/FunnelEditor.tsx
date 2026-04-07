@@ -56,25 +56,25 @@ const generateSlug = (title: string) =>
 
 // ── Wizard step definitions per mode ──
 const SINGLE_STEPS = [
-  { icon: FileText, label: "Basics" },
-  { icon: Video, label: "Video" },
-  { icon: Settings, label: "Controls" },
-  { icon: ClipboardList, label: "Lead Form" },
-  { icon: Mic, label: "Audio" },
-  { icon: MessageCircle, label: "WhatsApp" },
-  { icon: IndianRupee, label: "Payment" },
-  { icon: Radio, label: "Broadcast" },
-  { icon: Rocket, label: "Publish" },
+  { icon: FileText, label: "Name & Info", num: "1" },
+  { icon: Video, label: "Video", num: "2" },
+  { icon: Settings, label: "Video Settings", num: "3" },
+  { icon: ClipboardList, label: "Lead Capture", num: "4" },
+  { icon: Mic, label: "Audio Note", num: "5" },
+  { icon: MessageCircle, label: "Contact Info", num: "6" },
+  { icon: IndianRupee, label: "Payment", num: "7" },
+  { icon: Radio, label: "Broadcast", num: "8" },
+  { icon: Rocket, label: "Publish", num: "9" },
 ];
 
 const MULTI_STEPS = [
-  { icon: FileText, label: "Basics" },
-  { icon: Layers, label: "Steps" },
-  { icon: Settings, label: "Controls" },
-  { icon: MessageCircle, label: "WhatsApp" },
-  { icon: IndianRupee, label: "Payment" },
-  { icon: Radio, label: "Broadcast" },
-  { icon: Rocket, label: "Publish" },
+  { icon: FileText, label: "Name & Info", num: "1" },
+  { icon: Layers, label: "Build Journey", num: "2" },
+  { icon: Settings, label: "Video Settings", num: "3" },
+  { icon: MessageCircle, label: "Contact Info", num: "4" },
+  { icon: IndianRupee, label: "Payment", num: "5" },
+  { icon: Radio, label: "Broadcast", num: "6" },
+  { icon: Rocket, label: "Publish", num: "7" },
 ];
 
 const UNLOCK_LABELS: Record<string, string> = {
@@ -470,78 +470,129 @@ const FunnelEditor = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-heading font-semibold">Build Your Journey</h2>
-          <p className="text-sm text-muted-foreground">Add steps to create a guided experience for your viewers.</p>
+          <p className="text-sm text-muted-foreground">Create a step-by-step experience for your prospects.</p>
         </div>
-        <Button variant="hero" size="sm" onClick={() => setStepTypeSelectorOpen(true)}>
-          <Plus size={14} /> Add Step
-        </Button>
       </div>
 
-      {flowSteps.length === 0 ? (
-        <div className="border-2 border-dashed border-border rounded-xl p-10 text-center mt-4">
-          <Layers size={36} className="text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground mb-1">No steps yet</p>
-          <p className="text-xs text-muted-foreground mb-4">Start building your journey by adding the first step.</p>
-          <Button variant="hero" size="sm" onClick={() => setStepTypeSelectorOpen(true)}>
-            <Plus size={14} /> Add First Step
-          </Button>
-        </div>
-      ) : (
-        <div className="space-y-2 mt-4">
-          {flowSteps.map((fs, idx) => {
-            const meta = getStepTypeMeta(fs.step_type);
-            return (
-              <div
-                key={idx}
-                className="group flex items-center gap-3 p-3 rounded-xl border border-border hover:border-primary/30 bg-card transition-all"
-              >
-                {/* Reorder */}
-                <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => moveStep(idx, idx - 1)} disabled={idx === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors p-0.5"><ChevronUp size={12} /></button>
-                  <button onClick={() => moveStep(idx, idx + 1)} disabled={idx === flowSteps.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors p-0.5"><ChevronDown size={12} /></button>
-                </div>
+      <div className="lg:grid lg:grid-cols-[1fr_240px] lg:gap-5 mt-4">
+        {/* Left: Steps list */}
+        <div>
+          {flowSteps.length === 0 ? (
+            <div className="border-2 border-dashed border-border rounded-[14px] p-10 text-center">
+              <Layers size={36} className="text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm font-semibold text-foreground mb-1">No steps yet</p>
+              <p className="text-xs text-muted-foreground mb-4">Start building your journey by adding the first step.</p>
+              <Button variant="hero" size="sm" onClick={() => setStepTypeSelectorOpen(true)}>
+                <Plus size={14} /> Add First Step
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {flowSteps.map((fs, idx) => {
+                const meta = getStepTypeMeta(fs.step_type);
+                return (
+                  <div
+                    key={idx}
+                    className="group flex flex-col gap-2.5 p-4 rounded-[14px] border border-border hover:border-primary/30 bg-card/50 transition-all"
+                  >
+                    {/* Top row */}
+                    <div className="flex items-center gap-3">
+                      {/* Reorder */}
+                      <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => moveStep(idx, idx - 1)} disabled={idx === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors p-0.5"><ChevronUp size={12} /></button>
+                        <button onClick={() => moveStep(idx, idx + 1)} disabled={idx === flowSteps.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors p-0.5"><ChevronDown size={12} /></button>
+                      </div>
 
-                {/* Icon */}
-                <div className={`w-9 h-9 rounded-lg ${meta.bg} flex items-center justify-center shrink-0`}>
-                  <meta.icon size={16} className={meta.color} />
-                </div>
+                      {/* Icon */}
+                      <div className={`w-8 h-8 rounded-lg ${meta.bg} flex items-center justify-center shrink-0`}>
+                        <meta.icon size={16} className={meta.color} />
+                      </div>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Step {idx + 1}</span>
-                    {!fs.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Inactive</span>}
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">Step {idx + 1}</span>
+                          {!fs.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Inactive</span>}
+                        </div>
+                        <p className="text-[15px] font-semibold text-foreground truncate mt-0.5">
+                          {fs.title || <span className="text-muted-foreground italic">Untitled {meta.label}</span>}
+                        </p>
+                      </div>
+
+                      {/* Edit button */}
+                      <Button variant="outline" size="sm" className="h-8 text-xs shrink-0" onClick={() => setEditingStepIdx(idx)}>
+                        Edit
+                      </Button>
+                    </div>
+
+                    {/* Bottom row: type badge + unlock rule + actions */}
+                    <div className="flex items-center justify-between pl-[52px]">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)" }}>
+                          {meta.label}
+                        </span>
+                        {idx > 0 && (
+                          <span className="text-[12px] text-muted-foreground flex items-center gap-1">
+                            <Lock size={9} /> {UNLOCK_LABELS[fs.unlock_rule_type] || "Auto"}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => duplicateStep(idx)}>
+                          <Copy size={13} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeFlowStep(idx)}>
+                          <Trash2 size={13} />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-sm font-medium text-foreground truncate mt-0.5">
-                    {fs.title || <span className="text-muted-foreground italic">Untitled {meta.label}</span>}
-                  </p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[11px] text-muted-foreground">{meta.label}</span>
-                    {idx > 0 && (
-                      <span className="text-[11px] text-muted-foreground">
-                        · <Lock size={8} className="inline" /> {UNLOCK_LABELS[fs.unlock_rule_type] || "Auto"}
-                      </span>
-                    )}
-                  </div>
-                </div>
+                );
+              })}
+            </div>
+          )}
 
-                {/* Actions */}
-                <div className="flex items-center gap-1 shrink-0">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setEditingStepIdx(idx)}>
-                    <Pencil size={14} />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => duplicateStep(idx)}>
-                    <Copy size={14} />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeFlowStep(idx)}>
-                    <Trash2 size={14} />
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
+          {/* Add Step button */}
+          {flowSteps.length > 0 && (
+            <button
+              onClick={() => setStepTypeSelectorOpen(true)}
+              className="w-full mt-3 rounded-[14px] py-5 text-center transition-all"
+              style={{
+                border: "2px dashed rgba(255,255,255,0.1)",
+                background: "transparent",
+                color: "rgba(255,255,255,0.4)",
+                fontSize: "14px",
+                fontWeight: 600,
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.borderColor = "rgba(34,197,94,0.4)";
+                e.currentTarget.style.color = "#22c55e";
+                e.currentTarget.style.background = "rgba(34,197,94,0.04)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                e.currentTarget.style.color = "rgba(255,255,255,0.4)";
+                e.currentTarget.style.background = "transparent";
+              }}
+            >
+              <Plus size={16} className="inline mr-1.5" />
+              Add Step
+              <span className="block text-[11px] font-normal mt-0.5 opacity-60">Add a video, form, call booking, or payment step</span>
+            </button>
+          )}
         </div>
-      )}
+
+        {/* Right: Live Preview (desktop) */}
+        {flowSteps.length > 0 && (
+          <div className="hidden lg:block">
+            <div className="sticky top-24 p-4 border border-border rounded-xl bg-card/50">
+              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">Live Preview</p>
+              <JourneyPreview steps={flowSteps} />
+              <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">Prospects see this exact order.</p>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Mobile journey preview */}
       {flowSteps.length > 0 && (
@@ -800,12 +851,20 @@ const FunnelEditor = () => {
       <div className="flex gap-6 min-h-[calc(100vh-8rem)]">
         {/* Sidebar nav */}
         {modeChosen && (
-          <div className="hidden lg:flex flex-col gap-1 w-44 shrink-0">
+          <div className="hidden lg:flex flex-col gap-1 w-48 shrink-0">
             {visibleSteps.map((s, i) => (
               <button key={i} onClick={() => setWizardStep(i)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${wizardStep === i ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                <s.icon size={15} />
-                <span>{s.label}</span>
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
+                  wizardStep === i
+                    ? "bg-primary/10 border-l-[3px] border-primary text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted border-l-[3px] border-transparent"
+                }`}
+              >
+                <s.icon size={15} className={wizardStep === i ? "text-primary" : ""} />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold tracking-[0.05em]" style={{ color: "rgba(255,255,255,0.3)" }}>{(s as any).num || i + 1}</p>
+                  <p className="text-[13px] font-semibold leading-tight">{s.label}</p>
+                </div>
                 {i === lastStepIdx && funnel.is_published && <Check size={14} className="ml-auto text-emerald-500" />}
               </button>
             ))}
@@ -867,14 +926,6 @@ const FunnelEditor = () => {
           </div>
         </div>
 
-        {/* Desktop journey preview (multi mode only) */}
-        {isMulti && modeChosen && flowSteps.length > 0 && (
-          <div className="hidden lg:block w-56 shrink-0">
-            <div className="sticky top-24 p-4 border border-border rounded-xl bg-card/50">
-              <JourneyPreview steps={flowSteps} />
-            </div>
-          </div>
-        )}
       </div>
     </DashboardLayout>
   );
