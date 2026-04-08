@@ -115,6 +115,8 @@ const LandingPageEditor = () => {
   const [form, setForm] = useState(defaultFormState);
   const [slugEdited, setSlugEdited] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+  const [videoToggle, setVideoToggle] = useState(false);
+  const [funnelToggle, setFunnelToggle] = useState(false);
 
   const { data: existing, isLoading } = useQuery({
     queryKey: ["landing-page", id],
