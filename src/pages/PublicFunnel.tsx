@@ -332,8 +332,8 @@ const CustomVideoPlayer = ({
         </button>
       )}
 
-      {/* Center play button (before start) */}
-      {!started && (
+      {/* Center play button (only when autoplay failed or not enabled) */}
+      {!started && !autoplay && (
         <div
           className="absolute inset-0 flex items-center justify-center cursor-pointer z-20"
           onClick={(e) => { e.stopPropagation(); togglePlay(); }}
@@ -345,6 +345,30 @@ const CustomVideoPlayer = ({
               <Play size={36} className="ml-1 text-white" />
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Fallback play button when autoplay was completely blocked */}
+      {!started && autoplay && !playing && (
+        <div
+          className="absolute inset-0 flex items-center justify-center cursor-pointer z-20"
+          onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+        >
+          {poster && <img src={poster} alt="" className="absolute inset-0 w-full h-full object-cover" />}
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative z-10">
+            <button className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center hover:scale-110 transition-transform shadow-xl shadow-primary/25 backdrop-blur-sm">
+              <Play size={36} className="ml-1 text-white" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Seek disabled notification */}
+      {seekToast && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2.5 bg-black/80 backdrop-blur-sm rounded-xl border border-white/10 text-white text-xs font-medium animate-in fade-in slide-in-from-top-2 duration-300 shadow-xl">
+          <AlertTriangle size={14} className="text-amber-400 shrink-0" />
+          <span>Skipping forward is not allowed for this video</span>
         </div>
       )}
 
