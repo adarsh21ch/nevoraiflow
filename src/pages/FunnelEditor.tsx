@@ -58,8 +58,10 @@ const createEmptyStep = (order: number, type: string = "video"): FlowStep => ({
   booking_url: "",
 });
 
-const generateSlug = (title: string) =>
-  title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 60) || "my-funnel";
+const generateSlug = (title: string) => {
+  const base = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 50) || "my-funnel";
+  return `${base}-${Date.now().toString(36)}`;
+};
 
 // ── Wizard step definitions per mode ──
 const SINGLE_STEPS = [
