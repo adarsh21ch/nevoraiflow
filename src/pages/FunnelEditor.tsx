@@ -70,21 +70,25 @@ const SINGLE_STEPS = [
   { icon: FileText, label: "Name & Info", num: "1" },
   { icon: Video, label: "Video", num: "2" },
   { icon: Settings, label: "Video Settings", num: "3" },
-  { icon: ClipboardList, label: "Lead Capture", num: "4" },
-  { icon: MessageCircle, label: "Contact Info", num: "5" },
-  { icon: IndianRupee, label: "Payment", num: "6" },
-  { icon: Lock, label: "Privacy", num: "7" },
-  { icon: Rocket, label: "Publish", num: "8" },
+  { icon: User, label: "Speaker", num: "4" },
+  { icon: ListChecks, label: "Video Topics", num: "5" },
+  { icon: ClipboardList, label: "Lead Capture", num: "6" },
+  { icon: MessageCircle, label: "Contact Info", num: "7" },
+  { icon: IndianRupee, label: "Payment", num: "8" },
+  { icon: Lock, label: "Privacy", num: "9" },
+  { icon: Rocket, label: "Publish", num: "10" },
 ];
 
 const MULTI_STEPS = [
   { icon: FileText, label: "Name & Info", num: "1" },
   { icon: Layers, label: "Build Journey", num: "2" },
   { icon: Settings, label: "Video Settings", num: "3" },
-  { icon: MessageCircle, label: "Contact Info", num: "4" },
-  { icon: IndianRupee, label: "Payment", num: "5" },
-  { icon: Lock, label: "Privacy", num: "6" },
-  { icon: Rocket, label: "Publish", num: "7" },
+  { icon: User, label: "Speaker", num: "4" },
+  { icon: ListChecks, label: "Video Topics", num: "5" },
+  { icon: MessageCircle, label: "Contact Info", num: "6" },
+  { icon: IndianRupee, label: "Payment", num: "7" },
+  { icon: Lock, label: "Privacy", num: "8" },
+  { icon: Rocket, label: "Publish", num: "9" },
 ];
 
 const UNLOCK_LABELS: Record<string, string> = {
