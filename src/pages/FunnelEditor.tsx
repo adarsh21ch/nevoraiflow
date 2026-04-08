@@ -488,7 +488,7 @@ const FunnelEditor = () => {
           </div>
           {selectedVideo.url && (
             <div className="rounded-xl overflow-hidden border border-border">
-              <video src={selectedVideo.url} className="w-full aspect-video object-contain bg-black" controls playsInline />
+              <video src={selectedVideo.url} poster={selectedVideo.thumbnail || undefined} className="w-full aspect-video object-contain bg-black" controls playsInline />
             </div>
           )}
         </div>
