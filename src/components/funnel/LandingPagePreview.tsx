@@ -1,10 +1,3 @@
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Lock } from "lucide-react";
 
 interface LandingPagePreviewProps {
@@ -28,6 +21,10 @@ interface LandingPagePreviewProps {
     field_custom_1_label: string;
     field_custom_2_enabled: boolean;
     field_custom_2_label: string;
+    speaker_name?: string;
+    speaker_role?: string;
+    speaker_bio?: string;
+    speaker_photo_url?: string;
     [key: string]: any;
   };
 }
@@ -42,6 +39,7 @@ export const LandingPagePreview = ({ form }: LandingPagePreviewProps) => {
   const cardBg = form.background_style === "light" ? "bg-gray-50 border-gray-200" : "bg-gray-900/50 border-gray-800";
 
   const sections = form.sections || [];
+  const hasSpeaker = !!(form.speaker_name || form.speaker_photo_url);
 
   const formFields = [
     { key: "name", label: "Full Name", enabled: form.field_name_enabled },
@@ -116,19 +114,6 @@ export const LandingPagePreview = ({ form }: LandingPagePreviewProps) => {
             </div>
           </div>
         );
-      case "speaker":
-        return (
-          <div key={i} className={`rounded-lg p-4 flex items-center gap-3 ${cardBg} border`}>
-            {section.photo_url && (
-              <img src={section.photo_url} alt={section.name} className="w-16 h-16 rounded-full object-cover shrink-0" />
-            )}
-            <div>
-              <h3 className="font-bold text-sm">{section.name}</h3>
-              {section.title && <p className="text-[10px] opacity-50">{section.title}</p>}
-              {section.bio && <p className="text-xs opacity-70 mt-1">{section.bio}</p>}
-            </div>
-          </div>
-        );
       case "image":
         return (
           <div key={i}>
@@ -152,7 +137,8 @@ export const LandingPagePreview = ({ form }: LandingPagePreviewProps) => {
       </div>
 
       {/* Content */}
-      <div className="p-4 grid gap-6" style={{ gridTemplateColumns: sections.length > 0 ? "1fr" : "1fr" }}>
+      <div className="p-4 space-y-5">
+        {/* Page sections */}
         <div className="space-y-5">
           {sections.length > 0 ? (
             sections.map(renderSection)
@@ -163,6 +149,20 @@ export const LandingPagePreview = ({ form }: LandingPagePreviewProps) => {
             </div>
           )}
         </div>
+
+        {/* Speaker section */}
+        {hasSpeaker && (
+          <div className={`rounded-lg p-4 flex items-center gap-3 ${cardBg} border`}>
+            {form.speaker_photo_url && (
+              <img src={form.speaker_photo_url} alt={form.speaker_name} className="w-16 h-16 rounded-full object-cover shrink-0" />
+            )}
+            <div>
+              <h3 className="font-bold text-sm">{form.speaker_name}</h3>
+              {form.speaker_role && <p className="text-[10px] opacity-50">{form.speaker_role}</p>}
+              {form.speaker_bio && <p className="text-xs opacity-70 mt-1 line-clamp-2">{form.speaker_bio}</p>}
+            </div>
+          </div>
+        )}
 
         {/* Registration form */}
         <div className={`rounded-xl p-4 ${cardBg} border`}>

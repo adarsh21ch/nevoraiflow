@@ -54,6 +54,9 @@ Deno.serve(async (req) => {
       .eq('id', page.owner_id)
       .single()
 
+    // Use sender_display_name from landing page settings; fall back to platform name
+    const senderDisplayName = (page as any).sender_display_name || 'Nevorai Flow'
+
     let emailBody = (page.email_body || '').replace(/\{\{name\}\}/g, reg.name || 'there')
       .replace(/\{\{email\}\}/g, reg.email || '')
       .replace(/\{\{phone\}\}/g, reg.phone || '')
@@ -85,7 +88,7 @@ Deno.serve(async (req) => {
     }
 
     const senderDomain = 'notify.flow.nevorai.com'
-    const fromName = creator?.full_name || 'Nevorai Flow'
+    const fromName = senderDisplayName
 
     const plainText = `${page.email_heading || 'You are registered!'}\n\n${emailBody}\n\n${page.email_footer_text || ''}\n\nPowered by Nevorai Flow`
 

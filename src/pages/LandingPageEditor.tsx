@@ -107,7 +107,7 @@ const WIZARD_STEPS = [
 const LandingPageEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const isEdit = !!id;
   const isMobile = useIsMobile();
@@ -473,19 +473,45 @@ const LandingPageEditor = () => {
         </div>
         {form.send_confirmation_email && (
           <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
-            {/* Sender Name */}
+            {/* Email Sent As */}
             <div className="p-4 bg-muted/50 rounded-xl space-y-3">
               <div>
-                <Label className="font-semibold">Sender Name</Label>
-                <p className="text-xs text-muted-foreground mt-0.5">This name appears in the recipient's inbox as "From"</p>
-                <Input
-                  value={form.sender_display_name}
-                  onChange={(e) => updateField("sender_display_name", e.target.value)}
-                  placeholder="Nevorai Flow"
-                  className="mt-1.5 bg-muted border-border"
-                />
-                <p className="text-[11px] text-muted-foreground/70 mt-1">
-                  Email will be sent from: <span className="font-mono text-foreground/60">{form.sender_display_name || "Nevorai Flow"} &lt;noreply@flow.nevorai.com&gt;</span>
+                <Label className="font-semibold">Email Sent As</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">Choose who the email appears from in the recipient's inbox</p>
+                <div className="mt-2 space-y-2">
+                  <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                    form.sender_display_name === "Nevorai Flow" ? "border-primary bg-primary/5" : "border-border bg-muted/50 hover:border-muted-foreground/30"
+                  }`}>
+                    <input
+                      type="radio"
+                      name="sender_display_name"
+                      checked={form.sender_display_name === "Nevorai Flow"}
+                      onChange={() => updateField("sender_display_name", "Nevorai Flow")}
+                      className="accent-primary"
+                    />
+                    <div>
+                      <p className="text-sm font-medium">Platform Name</p>
+                      <p className="text-xs text-muted-foreground">Nevorai Flow</p>
+                    </div>
+                  </label>
+                  <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                    form.sender_display_name !== "Nevorai Flow" ? "border-primary bg-primary/5" : "border-border bg-muted/50 hover:border-muted-foreground/30"
+                  }`}>
+                    <input
+                      type="radio"
+                      name="sender_display_name"
+                      checked={form.sender_display_name !== "Nevorai Flow"}
+                      onChange={() => updateField("sender_display_name", profile?.full_name || "Nevorai Flow")}
+                      className="accent-primary"
+                    />
+                    <div>
+                      <p className="text-sm font-medium">My Name</p>
+                      <p className="text-xs text-muted-foreground">{profile?.full_name || "Your profile name"}</p>
+                    </div>
+                  </label>
+                </div>
+                <p className="text-[11px] text-muted-foreground/70 mt-2">
+                  Email will appear as: <span className="font-mono text-foreground/60">{form.sender_display_name || "Nevorai Flow"} &lt;noreply@flow.nevorai.com&gt;</span>
                 </p>
               </div>
             </div>
