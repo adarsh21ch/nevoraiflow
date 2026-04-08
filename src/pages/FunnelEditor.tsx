@@ -764,6 +764,17 @@ const FunnelEditor = () => {
     </>
   );
 
+  const renderPrivacyStep = () => (
+    <PrivacySettings
+      visibility={funnel.visibility}
+      accessCode={funnel.access_code_plain}
+      requiredFields={funnel.required_fields}
+      onVisibilityChange={(v) => update("visibility", v)}
+      onAccessCodeChange={(code) => update("access_code_plain", code)}
+      onRequiredFieldsChange={(fields) => update("required_fields", fields)}
+    />
+  );
+
   const renderWhatsappStep = () => (
     <>
       <h2 className="text-lg font-heading font-semibold">Contact & WhatsApp</h2>
