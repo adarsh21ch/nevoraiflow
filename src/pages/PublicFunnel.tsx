@@ -193,12 +193,18 @@ const CustomVideoPlayer = ({
         togglePlay();
       }
       if (!allowSeek) {
-        if (["ArrowRight", "l", "L"].includes(e.key)) e.preventDefault();
+        if (["ArrowRight", "l", "L"].includes(e.key)) {
+          e.preventDefault();
+          showSeekDisabledToast();
+        }
         if ("123456789".includes(e.key)) {
           const v = videoRef.current;
           if (v) {
             const target = v.duration * (parseInt(e.key) / 10);
-            if (target > maxWatched.current + 1) e.preventDefault();
+            if (target > maxWatched.current + 1) {
+              e.preventDefault();
+              showSeekDisabledToast();
+            }
           }
         }
       }
