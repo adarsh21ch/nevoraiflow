@@ -995,6 +995,7 @@ const FunnelEditor = () => {
             </div>
           )}
         </div>
+      </div>
     </DashboardLayout>
   );
 };
