@@ -770,32 +770,68 @@ const PublicFunnel = () => {
                 </div>
               )}
 
-              {/* Creator Badge */}
-              {creatorProfile?.full_name && (
-                <div className="flex items-center gap-3 py-2">
-                  <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 overflow-hidden ring-2 ring-primary/20">
-                    {creatorProfile.avatar_url ? (
-                      <img src={creatorProfile.avatar_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-primary font-heading font-bold text-sm">{creatorProfile.full_name.charAt(0).toUpperCase()}</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-heading font-semibold text-sm truncate" style={{ color: tc.text }}>{creatorProfile.full_name}</span>
-                      {isVerified && <BadgeCheck size={15} className="text-primary flex-shrink-0" />}
-                    </div>
-                    <div className="flex items-center gap-3 text-xs mt-0.5" style={{ color: tc.textDimmer }}>
-                      {creatorProfile.city && <span className="flex items-center gap-1"><MapPin size={10} /> {creatorProfile.city}</span>}
-                      {creatorProfile.instagram_url && (
-                        <a
-                          href={creatorProfile.instagram_url.startsWith("http") ? creatorProfile.instagram_url : `https://instagram.com/${creatorProfile.instagram_url.replace("@", "")}`}
-                          target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary transition-colors"
-                        >
-                          <Instagram size={10} /> @{creatorProfile.instagram_url.replace(/.*instagram\.com\//, "").replace("@", "")}
-                        </a>
+              {/* Speaker Card */}
+              {(() => {
+                const speakerMode = funnel.speaker_mode || "account";
+                const showSpeaker = speakerMode !== "none";
+                if (!showSpeaker) return null;
+
+                let speakerName = "";
+                let speakerPhoto = "";
+                let speakerAbout = "";
+                if (speakerMode === "account") {
+                  speakerName = creatorProfile?.full_name || "";
+                  speakerPhoto = creatorProfile?.avatar_url || "";
+                  speakerAbout = creatorProfile?.bio || "";
+                } else {
+                  speakerName = funnel.speaker_name || "";
+                  speakerPhoto = funnel.speaker_photo_url || "";
+                  speakerAbout = funnel.speaker_about || "";
+                }
+
+                if (!speakerName) return null;
+
+                return (
+                  <div className="flex items-center gap-3.5 py-4" style={{ borderTop: `1px solid ${tc.border}`, marginTop: "16px" }}>
+                    <div className="w-[52px] h-[52px] rounded-full flex items-center justify-center overflow-hidden shrink-0" style={{ border: "2px solid hsl(var(--primary))" }}>
+                      {speakerPhoto ? (
+                        <img src={speakerPhoto} alt={speakerName} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-primary/15 flex items-center justify-center">
+                          <span className="text-primary font-heading font-bold text-lg">{speakerName.charAt(0).toUpperCase()}</span>
+                        </div>
                       )}
                     </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-heading font-bold text-[15px]" style={{ color: tc.text }}>{speakerName}</p>
+                        {speakerMode === "account" && isVerified && <BadgeCheck size={15} className="text-primary flex-shrink-0" />}
+                      </div>
+                      {speakerAbout && (
+                        <p className="text-[13px] mt-0.5 line-clamp-2" style={{ color: tc.textMuted }}>{speakerAbout}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Video Topics */}
+              {funnel.video_topics_enabled && Array.isArray(funnel.video_topics) && funnel.video_topics.filter((t: string) => t?.trim()).length > 0 && (
+                <div className="rounded-2xl p-5" style={{ background: tc.bgCard, border: `1px solid ${tc.border}`, marginTop: "20px" }}>
+                  <h3 className="font-heading font-bold text-[16px] mb-3.5" style={{ color: tc.text }}>What you'll learn in this session</h3>
+                  <div className="space-y-0">
+                    {funnel.video_topics.filter((t: string) => t?.trim()).map((topic: string, idx: number) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-2.5 py-2"
+                        style={{ borderBottom: idx < funnel.video_topics.filter((t: string) => t?.trim()).length - 1 ? `1px solid ${tc.border}` : "none" }}
+                      >
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: "rgba(34,197,94,0.12)" }}>
+                          <Check size={11} className="text-emerald-500" />
+                        </div>
+                        <span className="text-[14px] leading-relaxed" style={{ color: tc.text }}>{topic}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
