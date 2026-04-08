@@ -171,4 +171,9 @@
       linear-gradient(to right, hsl(180, 20%, 98%, 0.03) 1px, transparent 1px),
       linear-gradient(to bottom, hsl(180, 20%, 98%, 0.03) 1px, transparent 1px);
   }
+
+  /* Safe area for mobile notch/home indicator */
+  .safe-area-pb {
+    padding-bottom: max(0.375rem, env(safe-area-inset-bottom));
+  }
 }

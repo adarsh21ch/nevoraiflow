@@ -48,6 +48,7 @@ import FAQPage from "./pages/FAQPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
+import InstallApp from "./pages/InstallApp";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/refund-policy" element={<RefundPolicyPage />} />
+              <Route path="/install" element={<InstallApp />} />
               <Route path="/f/:slug" element={<PublicFunnel />} />
               <Route path="/l/:slug" element={<PublicLandingPage />} />
               <Route path="/video/:id" element={<PublicVideoPage />} />
