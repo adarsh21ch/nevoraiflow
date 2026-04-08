@@ -270,6 +270,7 @@ const CustomVideoPlayer = ({
     const targetTime = pct * duration;
     if (!allowSeek && targetTime > maxWatched.current + 0.5) {
       v.currentTime = maxWatched.current;
+      showSeekDisabledToast();
     } else {
       v.currentTime = targetTime;
     }
