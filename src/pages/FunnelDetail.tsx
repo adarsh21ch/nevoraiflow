@@ -2,7 +2,6 @@ import { useParams, Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,14 +9,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
-import { Eye, Users, TrendingUp, IndianRupee, Edit, Copy, ExternalLink, Search, Download, Phone, MessageCircle, Check, X, Layers } from "lucide-react";
+import { Eye, Users, TrendingUp, IndianRupee, Edit, Copy, ExternalLink, Search, Download, Phone, MessageCircle, Check, X, Layers, Lock } from "lucide-react";
 import { LeadProgressTab } from "@/components/funnel/LeadProgressTab";
+import { ViewersAnalyticsTab } from "@/components/funnel/ViewersAnalyticsTab";
 
 const FunnelDetail = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<"overview" | "leads" | "payments" | "progress">("overview");
+  const [tab, setTab] = useState<"overview" | "leads" | "payments" | "progress" | "viewers">("overview");
   const [leadSearch, setLeadSearch] = useState("");
   const [leadFilter, setLeadFilter] = useState("all");
 
@@ -83,12 +83,14 @@ const FunnelDetail = () => {
   const totalRevenue = payments.filter((p) => p.status === "verified").reduce((a, p) => a + p.amount, 0);
 
   const isMultiStep = (funnel as any)?.funnel_mode === "multi";
+  const isPrivate = funnel.visibility === "private";
 
   const tabs = [
     { key: "overview", label: "Overview" },
     { key: "leads", label: `Leads (${leads.length})` },
     { key: "payments", label: `Payments (${payments.length})` },
     ...(isMultiStep ? [{ key: "progress", label: "Lead Progress" }] : []),
+    ...(isPrivate ? [{ key: "viewers", label: "Viewers", icon: Lock }] : []),
   ] as const;
 
   return (
@@ -99,6 +101,7 @@ const FunnelDetail = () => {
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-heading font-bold">{funnel.title}</h1>
               <Badge variant={funnel.is_published ? "default" : "secondary"}>{funnel.is_published ? "Published" : "Draft"}</Badge>
+              {isPrivate && <Badge variant="outline" className="text-amber-600 border-amber-500/30 bg-amber-500/10"><Lock size={10} className="mr-1" /> Private</Badge>}
             </div>
             <p className="text-sm text-muted-foreground mt-1">/f/{funnel.slug}</p>
           </div>
@@ -111,10 +114,11 @@ const FunnelDetail = () => {
           </div>
         </div>
 
-        <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
+        <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit flex-wrap">
           {tabs.map((t) => (
             <button key={t.key} onClick={() => setTab(t.key as any)}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${tab === t.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-1.5 ${tab === t.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
+              {"icon" in t && t.icon && <t.icon size={12} />}
               {t.label}
             </button>
           ))}
@@ -274,6 +278,15 @@ const FunnelDetail = () => {
 
         {tab === "progress" && isMultiStep && (
           <LeadProgressTab funnelId={id!} userId={user?.id || ""} />
+        )}
+
+        {tab === "viewers" && isPrivate && (
+          <ViewersAnalyticsTab
+            funnelId={id!}
+            funnelSlug={funnel.slug}
+            accessCode={funnel.access_code_plain || ""}
+            userId={user?.id || ""}
+          />
         )}
       </div>
     </DashboardLayout>
