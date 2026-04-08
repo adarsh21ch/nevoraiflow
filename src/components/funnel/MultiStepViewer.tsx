@@ -185,17 +185,35 @@ export const MultiStepViewer = ({
 
   const completeStep = useCallback(async (stepIndex: number) => {
     const step = steps[stepIndex];
-    await updateStepProgress(step.id, {
-      status: "completed",
+    const completedUpdate = {
+      status: "completed" as const,
       completed_at: new Date().toISOString(),
-    });
+    };
+    await updateStepProgress(step.id, completedUpdate);
 
     if (stepIndex + 1 < steps.length) {
       const nextStep = steps[stepIndex + 1];
-      const nextStatus = getStepStatus(nextStep.id);
-      if (nextStatus === "locked") {
-        const shouldUnlock = checkUnlockCondition(nextStep, stepIndex);
-        if (shouldUnlock) {
+      // Always check unlock for the next step after completing current
+      const rule = nextStep.unlock_rule_type;
+      let shouldUnlock = false;
+      if (rule === "auto") shouldUnlock = true;
+      if (rule === "watch_complete") shouldUnlock = true; // current step just completed
+      if (rule === "cta_click" || rule === "lead_submitted" || rule === "payment_submitted" || rule === "booking_done") shouldUnlock = true;
+      // For manual, don't auto-unlock
+      if (rule === "manual") shouldUnlock = false;
+      // For watch_seconds / watch_percent, check the current progress
+      if (rule === "watch_seconds") {
+        const prev = progressMap[step.id];
+        shouldUnlock = prev && prev.max_watched_seconds >= parseInt(nextStep.unlock_rule_value || "0");
+      }
+      if (rule === "watch_percent") {
+        const prev = progressMap[step.id];
+        shouldUnlock = prev && prev.watched_percentage >= parseInt(nextStep.unlock_rule_value || "0");
+      }
+
+      if (shouldUnlock) {
+        const nextStatus = progressMap[nextStep.id]?.status;
+        if (nextStatus === "locked") {
           await updateStepProgress(nextStep.id, { status: "unlocked" });
         }
       }
