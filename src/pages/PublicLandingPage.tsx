@@ -60,25 +60,27 @@ const PublicLandingPage = () => {
     try {
       const payload: any = {
         landing_page_id: page.id,
-        owner_id: page.owner_id,
+        honeypot: "",
         ...formData,
-        device_type: /Mobi/i.test(navigator.userAgent) ? "mobile" : "desktop",
         user_agent: navigator.userAgent,
       };
 
-      const { error } = await supabase.from("landing_page_registrations").insert(payload);
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke("submit-landing-page-registration", {
+        body: payload,
+      });
 
-      await supabase.from("landing_pages").update({
-        total_registrations: (page.total_registrations || 0) + 1,
-      } as any).eq("id", page.id);
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       localStorage.setItem(`nf_registered_${page.id}`, JSON.stringify({
         name: formData.name, email: formData.email, submittedAt: Date.now(),
       }));
 
-      setShowSuccess(true);
-      setTimeout(() => { setShowSuccess(false); setSubmitted(true); }, 2000);
+      // Show toast and immediately reveal post-submit content
+      toast.success("🎉 You're registered! Check your email for confirmation.", {
+        duration: 5000,
+      });
+      setSubmitted(true);
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");
     } finally {
