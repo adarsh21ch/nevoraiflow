@@ -428,14 +428,6 @@ const FunnelEditor = () => {
           <Label>Description <span className="text-muted-foreground font-normal">(optional)</span></Label>
           <Textarea value={funnel.description} onChange={(e) => update("description", e.target.value)} className="mt-1.5 bg-muted border-border" rows={3} placeholder="What is this funnel about?" />
         </div>
-        <div>
-          <Label>URL Slug</Label>
-          <div className="flex items-center gap-2 mt-1.5">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">/f/</span>
-            <Input value={funnel.slug} onChange={(e) => update("slug", e.target.value)} className="bg-muted border-border" />
-          </div>
-          {funnel.slug && <p className="text-xs text-muted-foreground mt-1">{window.location.origin}/f/{funnel.slug}</p>}
-        </div>
       </div>
     </>
   );
