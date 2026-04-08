@@ -161,6 +161,11 @@ const FunnelEditor = () => {
   const [flowSteps, setFlowSteps] = useState<FlowStep[]>([]);
 
   // ── Queries ──
+  const { data: userProfile } = useQuery({
+    queryKey: ["my-profile", user?.id],
+    queryFn: async () => { if (!user) return null; const { data } = await supabase.from("profiles").select("full_name, avatar_url, bio").eq("id", user.id).single(); return data; },
+    enabled: !!user,
+  });
   const { data: existingFunnel } = useQuery({
     queryKey: ["funnel", id],
     queryFn: async () => { if (!id) return null; const { data } = await supabase.from("funnels").select("*").eq("id", id).single(); return data; },
