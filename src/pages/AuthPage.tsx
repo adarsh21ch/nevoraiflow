@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/landing/Logo";
 import { Eye, EyeOff, Mail, Lock, User, Phone } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 
 const AuthPage = () => {
