@@ -184,6 +184,12 @@ const CustomVideoPlayer = ({
     if (videoRef.current) videoRef.current.playbackRate = s;
   }, []);
 
+  const showSeekDisabledToast = useCallback(() => {
+    if (seekToastTimer.current) clearTimeout(seekToastTimer.current);
+    setSeekToast(true);
+    seekToastTimer.current = setTimeout(() => setSeekToast(false), 2500);
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -250,12 +256,6 @@ const CustomVideoPlayer = ({
       setBuffered(v.buffered.end(v.buffered.length - 1));
     }
   };
-
-  const showSeekDisabledToast = useCallback(() => {
-    if (seekToastTimer.current) clearTimeout(seekToastTimer.current);
-    setSeekToast(true);
-    seekToastTimer.current = setTimeout(() => setSeekToast(false), 2500);
-  }, []);
 
   const handleSeeking = () => {
     const v = videoRef.current;
