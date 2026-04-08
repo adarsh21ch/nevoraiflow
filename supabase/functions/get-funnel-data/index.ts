@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     promises.push(
       supabase
         .from("profiles")
-        .select("full_name, city, instagram_url, avatar_url, kyc_status")
+        .select("full_name, city, instagram_url, avatar_url, kyc_status, bio")
         .eq("id", funnel.owner_id)
         .single()
         .then((r) => ({ key: "creator", data: r.data }))
