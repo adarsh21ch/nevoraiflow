@@ -203,6 +203,12 @@ const FunnelEditor = () => {
         is_published: f.is_published || false,
         access_code_plain: (f as any).access_code_plain || "",
         required_fields: (f as any).required_fields || { email: false, city: false, state: false, whatsapp: false },
+        speaker_mode: (f as any).speaker_mode || "account",
+        speaker_name: (f as any).speaker_name || "",
+        speaker_photo_url: (f as any).speaker_photo_url || "",
+        speaker_about: (f as any).speaker_about || "",
+        video_topics_enabled: (f as any).video_topics_enabled ?? false,
+        video_topics: Array.isArray((f as any).video_topics) ? (f as any).video_topics : [],
       }));
       setModeChosen(true);
       if (f.audio_note_url) setAudioNoteEnabled(true);
