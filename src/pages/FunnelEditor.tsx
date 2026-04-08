@@ -120,7 +120,7 @@ const FunnelEditor = () => {
   const preselectedVideoId = searchParams.get("videoId");
   const [videoPickerOpen, setVideoPickerOpen] = useState(false);
   const [stepVideoPickerIdx, setStepVideoPickerIdx] = useState<number | null>(null);
-  const [selectedVideo, setSelectedVideo] = useState<{ id: string; title: string; url: string | null } | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<{ id: string; title: string; url: string | null; thumbnail?: string | null } | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -219,8 +219,8 @@ const FunnelEditor = () => {
       setModeChosen(true);
       if (f.audio_note_url) setAudioNoteEnabled(true);
       if (f.video_asset_id) {
-        supabase.from("video_assets").select("id, title, public_url").eq("id", f.video_asset_id).single().then(({ data }) => {
-          if (data) setSelectedVideo({ id: data.id, title: data.title, url: data.public_url });
+        supabase.from("video_assets").select("id, title, public_url, thumbnail_url").eq("id", f.video_asset_id).single().then(({ data }) => {
+          if (data) setSelectedVideo({ id: data.id, title: data.title, url: data.public_url, thumbnail: data.thumbnail_url });
         });
       }
     }
@@ -254,8 +254,8 @@ const FunnelEditor = () => {
 
   useEffect(() => {
     if (preselectedVideoId && !isEdit && !selectedVideo) {
-      supabase.from("video_assets").select("id, title, public_url").eq("id", preselectedVideoId).single().then(({ data }) => {
-        if (data) setSelectedVideo({ id: data.id, title: data.title, url: data.public_url });
+      supabase.from("video_assets").select("id, title, public_url, thumbnail_url").eq("id", preselectedVideoId).single().then(({ data }) => {
+        if (data) setSelectedVideo({ id: data.id, title: data.title, url: data.public_url, thumbnail: data.thumbnail_url });
       });
     }
   }, [preselectedVideoId, isEdit, selectedVideo]);
@@ -488,7 +488,7 @@ const FunnelEditor = () => {
           </div>
           {selectedVideo.url && (
             <div className="rounded-xl overflow-hidden border border-border">
-              <video src={selectedVideo.url} className="w-full aspect-video object-contain bg-black" controls playsInline />
+              <video src={selectedVideo.url} poster={selectedVideo.thumbnail || undefined} className="w-full aspect-video object-contain bg-black" controls playsInline />
             </div>
           )}
         </div>
@@ -538,7 +538,7 @@ const FunnelEditor = () => {
         )}
       </div>
 
-      <VideoPickerModal open={videoPickerOpen} onClose={() => setVideoPickerOpen(false)} onSelect={(videoId, title, publicUrl) => { setSelectedVideo({ id: videoId, title, url: publicUrl }); setVideoPickerOpen(false); }} />
+      <VideoPickerModal open={videoPickerOpen} onClose={() => setVideoPickerOpen(false)} onSelect={(videoId, title, publicUrl, thumbnailUrl) => { setSelectedVideo({ id: videoId, title, url: publicUrl, thumbnail: thumbnailUrl }); setVideoPickerOpen(false); }} />
     </>
   );
 

@@ -10,7 +10,7 @@ import { Video, Search, Check } from "lucide-react";
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSelect: (videoId: string, title: string, publicUrl: string | null) => void;
+  onSelect: (videoId: string, title: string, publicUrl: string | null, thumbnailUrl?: string | null) => void;
 }
 
 export const VideoPickerModal = ({ open, onClose, onSelect }: Props) => {
@@ -74,7 +74,7 @@ export const VideoPickerModal = ({ open, onClose, onSelect }: Props) => {
             filtered.map((v) => (
               <button
                 key={v.id}
-                onClick={() => onSelect(v.id, v.title, v.public_url)}
+                onClick={() => onSelect(v.id, v.title, v.public_url, v.thumbnail_url)}
                 className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
               >
                 <div className="w-16 h-10 bg-muted rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
