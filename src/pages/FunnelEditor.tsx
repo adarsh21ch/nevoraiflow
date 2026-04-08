@@ -369,9 +369,11 @@ const FunnelEditor = () => {
     const idx = wizardStep - offset;
     if (idx === 0) return renderControlsStep();
     if (!isMulti && idx === 1) return renderLeadFormStep();
-    const whatsappIdx = isMulti ? 1 : 2;
-    const paymentIdx = isMulti ? 2 : 3;
-    const publishIdx = isMulti ? 3 : 4;
+    const privacyIdx = isMulti ? 1 : 2;
+    const whatsappIdx = isMulti ? 2 : 3;
+    const paymentIdx = isMulti ? 3 : 4;
+    const publishIdx = isMulti ? 4 : 5;
+    if (idx === privacyIdx) return renderPrivacyStep();
     if (idx === whatsappIdx) return renderWhatsappStep();
     if (idx === paymentIdx) return renderPaymentStep();
     if (idx === publishIdx) return renderPublishStep();
