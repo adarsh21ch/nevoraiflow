@@ -68,46 +68,45 @@ Deno.serve(async (req) => {
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 40px 20px;">
-  <div style="max-width: 560px; margin: 0 auto; background: #171717; border-radius: 12px; padding: 32px; border: 1px solid #262626;">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #ffffff; color: #1a1a1a; padding: 40px 20px;">
+  <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; border: 1px solid #e5e5e5;">
     <div style="text-align: center; margin-bottom: 24px;">
-      <h1 style="color: #22c55e; font-size: 20px; margin: 0;">Nevora Flow</h1>
+      <h1 style="color: #22c55e; font-size: 20px; margin: 0;">Nevorai Flow</h1>
     </div>
-    <h2 style="font-size: 22px; margin: 0 0 16px; color: #fafafa;">${page.email_heading || 'You are registered!'}</h2>
-    <div style="font-size: 15px; line-height: 1.7; color: #d4d4d4; white-space: pre-line;">${emailBody}</div>
-    ${page.email_footer_text ? `<div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #262626; font-size: 13px; color: #737373;">${page.email_footer_text}</div>` : ''}
-    <div style="margin-top: 32px; text-align: center; font-size: 11px; color: #525252;">
-      Powered by Nevora Flow
+    <h2 style="font-size: 22px; margin: 0 0 16px; color: #1a1a1a;">${page.email_heading || 'You are registered!'}</h2>
+    <div style="font-size: 15px; line-height: 1.7; color: #555555; white-space: pre-line;">${emailBody}</div>
+    ${page.email_footer_text ? `<div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e5e5; font-size: 13px; color: #999999;">${page.email_footer_text}</div>` : ''}
+    <div style="margin-top: 32px; text-align: center; font-size: 11px; color: #999999;">
+      Powered by Nevorai Flow
     </div>
   </div>
 </body>
 </html>`
 
-    // Send via Resend (if available) or log
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
-    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+    const messageId = `lp-confirm-${registration_id}`
+    const fromName = creator?.full_name || 'Nevorai Flow'
+    const senderDomain = 'notify.flow.nevorai.com'
 
-    if (LOVABLE_API_KEY && RESEND_API_KEY) {
-      const response = await fetch('https://connector-gateway.lovable.dev/resend/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'X-Connection-Api-Key': RESEND_API_KEY,
-        },
-        body: JSON.stringify({
-          from: `${creator?.full_name || 'Nevora Flow'} <onboarding@resend.dev>`,
-          to: [reg.email],
-          subject,
-          html,
-          reply_to: creator?.email || undefined,
-        }),
-      })
-      const result = await response.json()
-      console.log('Resend result:', result)
-    } else {
-      console.log('No email service configured. Would send to:', reg.email)
+    // Enqueue email via Lovable email infrastructure
+    const { error: enqueueError } = await supabase.rpc('enqueue_email', {
+      p_queue_name: 'transactional_emails',
+      p_message_id: messageId,
+      p_to: reg.email,
+      p_subject: subject,
+      p_html: html,
+      p_from: `${fromName} <noreply@flow.nevorai.com>`,
+      p_sender_domain: senderDomain,
+      p_reply_to: creator?.email || null,
+      p_purpose: 'transactional',
+      p_idempotency_key: messageId,
+    })
+
+    if (enqueueError) {
+      console.error('Enqueue error:', enqueueError)
+      throw enqueueError
     }
+
+    console.log('Email enqueued for:', reg.email)
 
     // Update registration
     await supabase.from('landing_page_registrations').update({
