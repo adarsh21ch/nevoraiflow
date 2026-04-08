@@ -56,6 +56,11 @@ Deno.serve(async (req) => {
 
     // Use sender_display_name from landing page settings; fall back to platform name
     const senderDisplayName = (page as any).sender_display_name || 'Nevorai Flow'
+    const isPlatformSender = senderDisplayName === 'Nevorai Flow'
+    const trustBadgeText = isPlatformSender ? 'Verified by Nevorai Flow' : 'Sent via Nevorai Flow'
+    const trustBadgeIcon = isPlatformSender
+      ? '&#10003;'  // checkmark
+      : '&#9656;'   // arrow
 
     let emailBody = (page.email_body || '').replace(/\{\{name\}\}/g, reg.name || 'there')
       .replace(/\{\{email\}\}/g, reg.email || '')
@@ -75,8 +80,11 @@ Deno.serve(async (req) => {
     <h2 style="font-size: 22px; margin: 0 0 16px; color: #1a1a1a;">${page.email_heading || 'You are registered!'}</h2>
     <div style="font-size: 15px; line-height: 1.7; color: #555555; white-space: pre-line;">${emailBody}</div>
     ${page.email_footer_text ? `<div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e5e5; font-size: 13px; color: #999999;">${page.email_footer_text}</div>` : ''}
-    <div style="margin-top: 32px; text-align: center; font-size: 11px; color: #999999;">
-      Powered by Nevorai Flow
+    <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #f0f0f0; text-align: center;">
+      <span style="display: inline-block; font-size: 11px; color: #b0b0b0; letter-spacing: 0.5px; font-weight: 500;">
+        <span style="display: inline-block; width: 16px; height: 16px; line-height: 16px; text-align: center; background: #f5f5f5; border-radius: 50%; font-size: 9px; color: #22c55e; margin-right: 5px; vertical-align: middle;">${trustBadgeIcon}</span>
+        ${trustBadgeText}
+      </span>
     </div>
   </div>
 </body>
