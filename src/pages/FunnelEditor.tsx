@@ -189,6 +189,8 @@ const FunnelEditor = () => {
         broadcast_scheduled_at: f.broadcast_scheduled_at || "", broadcast_password: f.broadcast_password || "",
         broadcast_replay_enabled: f.broadcast_replay_enabled ?? true,
         is_published: f.is_published || false,
+        access_code_plain: (f as any).access_code_plain || "",
+        required_fields: (f as any).required_fields || { email: false, city: false, state: false, whatsapp: false },
       }));
       setModeChosen(true);
       if (f.audio_note_url) setAudioNoteEnabled(true);
