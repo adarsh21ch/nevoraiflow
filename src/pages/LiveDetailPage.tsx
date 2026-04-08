@@ -68,7 +68,7 @@ const LiveDetailPage = () => {
 
   const updateReg = useMutation({
     mutationFn: async ({ regId, updates }: { regId: string; updates: Record<string, any> }) => {
-      const { error } = await supabase.from("live_registrations").update(updates).eq("id", regId);
+      const { error } = await supabase.from("live_registrations").update(updates as any).eq("id", regId);
       if (error) throw error;
     },
     onSuccess: () => {
