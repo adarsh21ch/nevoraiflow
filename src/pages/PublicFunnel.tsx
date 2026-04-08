@@ -102,10 +102,12 @@ const CustomVideoPlayer = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isBuffering, setIsBuffering] = useState(false);
-  const [started, setStarted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [started, setStarted] = useState(autoplay);
+  const [isLoading, setIsLoading] = useState(autoplay);
   const [speed, setSpeed] = useState(1);
   const [autoplayMuted, setAutoplayMuted] = useState(false);
+  const [seekToast, setSeekToast] = useState(false);
+  const seekToastTimer = useRef<ReturnType<typeof setTimeout>>();
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
   const autoplayAttempted = useRef(false);
 
