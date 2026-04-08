@@ -500,7 +500,7 @@ const LandingPageEditor = () => {
                 <Select value={form.post_submit_video_asset_id || ""} onValueChange={(v) => updateField("post_submit_video_asset_id", v || null)}>
                   <SelectTrigger><SelectValue placeholder="Select a video..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     {videos.map((v: any) => (
                       <SelectItem key={v.id} value={v.id}>{v.title}</SelectItem>
                     ))}
