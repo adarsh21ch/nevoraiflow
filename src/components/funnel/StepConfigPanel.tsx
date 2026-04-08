@@ -22,6 +22,12 @@ interface FlowStep {
   cta_text: string;
   cta_url: string;
   booking_url: string;
+  unlock_timer_minutes?: number;
+  between_step_audio_url?: string;
+  between_step_audio_enabled?: boolean;
+  between_step_message?: string;
+  between_step_message_enabled?: boolean;
+  unlock_after_percent?: number;
 }
 
 interface StepConfigPanelProps {
