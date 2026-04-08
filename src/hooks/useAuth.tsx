@@ -104,8 +104,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setProfile(null);
   };
 
+  const signInWithPhone = async (phone: string) => {
+    const { error } = await supabase.auth.signInWithOtp({ phone });
+    return { error };
+  };
+
+  const verifyPhoneOtp = async (phone: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({ phone, token, type: "sms" });
+    return { error };
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signUp, signIn, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, signUp, signIn, signInWithPhone, verifyPhoneOtp, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
