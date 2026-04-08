@@ -154,6 +154,8 @@ const LandingPageEditor = () => {
         sections: (existing.sections as any[]) || [],
       });
       setSlugEdited(true);
+      setVideoToggle(!!existing.post_submit_video_asset_id);
+      setFunnelToggle(!!existing.linked_funnel_id);
     }
   }, [existing]);
 
