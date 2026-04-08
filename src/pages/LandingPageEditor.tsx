@@ -603,8 +603,6 @@ const LandingPageEditor = () => {
     </>
   );
 
-  const [videoToggle, setVideoToggle] = useState(!!form.post_submit_video_asset_id);
-  const [funnelToggle, setFunnelToggle] = useState(!!form.linked_funnel_id);
 
   const renderVideoStep = () => (
     <>
