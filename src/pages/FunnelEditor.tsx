@@ -254,8 +254,8 @@ const FunnelEditor = () => {
 
   useEffect(() => {
     if (preselectedVideoId && !isEdit && !selectedVideo) {
-      supabase.from("video_assets").select("id, title, public_url").eq("id", preselectedVideoId).single().then(({ data }) => {
-        if (data) setSelectedVideo({ id: data.id, title: data.title, url: data.public_url });
+      supabase.from("video_assets").select("id, title, public_url, thumbnail_url").eq("id", preselectedVideoId).single().then(({ data }) => {
+        if (data) setSelectedVideo({ id: data.id, title: data.title, url: data.public_url, thumbnail: data.thumbnail_url });
       });
     }
   }, [preselectedVideoId, isEdit, selectedVideo]);
