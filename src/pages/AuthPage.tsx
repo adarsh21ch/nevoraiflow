@@ -87,7 +87,7 @@ const AuthPage = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {tab === "signup" && (
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm">Full Name</Label>
+                <Label htmlFor="name" className="text-sm">Full Name <span className="text-destructive">*</span></Label>
                 <div className="relative">
                   <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input id="name" placeholder="Your full name" className="pl-9 bg-muted border-border"
