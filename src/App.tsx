@@ -48,6 +48,7 @@ import FAQPage from "./pages/FAQPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
+import InstallApp from "./pages/InstallApp";
 
 const queryClient = new QueryClient();
 
