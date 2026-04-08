@@ -133,6 +133,8 @@ const FunnelEditor = () => {
     payment_enabled: false, upi_id: "", qr_code_url: "", payment_instructions: "",
     is_live_broadcast: false, broadcast_scheduled_at: "", broadcast_password: "", broadcast_replay_enabled: true,
     is_published: false,
+    access_code_plain: "",
+    required_fields: { email: false, city: false, state: false, whatsapp: false } as { email: boolean; city: boolean; state: boolean; whatsapp: boolean },
   });
 
   const [leadForm, setLeadForm] = useState({
