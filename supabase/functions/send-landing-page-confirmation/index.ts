@@ -3,6 +3,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -23,7 +24,6 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Fetch registration
     const { data: reg } = await supabase
       .from('landing_page_registrations')
       .select('*')
@@ -36,7 +36,6 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Fetch landing page
     const { data: page } = await supabase
       .from('landing_pages')
       .select('*')
@@ -49,21 +48,18 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Fetch creator profile
     const { data: creator } = await supabase
       .from('profiles')
       .select('full_name, email')
       .eq('id', page.owner_id)
       .single()
 
-    // Replace template variables
     let emailBody = (page.email_body || '').replace(/\{\{name\}\}/g, reg.name || 'there')
       .replace(/\{\{email\}\}/g, reg.email || '')
       .replace(/\{\{phone\}\}/g, reg.phone || '')
 
     let subject = (page.email_subject || 'Registration Confirmed').replace(/\{\{name\}\}/g, reg.name || 'there')
 
-    // Build HTML email
     const html = `
 <!DOCTYPE html>
 <html>
@@ -83,30 +79,27 @@ Deno.serve(async (req) => {
 </body>
 </html>`
 
-    const messageId = `lp-confirm-${registration_id}`
-    const fromName = creator?.full_name || 'Nevorai Flow'
-    const senderDomain = 'notify.flow.nevorai.com'
-
-    // Enqueue email via Lovable email infrastructure
-    const { error: enqueueError } = await supabase.rpc('enqueue_email', {
-      p_queue_name: 'transactional_emails',
-      p_message_id: messageId,
-      p_to: reg.email,
-      p_subject: subject,
-      p_html: html,
-      p_from: `${fromName} <noreply@flow.nevorai.com>`,
-      p_sender_domain: senderDomain,
-      p_reply_to: creator?.email || null,
-      p_purpose: 'transactional',
-      p_idempotency_key: messageId,
-    })
-
-    if (enqueueError) {
-      console.error('Enqueue error:', enqueueError)
-      throw enqueueError
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured')
     }
 
-    console.log('Email enqueued for:', reg.email)
+    const senderDomain = 'notify.flow.nevorai.com'
+    const fromName = creator?.full_name || 'Nevorai Flow'
+
+    const result = await sendLovableEmail({
+      apiKey: LOVABLE_API_KEY,
+      senderDomain,
+      to: reg.email,
+      subject,
+      html,
+      from: `${fromName} <noreply@flow.nevorai.com>`,
+      replyTo: creator?.email || undefined,
+      purpose: 'transactional',
+      idempotencyKey: `lp-confirm-${registration_id}`,
+    })
+
+    console.log('Email sent result:', JSON.stringify(result))
 
     // Update registration
     await supabase.from('landing_page_registrations').update({
