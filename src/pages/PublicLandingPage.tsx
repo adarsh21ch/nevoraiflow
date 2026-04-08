@@ -132,7 +132,7 @@ const PublicLandingPage = () => {
           <div key={i} className="space-y-4">
             <h1 className="text-3xl md:text-4xl font-bold leading-tight">{section.headline}</h1>
             {section.subheadline && <p className="text-lg text-muted-foreground">{section.subheadline}</p>}
-            {section.image_url && <img src={section.image_url} alt="" className="rounded-xl w-full max-h-80 object-cover" />}
+            {section.image_url && <img src={section.image_url} alt="" className="rounded-xl w-full object-contain" />}
             {section.cta_text && <p className="text-primary font-semibold text-lg">{section.cta_text}</p>}
           </div>
         );
