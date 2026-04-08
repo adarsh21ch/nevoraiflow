@@ -20,6 +20,7 @@ import { VideoPickerModal } from "@/components/VideoPickerModal";
 import { StepTypeSelector, getStepTypeMeta } from "@/components/funnel/StepTypeSelector";
 import { StepConfigPanel } from "@/components/funnel/StepConfigPanel";
 import { JourneyPreview } from "@/components/funnel/JourneyPreview";
+import { PrivacySettings } from "@/components/funnel/PrivacySettings";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface FlowStep {
@@ -66,18 +67,20 @@ const SINGLE_STEPS = [
   { icon: Video, label: "Video", num: "2" },
   { icon: Settings, label: "Video Settings", num: "3" },
   { icon: ClipboardList, label: "Lead Capture", num: "4" },
-  { icon: MessageCircle, label: "Contact Info", num: "5" },
-  { icon: IndianRupee, label: "Payment", num: "6" },
-  { icon: Rocket, label: "Publish", num: "7" },
+  { icon: Lock, label: "Privacy", num: "5" },
+  { icon: MessageCircle, label: "Contact Info", num: "6" },
+  { icon: IndianRupee, label: "Payment", num: "7" },
+  { icon: Rocket, label: "Publish", num: "8" },
 ];
 
 const MULTI_STEPS = [
   { icon: FileText, label: "Name & Info", num: "1" },
   { icon: Layers, label: "Build Journey", num: "2" },
   { icon: Settings, label: "Video Settings", num: "3" },
-  { icon: MessageCircle, label: "Contact Info", num: "4" },
-  { icon: IndianRupee, label: "Payment", num: "5" },
-  { icon: Rocket, label: "Publish", num: "6" },
+  { icon: Lock, label: "Privacy", num: "4" },
+  { icon: MessageCircle, label: "Contact Info", num: "5" },
+  { icon: IndianRupee, label: "Payment", num: "6" },
+  { icon: Rocket, label: "Publish", num: "7" },
 ];
 
 const UNLOCK_LABELS: Record<string, string> = {
@@ -132,6 +135,8 @@ const FunnelEditor = () => {
     payment_enabled: false, upi_id: "", qr_code_url: "", payment_instructions: "",
     is_live_broadcast: false, broadcast_scheduled_at: "", broadcast_password: "", broadcast_replay_enabled: true,
     is_published: false,
+    access_code_plain: "",
+    required_fields: { email: false, city: false, state: false, whatsapp: false } as { email: boolean; city: boolean; state: boolean; whatsapp: boolean },
   });
 
   const [leadForm, setLeadForm] = useState({
@@ -184,6 +189,8 @@ const FunnelEditor = () => {
         broadcast_scheduled_at: f.broadcast_scheduled_at || "", broadcast_password: f.broadcast_password || "",
         broadcast_replay_enabled: f.broadcast_replay_enabled ?? true,
         is_published: f.is_published || false,
+        access_code_plain: (f as any).access_code_plain || "",
+        required_fields: (f as any).required_fields || { email: false, city: false, state: false, whatsapp: false },
       }));
       setModeChosen(true);
       if (f.audio_note_url) setAudioNoteEnabled(true);
@@ -253,6 +260,8 @@ const FunnelEditor = () => {
       is_live_broadcast: funnel.is_live_broadcast, broadcast_scheduled_at: funnel.broadcast_scheduled_at || null,
       broadcast_password: funnel.broadcast_password || null, broadcast_replay_enabled: funnel.broadcast_replay_enabled,
       is_published: funnel.is_published, video_asset_id: selectedVideo?.id || null,
+      access_code_plain: funnel.access_code_plain || null,
+      required_fields: funnel.required_fields,
     };
   }, [user, funnel, selectedVideo]);
 
@@ -360,9 +369,11 @@ const FunnelEditor = () => {
     const idx = wizardStep - offset;
     if (idx === 0) return renderControlsStep();
     if (!isMulti && idx === 1) return renderLeadFormStep();
-    const whatsappIdx = isMulti ? 1 : 2;
-    const paymentIdx = isMulti ? 2 : 3;
-    const publishIdx = isMulti ? 3 : 4;
+    const privacyIdx = isMulti ? 1 : 2;
+    const whatsappIdx = isMulti ? 2 : 3;
+    const paymentIdx = isMulti ? 3 : 4;
+    const publishIdx = isMulti ? 4 : 5;
+    if (idx === privacyIdx) return renderPrivacyStep();
     if (idx === whatsappIdx) return renderWhatsappStep();
     if (idx === paymentIdx) return renderPaymentStep();
     if (idx === publishIdx) return renderPublishStep();
@@ -751,6 +762,17 @@ const FunnelEditor = () => {
         <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl"><div><Label className="font-semibold">Lock Video Until Audio Completes</Label></div><Switch checked={funnel.audio_lock_video} onCheckedChange={(v) => update("audio_lock_video", v)} /></div>
       </div>
     </>
+  );
+
+  const renderPrivacyStep = () => (
+    <PrivacySettings
+      visibility={funnel.visibility}
+      accessCode={funnel.access_code_plain}
+      requiredFields={funnel.required_fields}
+      onVisibilityChange={(v) => update("visibility", v)}
+      onAccessCodeChange={(code) => update("access_code_plain", code)}
+      onRequiredFieldsChange={(fields) => update("required_fields", fields)}
+    />
   );
 
   const renderWhatsappStep = () => (

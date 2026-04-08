@@ -13,7 +13,8 @@ import {
 } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 import { MultiStepViewer } from "@/components/funnel/MultiStepViewer";
-
+import { CodeGateScreen } from "@/components/funnel/CodeGateScreen";
+import { PrivateLeadForm } from "@/components/funnel/PrivateLeadForm";
 /* ─── Speed Popover ─── */
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
 
@@ -426,6 +427,8 @@ const PublicFunnel = () => {
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordUnlocked, setPasswordUnlocked] = useState(false);
+  const [codeGateUnlocked, setCodeGateUnlocked] = useState(false);
+  const [privateLeadSubmitted, setPrivateLeadSubmitted] = useState(false);
   const [pubTheme, setPubTheme] = useState<"dark" | "light">(() => {
     const saved = localStorage.getItem("nevorai-public-theme");
     return saved === "light" ? "light" : "dark";
@@ -489,6 +492,17 @@ const PublicFunnel = () => {
 
   const isDraft = funnel && !funnel.is_published;
   const canView = funnel && funnel.is_published;
+  const isPrivateFunnel = funnel?.visibility === "private";
+  const requiredFields = funnel?.required_fields || { email: false, city: false, state: false, whatsapp: false };
+
+  // Check localStorage for existing code verification and lead submission
+  useEffect(() => {
+    if (!funnel) return;
+    const codeVerified = localStorage.getItem(`nf_code_verified_${funnel.id}`);
+    if (codeVerified) setCodeGateUnlocked(true);
+    const leadStored = localStorage.getItem(`nf_lead_${funnel.id}`);
+    if (leadStored) setPrivateLeadSubmitted(true);
+  }, [funnel]);
 
   useEffect(() => {
     if (!funnel || funnel.cta_enabled !== true) return;
@@ -582,7 +596,7 @@ const PublicFunnel = () => {
     </div>
   );
 
-  // Password gate
+  // Password gate (legacy)
   if (funnel.visibility === "password" && !passwordUnlocked) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: tc.bg }}>
@@ -593,6 +607,35 @@ const PublicFunnel = () => {
           <Input type="password" placeholder="Enter password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} style={{ background: tc.inputBg, borderColor: tc.inputBorder, color: tc.inputText }} className="mb-3" />
           <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => setPasswordUnlocked(true)}>Unlock</Button>
         </div>
+      </div>
+    );
+  }
+
+  // Private funnel gate: Step 1 - Access Code
+  if (isPrivateFunnel && !codeGateUnlocked) {
+    return (
+      <CodeGateScreen
+        funnelId={funnel.id}
+        funnelTitle={funnel.title}
+        creatorName={creatorProfile?.full_name}
+        onSuccess={() => setCodeGateUnlocked(true)}
+        onLoginClick={() => {}}
+        isDark={isDark}
+      />
+    );
+  }
+
+  // Private funnel gate: Step 2 - Lead Registration
+  if (isPrivateFunnel && codeGateUnlocked && !privateLeadSubmitted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: tc.bg }}>
+        <PrivateLeadForm
+          funnelId={funnel.id}
+          funnelTitle={funnel.title}
+          requiredFields={requiredFields}
+          onSuccess={() => setPrivateLeadSubmitted(true)}
+          isDark={isDark}
+        />
       </div>
     );
   }
