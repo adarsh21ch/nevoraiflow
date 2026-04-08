@@ -99,6 +99,9 @@ const FunnelsPage = () => {
                   <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full ${f.is_published ? "bg-success" : "bg-muted-foreground"}`} />
                     <span className="text-xs text-muted-foreground">{f.is_published ? "Published" : "Draft"}</span>
+                    {f.visibility === "private" && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium flex items-center gap-1">🔒 Private</span>
+                    )}
                   </div>
                   {f.intent_type === "paid" && <span className="text-xs px-2 py-0.5 rounded-full bg-warning/10 text-warning">Paid</span>}
                 </div>
