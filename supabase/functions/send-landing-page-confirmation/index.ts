@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
     }
 
     const senderDomain = 'notify.flow.nevorai.com'
-    const fromName = creator?.full_name || 'Nevorai Flow'
+    const fromName = senderDisplayName
 
     const plainText = `${page.email_heading || 'You are registered!'}\n\n${emailBody}\n\n${page.email_footer_text || ''}\n\nPowered by Nevorai Flow`
 

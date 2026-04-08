@@ -107,7 +107,7 @@ const WIZARD_STEPS = [
 const LandingPageEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const isEdit = !!id;
   const isMobile = useIsMobile();
