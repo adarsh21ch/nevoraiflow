@@ -62,6 +62,41 @@ export type Database = {
         }
         Relationships: []
       }
+      funnel_access_logs: {
+        Row: {
+          attempted_at: string | null
+          code_attempted: string | null
+          funnel_id: string
+          id: string
+          ip_address: string | null
+          success: boolean
+        }
+        Insert: {
+          attempted_at?: string | null
+          code_attempted?: string | null
+          funnel_id: string
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+        }
+        Update: {
+          attempted_at?: string | null
+          code_attempted?: string | null
+          funnel_id?: string
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funnel_access_logs_funnel_id_fkey"
+            columns: ["funnel_id"]
+            isOneToOne: false
+            referencedRelation: "funnels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       funnel_lead_form_config: {
         Row: {
           capture_enabled: boolean | null
@@ -526,6 +561,7 @@ export type Database = {
       }
       funnels: {
         Row: {
+          access_code_plain: string | null
           allow_seek: boolean | null
           allow_speed_change: boolean | null
           audio_lock_video: boolean | null
@@ -556,6 +592,7 @@ export type Database = {
           payment_enabled: boolean | null
           payment_instructions: string | null
           qr_code_url: string | null
+          required_fields: Json | null
           show_contact_after_cta: boolean | null
           show_contact_buttons: boolean | null
           slug: string
@@ -574,6 +611,7 @@ export type Database = {
           whatsapp_message_template: string | null
         }
         Insert: {
+          access_code_plain?: string | null
           allow_seek?: boolean | null
           allow_speed_change?: boolean | null
           audio_lock_video?: boolean | null
@@ -604,6 +642,7 @@ export type Database = {
           payment_enabled?: boolean | null
           payment_instructions?: string | null
           qr_code_url?: string | null
+          required_fields?: Json | null
           show_contact_after_cta?: boolean | null
           show_contact_buttons?: boolean | null
           slug: string
@@ -622,6 +661,7 @@ export type Database = {
           whatsapp_message_template?: string | null
         }
         Update: {
+          access_code_plain?: string | null
           allow_seek?: boolean | null
           allow_speed_change?: boolean | null
           audio_lock_video?: boolean | null
@@ -652,6 +692,7 @@ export type Database = {
           payment_enabled?: boolean | null
           payment_instructions?: string | null
           qr_code_url?: string | null
+          required_fields?: Json | null
           show_contact_after_cta?: boolean | null
           show_contact_buttons?: boolean | null
           slug?: string
