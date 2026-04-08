@@ -20,6 +20,7 @@ import { VideoPickerModal } from "@/components/VideoPickerModal";
 import { StepTypeSelector, getStepTypeMeta } from "@/components/funnel/StepTypeSelector";
 import { StepConfigPanel } from "@/components/funnel/StepConfigPanel";
 import { JourneyPreview } from "@/components/funnel/JourneyPreview";
+import { PrivacySettings } from "@/components/funnel/PrivacySettings";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface FlowStep {
