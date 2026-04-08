@@ -538,7 +538,7 @@ const FunnelEditor = () => {
         )}
       </div>
 
-      <VideoPickerModal open={videoPickerOpen} onClose={() => setVideoPickerOpen(false)} onSelect={(videoId, title, publicUrl) => { setSelectedVideo({ id: videoId, title, url: publicUrl }); setVideoPickerOpen(false); }} />
+      <VideoPickerModal open={videoPickerOpen} onClose={() => setVideoPickerOpen(false)} onSelect={(videoId, title, publicUrl, thumbnailUrl) => { setSelectedVideo({ id: videoId, title, url: publicUrl, thumbnail: thumbnailUrl }); setVideoPickerOpen(false); }} />
     </>
   );
 
