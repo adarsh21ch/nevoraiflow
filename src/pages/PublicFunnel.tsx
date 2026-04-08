@@ -13,7 +13,8 @@ import {
 } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 import { MultiStepViewer } from "@/components/funnel/MultiStepViewer";
-
+import { CodeGateScreen } from "@/components/funnel/CodeGateScreen";
+import { PrivateLeadForm } from "@/components/funnel/PrivateLeadForm";
 /* ─── Speed Popover ─── */
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
 
