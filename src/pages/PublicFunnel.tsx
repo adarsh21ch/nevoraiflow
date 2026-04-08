@@ -596,7 +596,7 @@ const PublicFunnel = () => {
     </div>
   );
 
-  // Password gate
+  // Password gate (legacy)
   if (funnel.visibility === "password" && !passwordUnlocked) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: tc.bg }}>
@@ -607,6 +607,35 @@ const PublicFunnel = () => {
           <Input type="password" placeholder="Enter password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} style={{ background: tc.inputBg, borderColor: tc.inputBorder, color: tc.inputText }} className="mb-3" />
           <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => setPasswordUnlocked(true)}>Unlock</Button>
         </div>
+      </div>
+    );
+  }
+
+  // Private funnel gate: Step 1 - Access Code
+  if (isPrivateFunnel && !codeGateUnlocked) {
+    return (
+      <CodeGateScreen
+        funnelId={funnel.id}
+        funnelTitle={funnel.title}
+        creatorName={creatorProfile?.full_name}
+        onSuccess={() => setCodeGateUnlocked(true)}
+        onLoginClick={() => {}}
+        isDark={isDark}
+      />
+    );
+  }
+
+  // Private funnel gate: Step 2 - Lead Registration
+  if (isPrivateFunnel && codeGateUnlocked && !privateLeadSubmitted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: tc.bg }}>
+        <PrivateLeadForm
+          funnelId={funnel.id}
+          funnelTitle={funnel.title}
+          requiredFields={requiredFields}
+          onSuccess={() => setPrivateLeadSubmitted(true)}
+          isDark={isDark}
+        />
       </div>
     );
   }
