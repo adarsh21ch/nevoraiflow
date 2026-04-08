@@ -427,6 +427,8 @@ const PublicFunnel = () => {
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordUnlocked, setPasswordUnlocked] = useState(false);
+  const [codeGateUnlocked, setCodeGateUnlocked] = useState(false);
+  const [privateLeadSubmitted, setPrivateLeadSubmitted] = useState(false);
   const [pubTheme, setPubTheme] = useState<"dark" | "light">(() => {
     const saved = localStorage.getItem("nevorai-public-theme");
     return saved === "light" ? "light" : "dark";
