@@ -520,7 +520,7 @@ const LandingPageEditor = () => {
                 <Select value={form.linked_funnel_id || ""} onValueChange={(v) => updateField("linked_funnel_id", v || null)}>
                   <SelectTrigger><SelectValue placeholder="No linked funnel" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     {funnels.map((f: any) => (
                       <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>
                     ))}
