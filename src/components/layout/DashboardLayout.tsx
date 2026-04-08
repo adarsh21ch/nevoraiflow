@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Layers, Video, Users, IndianRupee, BarChart3,
   User, Bell, Settings, LogOut, ChevronLeft, ChevronRight,
   Shield, Cog, UserCheck, CreditCard, Sun, Moon, Radio, FileCheck,
+  FileText,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
