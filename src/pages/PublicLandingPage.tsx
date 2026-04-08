@@ -220,17 +220,7 @@ const PublicLandingPage = () => {
 
       {/* Main Content */}
       <main className="flex-1 px-4 md:px-8 py-8 max-w-7xl mx-auto w-full">
-        {showSuccess ? (
-          <div className="flex items-center justify-center min-h-[60vh] animate-in fade-in">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto">
-                <Check className="text-primary" size={32} />
-              </div>
-              <h2 className="text-2xl font-bold">You're registered!</h2>
-              <p className="text-muted-foreground">Check your email for confirmation.</p>
-            </div>
-          </div>
-        ) : submitted ? (
+        {submitted ? (
           <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold">{page.post_submit_video_title}</h2>
