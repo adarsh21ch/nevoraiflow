@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Lock, Loader2 } from "lucide-react";
+import { Lock, Loader2, Shield } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 
 interface CodeGateScreenProps {
@@ -28,7 +28,6 @@ export const CodeGateScreen = ({
   const [locked, setLocked] = useState(false);
   const [lockRemaining, setLockRemaining] = useState(0);
 
-  // Check localStorage for lockout
   useEffect(() => {
     const key = `nf_code_lock_${funnelId}`;
     const stored = localStorage.getItem(key);
@@ -43,7 +42,6 @@ export const CodeGateScreen = ({
     }
   }, [funnelId]);
 
-  // Countdown timer for lockout
   useEffect(() => {
     if (!locked) return;
     const interval = setInterval(() => {
@@ -92,14 +90,13 @@ export const CodeGateScreen = ({
         );
         onSuccess();
       } else {
-        // Track failed attempts
         const attemptKey = `nf_code_attempts_${funnelId}`;
         const stored = localStorage.getItem(attemptKey);
         let attempts = stored ? JSON.parse(stored).count : 0;
         attempts++;
 
         if (attempts >= 5) {
-          const lockedUntil = Date.now() + 60 * 60 * 1000; // 1 hour
+          const lockedUntil = Date.now() + 60 * 60 * 1000;
           localStorage.setItem(`nf_code_lock_${funnelId}`, JSON.stringify({ lockedUntil }));
           localStorage.removeItem(attemptKey);
           setLocked(true);
@@ -108,7 +105,7 @@ export const CodeGateScreen = ({
           localStorage.setItem(attemptKey, JSON.stringify({ count: attempts }));
         }
 
-        setError("Incorrect code. Please try again.");
+        setError("That code doesn't match. Please check and try again.");
         setShake(true);
         setTimeout(() => setShake(false), 500);
       }
@@ -136,13 +133,15 @@ export const CodeGateScreen = ({
         </div>
 
         <div className="rounded-2xl p-8" style={{ background: cardBg, border: `1px solid ${border}` }}>
-          <Lock size={40} className="text-primary mx-auto mb-4" />
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-5">
+            <Shield size={28} className="text-primary" />
+          </div>
           <h2 className="text-xl font-heading font-bold mb-1" style={{ color: text }}>{funnelTitle}</h2>
           {creatorName && (
             <p className="text-sm mb-4" style={{ color: textMuted }}>by {creatorName}</p>
           )}
-          <p className="text-sm font-semibold mb-2" style={{ color: text }}>This is a Private Funnel</p>
-          <p className="text-xs mb-6" style={{ color: textMuted }}>Enter your access code to continue</p>
+          <p className="text-sm font-medium mb-1" style={{ color: text }}>This program requires an access code</p>
+          <p className="text-xs mb-6" style={{ color: textMuted }}>Enter the code shared with you to unlock this content</p>
 
           {locked ? (
             <div className="text-center">
@@ -170,10 +169,14 @@ export const CodeGateScreen = ({
                 className="w-full h-12 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
                 disabled={loading || !code.trim()}
               >
-                {loading ? <><Loader2 size={16} className="animate-spin mr-2" /> Verifying...</> : "Unlock Access"}
+                {loading ? <><Loader2 size={16} className="animate-spin mr-2" /> Verifying...</> : "Unlock Program →"}
               </Button>
             </form>
           )}
+
+          <p className="text-[10px] mt-4 flex items-center justify-center gap-1" style={{ color: textMuted }}>
+            <Lock size={10} /> Secure & encrypted verification
+          </p>
         </div>
 
         <button
@@ -181,7 +184,7 @@ export const CodeGateScreen = ({
           className="mt-4 text-xs hover:underline"
           style={{ color: textMuted }}
         >
-          Already have access? Login
+          Already have access? Continue here
         </button>
       </div>
 
