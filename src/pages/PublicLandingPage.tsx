@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { Logo } from "@/components/landing/Logo";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
@@ -119,7 +122,7 @@ const PublicLandingPage = () => {
     { key: "email", label: "Email Address", enabled: page.field_email_enabled, required: page.field_email_required, type: "email" },
     { key: "age", label: "Age", enabled: page.field_age_enabled, required: page.field_age_required },
     { key: "city", label: "City", enabled: page.field_city_enabled, required: page.field_city_required },
-    { key: "state", label: "State", enabled: page.field_state_enabled, required: page.field_state_required },
+    { key: "state", label: "State", enabled: page.field_state_enabled, required: page.field_state_required, fieldType: "state_dropdown" },
     { key: "occupation", label: "Occupation", enabled: page.field_occupation_enabled, required: page.field_occupation_required },
     ...(page.field_custom_1_enabled ? [{ key: "custom_1_value", label: page.field_custom_1_label || "Custom 1", enabled: true, required: page.field_custom_1_required }] : []),
     ...(page.field_custom_2_enabled ? [{ key: "custom_2_value", label: page.field_custom_2_label || "Custom 2", enabled: true, required: page.field_custom_2_required }] : []),
@@ -284,13 +287,32 @@ const PublicLandingPage = () => {
                   {formFields.map((f) => (
                     <div key={f.key} className="space-y-1.5">
                       <Label>{f.label} {f.required && <span className="text-destructive">*</span>}</Label>
-                      <Input
-                        type={(f as any).type || "text"}
-                        placeholder={(f as any).prefix ? `${(f as any).prefix} ` : ""}
-                        value={formData[f.key] || ""}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                        required={f.required}
-                      />
+                      {(f as any).fieldType === "state_dropdown" ? (
+                        <Select
+                          value={formData[f.key] || "__none__"}
+                          onValueChange={(val) => setFormData((prev) => ({ ...prev, [f.key]: val === "__none__" ? "" : val }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select State" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__" disabled>Select State</SelectItem>
+                            {[
+                              "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Andaman & Nicobar Islands","Chandigarh","Dadra & Nagar Haveli and Daman & Diu","Delhi","Jammu & Kashmir","Ladakh","Lakshadweep","Puducherry"
+                            ].map((s) => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          type={(f as any).type || "text"}
+                          placeholder={(f as any).prefix ? `${(f as any).prefix} ` : ""}
+                          value={formData[f.key] || ""}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                          required={f.required}
+                        />
+                      )}
                     </div>
                   ))}
 
