@@ -5,7 +5,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Video, Lock } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Video, Lock, Clock, MessageSquare, Music } from "lucide-react";
 import { getStepTypeMeta } from "./StepTypeSelector";
 
 interface FlowStep {
@@ -21,6 +22,12 @@ interface FlowStep {
   cta_text: string;
   cta_url: string;
   booking_url: string;
+  unlock_timer_minutes?: number;
+  between_step_audio_url?: string;
+  between_step_audio_enabled?: boolean;
+  between_step_message?: string;
+  between_step_message_enabled?: boolean;
+  unlock_after_percent?: number;
 }
 
 interface StepConfigPanelProps {
@@ -259,6 +266,75 @@ export const StepConfigPanel = ({ open, onClose, step, stepIndex, onUpdate, onOp
               <p className="text-xs text-muted-foreground mt-2">
                 {UNLOCK_OPTIONS.find((r) => r.value === step.unlock_rule_type)?.description}
               </p>
+            </div>
+          )}
+
+          {/* Enhanced: Time-based unlock timer */}
+          {stepIndex < totalSteps - 1 && (
+            <div className="pt-4 border-t border-border space-y-4">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                <Clock size={12} className="text-muted-foreground" />
+                After Completing This Step
+              </Label>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Time delay before next step (minutes)</Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={step.unlock_timer_minutes || 0}
+                    onChange={(e) => onUpdate("unlock_timer_minutes" as keyof FlowStep, parseInt(e.target.value) || 0)}
+                    className="w-24 bg-muted border-border"
+                  />
+                  <span className="text-xs text-muted-foreground">0 = no delay</span>
+                </div>
+              </div>
+
+              {/* Between-step audio */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium flex items-center gap-1.5">
+                    <Music size={12} className="text-muted-foreground" />
+                    Audio Note (between steps)
+                  </Label>
+                  <Switch
+                    checked={step.between_step_audio_enabled || false}
+                    onCheckedChange={(v) => onUpdate("between_step_audio_enabled" as keyof FlowStep, v)}
+                  />
+                </div>
+                {step.between_step_audio_enabled && (
+                  <Input
+                    value={step.between_step_audio_url || ""}
+                    onChange={(e) => onUpdate("between_step_audio_url" as keyof FlowStep, e.target.value)}
+                    placeholder="Audio file URL (MP3, M4A)"
+                    className="bg-muted border-border"
+                  />
+                )}
+              </div>
+
+              {/* Between-step text message */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium flex items-center gap-1.5">
+                    <MessageSquare size={12} className="text-muted-foreground" />
+                    Text Message (between steps)
+                  </Label>
+                  <Switch
+                    checked={step.between_step_message_enabled || false}
+                    onCheckedChange={(v) => onUpdate("between_step_message_enabled" as keyof FlowStep, v)}
+                  />
+                </div>
+                {step.between_step_message_enabled && (
+                  <Textarea
+                    value={step.between_step_message || ""}
+                    onChange={(e) => onUpdate("between_step_message" as keyof FlowStep, e.target.value)}
+                    placeholder="Message shown while waiting for next step..."
+                    className="bg-muted border-border"
+                    rows={3}
+                  />
+                )}
+              </div>
             </div>
           )}
 

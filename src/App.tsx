@@ -16,6 +16,10 @@ import FunnelsPage from "./pages/FunnelsPage";
 import FunnelEditor from "./pages/FunnelEditor";
 import FunnelDetail from "./pages/FunnelDetail";
 import PublicFunnel from "./pages/PublicFunnel";
+import LandingPagesPage from "./pages/LandingPagesPage";
+import LandingPageEditor from "./pages/LandingPageEditor";
+import LandingPageDetail from "./pages/LandingPageDetail";
+import PublicLandingPage from "./pages/PublicLandingPage";
 import VideosPage from "./pages/VideosPage";
 import PublicVideoPage from "./pages/PublicVideoPage";
 import LeadsPage from "./pages/LeadsPage";
@@ -69,6 +73,7 @@ const App = () => (
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/refund-policy" element={<RefundPolicyPage />} />
               <Route path="/f/:slug" element={<PublicFunnel />} />
+              <Route path="/l/:slug" element={<PublicLandingPage />} />
               <Route path="/video/:id" element={<PublicVideoPage />} />
               <Route path="/s/:slug" element={<PublicLivePage />} />
 
@@ -76,6 +81,10 @@ const App = () => (
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/funnels" element={<ProtectedRoute><FunnelsPage /></ProtectedRoute>} />
+              <Route path="/landing-pages" element={<ProtectedRoute><LandingPagesPage /></ProtectedRoute>} />
+              <Route path="/landing-pages/create" element={<ProtectedRoute><LandingPageEditor /></ProtectedRoute>} />
+              <Route path="/landing-pages/:id" element={<ProtectedRoute><LandingPageDetail /></ProtectedRoute>} />
+              <Route path="/landing-pages/:id/edit" element={<ProtectedRoute><LandingPageEditor /></ProtectedRoute>} />
               <Route path="/funnels/create" element={<ProtectedRoute><FunnelEditor /></ProtectedRoute>} />
               <Route path="/funnels/:id" element={<ProtectedRoute><FunnelDetail /></ProtectedRoute>} />
               <Route path="/funnels/:id/edit" element={<ProtectedRoute><FunnelEditor /></ProtectedRoute>} />
