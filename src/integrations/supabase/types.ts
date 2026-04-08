@@ -993,7 +993,12 @@ export type Database = {
           post_submit_video_title: string | null
           sections: Json | null
           send_confirmation_email: boolean | null
+          sender_display_name: string | null
           slug: string
+          speaker_bio: string | null
+          speaker_name: string | null
+          speaker_photo_url: string | null
+          speaker_role: string | null
           status: string
           theme_color: string | null
           title: string
@@ -1047,7 +1052,12 @@ export type Database = {
           post_submit_video_title?: string | null
           sections?: Json | null
           send_confirmation_email?: boolean | null
+          sender_display_name?: string | null
           slug: string
+          speaker_bio?: string | null
+          speaker_name?: string | null
+          speaker_photo_url?: string | null
+          speaker_role?: string | null
           status?: string
           theme_color?: string | null
           title: string
@@ -1101,7 +1111,12 @@ export type Database = {
           post_submit_video_title?: string | null
           sections?: Json | null
           send_confirmation_email?: boolean | null
+          sender_display_name?: string | null
           slug?: string
+          speaker_bio?: string | null
+          speaker_name?: string | null
+          speaker_photo_url?: string | null
+          speaker_role?: string | null
           status?: string
           theme_color?: string | null
           title?: string

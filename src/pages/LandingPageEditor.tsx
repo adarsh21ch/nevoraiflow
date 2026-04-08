@@ -15,8 +15,8 @@ import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { LandingPagePreview } from "@/components/funnel/LandingPagePreview";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
-  FileText, Palette, ClipboardList, Mail, Video, Link2, Rocket,
-  Save, ArrowLeft, Check, X, Plus, Trash2, GripVertical, Eye, Edit3,
+  FileText, Palette, ClipboardList, Mail, Video, Link2, Rocket, Mic,
+  Save, ArrowLeft, Check, X, Plus, Trash2, GripVertical, Eye, Edit3, Search,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,10 +42,21 @@ const defaultFormState = {
   field_custom_1_enabled: false, field_custom_1_label: "", field_custom_1_required: false,
   field_custom_2_enabled: false, field_custom_2_label: "", field_custom_2_required: false,
   send_confirmation_email: true,
-  email_subject: "Your Registration is Confirmed!",
-  email_heading: "Welcome! You are registered.",
-  email_body: "Thank you for registering. We look forward to seeing you at the session.",
-  email_footer_text: "",
+  sender_display_name: "Nevorai Flow",
+  email_subject: "You're Registered! Get Ready for the Session",
+  email_heading: "Welcome! You Are Successfully Registered",
+  email_body: `Thank you for registering.
+
+Your registration has been successfully confirmed, and your spot is now secured.
+
+We're excited to have you join this session. Please make sure you are ready before the scheduled time and attend with full focus for the best experience.
+
+Be ready for the session at [7:00 PM].
+
+Make sure to join on time and go through the complete session properly so you do not miss any important information.
+
+We look forward to having you there.`,
+  email_footer_text: "Regards,\nTeam Nevorai Flow",
   post_submit_video_asset_id: null as string | null,
   post_submit_video_title: "Watch this introduction",
   post_submit_video_description: "",
@@ -57,6 +68,10 @@ const defaultFormState = {
   og_image_url: "",
   theme_color: "#22c55e",
   background_style: "dark",
+  speaker_name: "",
+  speaker_role: "",
+  speaker_bio: "",
+  speaker_photo_url: "",
 };
 
 const sectionTypes = [
@@ -65,7 +80,6 @@ const sectionTypes = [
   { type: "features", label: "Features / Benefits", icon: "✨" },
   { type: "testimonials", label: "Testimonials", icon: "💬" },
   { type: "faq", label: "FAQ", icon: "❓" },
-  { type: "speaker", label: "Speaker / Host", icon: "🎤" },
   { type: "image", label: "Image", icon: "🖼️" },
 ];
 
@@ -84,9 +98,10 @@ const WIZARD_STEPS = [
   { icon: Palette, label: "Design", num: "2" },
   { icon: ClipboardList, label: "Form", num: "3" },
   { icon: Mail, label: "Email", num: "4" },
-  { icon: Video, label: "Video", num: "5" },
-  { icon: Link2, label: "SEO", num: "6" },
-  { icon: Rocket, label: "Publish", num: "7" },
+  { icon: Mic, label: "Speaker", num: "5" },
+  { icon: Video, label: "Video", num: "6" },
+  { icon: Search, label: "SEO", num: "7" },
+  { icon: Rocket, label: "Publish", num: "8" },
 ];
 
 const LandingPageEditor = () => {
@@ -176,7 +191,6 @@ const LandingPageEditor = () => {
       features: { type: "features", title: "What You Will Learn", items: [{ emoji: "✅", text: "" }], layout: "list" },
       testimonials: { type: "testimonials", title: "What People Say", items: [{ name: "", role: "", quote: "" }] },
       faq: { type: "faq", title: "Frequently Asked Questions", items: [{ question: "", answer: "" }] },
-      speaker: { type: "speaker", name: "", title: "", photo_url: "", bio: "" },
       image: { type: "image", url: "", caption: "", size: "full" },
     };
     setForm((prev) => ({ ...prev, sections: [...prev.sections, defaults[type] || { type }] }));
@@ -229,7 +243,7 @@ const LandingPageEditor = () => {
   const renderDesign = () => (
     <>
       <h2 className="text-lg font-heading font-semibold">Design</h2>
-      <p className="text-sm text-muted-foreground">Customize the look and content sections.</p>
+      <p className="text-sm text-muted-foreground">Customize the look and content sections of your page.</p>
       <div className="space-y-4 mt-4">
         <div className="p-4 bg-muted/50 rounded-xl space-y-3">
           <Label className="font-semibold">Background Style</Label>
@@ -252,6 +266,7 @@ const LandingPageEditor = () => {
 
         <div className="border-t pt-5 space-y-4">
           <h3 className="font-semibold">Page Sections</h3>
+          <p className="text-xs text-muted-foreground">Add hero banners, text blocks, features, testimonials, FAQ, and images.</p>
           {form.sections.map((section, i) => (
             <div key={i} className="p-4 bg-muted/50 rounded-xl space-y-3">
               <div className="flex items-center justify-between">
@@ -354,19 +369,6 @@ const LandingPageEditor = () => {
                   </Button>
                 </div>
               )}
-              {section.type === "speaker" && (
-                <div className="space-y-3">
-                  <Input placeholder="Speaker name" value={section.name || ""} onChange={(e) => updateSection(i, { name: e.target.value })} className="bg-muted border-border" />
-                  <Input placeholder="Title / Role" value={section.title || ""} onChange={(e) => updateSection(i, { title: e.target.value })} className="bg-muted border-border" />
-                  <ImageUploadField
-                    label="Speaker Photo"
-                    value={section.photo_url || ""}
-                    onChange={(url) => updateSection(i, { photo_url: url })}
-                    folder="speakers"
-                  />
-                  <Textarea placeholder="Bio" value={section.bio || ""} onChange={(e) => updateSection(i, { bio: e.target.value })} rows={3} className="bg-muted border-border" />
-                </div>
-              )}
               {section.type === "image" && (
                 <div className="space-y-3">
                   <ImageUploadField
@@ -380,7 +382,7 @@ const LandingPageEditor = () => {
               )}
             </div>
           ))}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {sectionTypes.map((st) => (
               <Button key={st.type} variant="outline" size="sm" onClick={() => addSection(st.type)} className="justify-start text-xs">
                 <span className="mr-1">{st.icon}</span> {st.label}
@@ -458,26 +460,117 @@ const LandingPageEditor = () => {
   const renderEmailStep = () => (
     <>
       <h2 className="text-lg font-heading font-semibold">Confirmation Email</h2>
-      <p className="text-sm text-muted-foreground">Configure the email sent after registration.</p>
+      <p className="text-sm text-muted-foreground">Configure the email sent to registrants after they sign up.</p>
       <div className="space-y-4 mt-4">
         <div className="p-4 bg-muted/50 rounded-xl">
           <div className="flex items-center justify-between">
-            <Label className="font-semibold">Send confirmation email</Label>
+            <div>
+              <Label className="font-semibold">Send Confirmation Email</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">Automatically send an email when someone registers</p>
+            </div>
             <Switch checked={form.send_confirmation_email} onCheckedChange={(v) => updateField("send_confirmation_email", v)} />
           </div>
         </div>
         {form.send_confirmation_email && (
-          <div className="p-4 bg-muted/50 rounded-xl space-y-3 animate-in slide-in-from-top-2 duration-300">
-            <div><Label>Email Subject</Label><Input value={form.email_subject} onChange={(e) => updateField("email_subject", e.target.value)} className="mt-1.5 bg-muted border-border" /></div>
-            <div><Label>Email Heading</Label><Input value={form.email_heading} onChange={(e) => updateField("email_heading", e.target.value)} className="mt-1.5 bg-muted border-border" /></div>
-            <div>
-              <Label>Email Body</Label>
-              <Textarea value={form.email_body} onChange={(e) => updateField("email_body", e.target.value)} rows={6} className="mt-1.5 bg-muted border-border" />
-              <p className="text-xs text-muted-foreground mt-1">Variables: {"{{name}}"}, {"{{email}}"}, {"{{phone}}"}</p>
+          <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
+            {/* Sender Name */}
+            <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+              <div>
+                <Label className="font-semibold">Sender Name</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">This name appears in the recipient's inbox as "From"</p>
+                <Input
+                  value={form.sender_display_name}
+                  onChange={(e) => updateField("sender_display_name", e.target.value)}
+                  placeholder="Nevorai Flow"
+                  className="mt-1.5 bg-muted border-border"
+                />
+                <p className="text-[11px] text-muted-foreground/70 mt-1">
+                  Email will be sent from: <span className="font-mono text-foreground/60">{form.sender_display_name || "Nevorai Flow"} &lt;noreply@flow.nevorai.com&gt;</span>
+                </p>
+              </div>
             </div>
-            <div><Label>Email Footer</Label><Input value={form.email_footer_text} onChange={(e) => updateField("email_footer_text", e.target.value)} className="mt-1.5 bg-muted border-border" /></div>
+
+            {/* Subject & Heading */}
+            <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <Mail size={14} className="text-primary" /> What recipients see
+              </h3>
+              <div>
+                <Label>Email Subject</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">Shown in the inbox subject line</p>
+                <Input value={form.email_subject} onChange={(e) => updateField("email_subject", e.target.value)} className="mt-1.5 bg-muted border-border" />
+              </div>
+              <div>
+                <Label>Email Heading</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">The main heading inside the email</p>
+                <Input value={form.email_heading} onChange={(e) => updateField("email_heading", e.target.value)} className="mt-1.5 bg-muted border-border" />
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+              <div>
+                <Label className="font-semibold">Email Body</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">The main message content. Edit the session time directly (e.g., change [7:00 PM] to your timing).</p>
+                <Textarea value={form.email_body} onChange={(e) => updateField("email_body", e.target.value)} rows={8} className="mt-1.5 bg-muted border-border" />
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  <span className="font-semibold">Available variables:</span> {"{{name}}"} — registrant name, {"{{email}}"} — registrant email, {"{{phone}}"} — registrant phone
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+              <div>
+                <Label className="font-semibold">Email Footer</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">Closing text shown at the bottom of the email body</p>
+                <Textarea
+                  value={form.email_footer_text}
+                  onChange={(e) => updateField("email_footer_text", e.target.value)}
+                  rows={2}
+                  placeholder="Regards,&#10;Team Nevorai Flow"
+                  className="mt-1.5 bg-muted border-border"
+                />
+              </div>
+            </div>
           </div>
         )}
+      </div>
+    </>
+  );
+
+  const renderSpeakerStep = () => (
+    <>
+      <h2 className="text-lg font-heading font-semibold">Speaker / Host</h2>
+      <p className="text-sm text-muted-foreground">Add details about the speaker or host for this session.</p>
+      <div className="space-y-4 mt-4">
+        <div className="p-4 bg-muted/50 rounded-xl space-y-4">
+          <ImageUploadField
+            label="Speaker Photo"
+            helperText="Upload a professional photo of the speaker"
+            value={form.speaker_photo_url}
+            onChange={(url) => updateField("speaker_photo_url", url)}
+            folder="speakers"
+          />
+          <div>
+            <Label>Speaker Name</Label>
+            <Input value={form.speaker_name} onChange={(e) => updateField("speaker_name", e.target.value)} placeholder="e.g., Adarsh Chaturvedi" className="mt-1.5 bg-muted border-border" />
+          </div>
+          <div>
+            <Label>Title / Role</Label>
+            <Input value={form.speaker_role} onChange={(e) => updateField("speaker_role", e.target.value)} placeholder="e.g., CEO & Founder" className="mt-1.5 bg-muted border-border" />
+          </div>
+          <div>
+            <Label>Speaker Bio</Label>
+            <Textarea
+              value={form.speaker_bio}
+              onChange={(e) => updateField("speaker_bio", e.target.value)}
+              rows={4}
+              placeholder="A short bio about the speaker's expertise and background..."
+              className="mt-1.5 bg-muted border-border"
+            />
+          </div>
+        </div>
       </div>
     </>
   );
@@ -574,6 +667,7 @@ const LandingPageEditor = () => {
             { ok: form.sections.length > 0, label: "At least one section added" },
             { ok: form.field_email_enabled, label: "Email field enabled" },
             { ok: form.send_confirmation_email, label: "Confirmation email configured" },
+            { ok: !!form.speaker_name, label: "Speaker info added (optional)" },
             { ok: !!form.post_submit_video_asset_id, label: "Post-submit video (optional)" },
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-2 text-sm">
@@ -604,9 +698,10 @@ const LandingPageEditor = () => {
       case 1: return renderDesign();
       case 2: return renderFormStep();
       case 3: return renderEmailStep();
-      case 4: return renderVideoStep();
-      case 5: return renderSeoStep();
-      case 6: return renderPublishStep();
+      case 4: return renderSpeakerStep();
+      case 5: return renderVideoStep();
+      case 6: return renderSeoStep();
+      case 7: return renderPublishStep();
       default: return null;
     }
   };
