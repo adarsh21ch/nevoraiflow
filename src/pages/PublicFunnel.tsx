@@ -102,10 +102,12 @@ const CustomVideoPlayer = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isBuffering, setIsBuffering] = useState(false);
-  const [started, setStarted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [started, setStarted] = useState(autoplay);
+  const [isLoading, setIsLoading] = useState(autoplay);
   const [speed, setSpeed] = useState(1);
   const [autoplayMuted, setAutoplayMuted] = useState(false);
+  const [seekToast, setSeekToast] = useState(false);
+  const seekToastTimer = useRef<ReturnType<typeof setTimeout>>();
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
   const autoplayAttempted = useRef(false);
 
@@ -182,6 +184,12 @@ const CustomVideoPlayer = ({
     if (videoRef.current) videoRef.current.playbackRate = s;
   }, []);
 
+  const showSeekDisabledToast = useCallback(() => {
+    if (seekToastTimer.current) clearTimeout(seekToastTimer.current);
+    setSeekToast(true);
+    seekToastTimer.current = setTimeout(() => setSeekToast(false), 2500);
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -191,12 +199,18 @@ const CustomVideoPlayer = ({
         togglePlay();
       }
       if (!allowSeek) {
-        if (["ArrowRight", "l", "L"].includes(e.key)) e.preventDefault();
+        if (["ArrowRight", "l", "L"].includes(e.key)) {
+          e.preventDefault();
+          showSeekDisabledToast();
+        }
         if ("123456789".includes(e.key)) {
           const v = videoRef.current;
           if (v) {
             const target = v.duration * (parseInt(e.key) / 10);
-            if (target > maxWatched.current + 1) e.preventDefault();
+            if (target > maxWatched.current + 1) {
+              e.preventDefault();
+              showSeekDisabledToast();
+            }
           }
         }
       }
@@ -213,7 +227,7 @@ const CustomVideoPlayer = ({
     };
     window.addEventListener("keydown", handler, true);
     return () => window.removeEventListener("keydown", handler, true);
-  }, [allowSeek, togglePlay]);
+  }, [allowSeek, togglePlay, showSeekDisabledToast]);
 
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
@@ -249,6 +263,7 @@ const CustomVideoPlayer = ({
     if (v.currentTime > maxWatched.current + 0.5) {
       isSeeking.current = true;
       v.currentTime = maxWatched.current;
+      showSeekDisabledToast();
       requestAnimationFrame(() => { isSeeking.current = false; });
     }
   };
@@ -261,6 +276,7 @@ const CustomVideoPlayer = ({
     const targetTime = pct * duration;
     if (!allowSeek && targetTime > maxWatched.current + 0.5) {
       v.currentTime = maxWatched.current;
+      showSeekDisabledToast();
     } else {
       v.currentTime = targetTime;
     }
@@ -322,8 +338,8 @@ const CustomVideoPlayer = ({
         </button>
       )}
 
-      {/* Center play button (before start) */}
-      {!started && (
+      {/* Center play button (only when autoplay failed or not enabled) */}
+      {!started && !autoplay && (
         <div
           className="absolute inset-0 flex items-center justify-center cursor-pointer z-20"
           onClick={(e) => { e.stopPropagation(); togglePlay(); }}
@@ -335,6 +351,30 @@ const CustomVideoPlayer = ({
               <Play size={36} className="ml-1 text-white" />
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Fallback play button when autoplay was completely blocked */}
+      {!started && autoplay && !playing && (
+        <div
+          className="absolute inset-0 flex items-center justify-center cursor-pointer z-20"
+          onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+        >
+          {poster && <img src={poster} alt="" className="absolute inset-0 w-full h-full object-cover" />}
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative z-10">
+            <button className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center hover:scale-110 transition-transform shadow-xl shadow-primary/25 backdrop-blur-sm">
+              <Play size={36} className="ml-1 text-white" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Seek disabled notification */}
+      {seekToast && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2.5 bg-black/80 backdrop-blur-sm rounded-xl border border-white/10 text-white text-xs font-medium animate-in fade-in slide-in-from-top-2 duration-300 shadow-xl">
+          <AlertTriangle size={14} className="text-amber-400 shrink-0" />
+          <span>Skipping forward is not allowed for this video</span>
         </div>
       )}
 
