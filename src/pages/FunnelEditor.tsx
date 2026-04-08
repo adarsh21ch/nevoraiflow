@@ -120,7 +120,7 @@ const FunnelEditor = () => {
   const preselectedVideoId = searchParams.get("videoId");
   const [videoPickerOpen, setVideoPickerOpen] = useState(false);
   const [stepVideoPickerIdx, setStepVideoPickerIdx] = useState<number | null>(null);
-  const [selectedVideo, setSelectedVideo] = useState<{ id: string; title: string; url: string | null } | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<{ id: string; title: string; url: string | null; thumbnail?: string | null } | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
