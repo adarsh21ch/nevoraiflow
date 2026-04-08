@@ -23,6 +23,7 @@ import { StepConfigPanel } from "@/components/funnel/StepConfigPanel";
 import { JourneyPreview } from "@/components/funnel/JourneyPreview";
 import { PrivacySettings } from "@/components/funnel/PrivacySettings";
 import { FunnelLivePreview } from "@/components/funnel/FunnelLivePreview";
+import { SpeakerPhotoUpload } from "@/components/funnel/SpeakerPhotoUpload";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface FlowStep {
@@ -844,15 +845,10 @@ const FunnelEditor = () => {
 
         {funnel.speaker_mode === "custom" && (
           <div className="space-y-4">
-            <div>
-              <Label className="text-sm font-medium">Speaker Photo</Label>
-              <Input
-                value={funnel.speaker_photo_url}
-                onChange={(e) => update("speaker_photo_url", e.target.value)}
-                placeholder="Paste photo URL"
-                className="mt-1.5 bg-muted border-border"
-              />
-            </div>
+            <SpeakerPhotoUpload
+              value={funnel.speaker_photo_url}
+              onChange={(url) => update("speaker_photo_url", url)}
+            />
             <div>
               <Label className="text-sm font-medium">Speaker Name</Label>
               <Input
