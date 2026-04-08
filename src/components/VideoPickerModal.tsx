@@ -10,7 +10,7 @@ import { Video, Search, Check } from "lucide-react";
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSelect: (videoId: string, title: string, publicUrl: string | null) => void;
+  onSelect: (videoId: string, title: string, publicUrl: string | null, thumbnailUrl?: string | null) => void;
 }
 
 export const VideoPickerModal = ({ open, onClose, onSelect }: Props) => {
