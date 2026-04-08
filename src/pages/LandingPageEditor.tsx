@@ -497,7 +497,7 @@ const LandingPageEditor = () => {
             <Card className="p-6 space-y-5">
               <div className="space-y-2">
                 <Label>Post-Submit Video</Label>
-                <Select value={form.post_submit_video_asset_id || ""} onValueChange={(v) => updateField("post_submit_video_asset_id", v || null)}>
+                <Select value={form.post_submit_video_asset_id || "__none__"} onValueChange={(v) => updateField("post_submit_video_asset_id", v === "__none__" ? null : v)}>
                   <SelectTrigger><SelectValue placeholder="Select a video..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">None</SelectItem>
