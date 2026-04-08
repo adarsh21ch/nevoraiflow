@@ -145,6 +145,10 @@ const FunnelEditor = () => {
     is_published: false,
     access_code_plain: "",
     required_fields: { email: false, city: false, state: false, whatsapp: false } as { email: boolean; city: boolean; state: boolean; whatsapp: boolean },
+    speaker_mode: "account" as "none" | "account" | "custom",
+    speaker_name: "", speaker_photo_url: "", speaker_about: "",
+    video_topics_enabled: false,
+    video_topics: [] as string[],
   });
 
   const [leadForm, setLeadForm] = useState({
