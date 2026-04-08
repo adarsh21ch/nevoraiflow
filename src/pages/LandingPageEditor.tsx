@@ -601,38 +601,75 @@ const LandingPageEditor = () => {
     </>
   );
 
+  const videoEnabled = !!form.post_submit_video_asset_id;
+
   const renderVideoStep = () => (
     <>
       <h2 className="text-lg font-heading font-semibold">Post-Submit Video</h2>
       <p className="text-sm text-muted-foreground">Show a video after successful registration.</p>
       <div className="space-y-4 mt-4">
-        <div className="p-4 bg-muted/50 rounded-xl space-y-3">
-          <Label className="font-semibold">Select Video</Label>
-          <Select value={form.post_submit_video_asset_id || "__none__"} onValueChange={(v) => updateField("post_submit_video_asset_id", v === "__none__" ? null : v)}>
-            <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select a video..." /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">None</SelectItem>
-              {videos.map((v: any) => (
-                <SelectItem key={v.id} value={v.id}>{v.title}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="p-4 bg-muted/50 rounded-xl flex items-center justify-between">
+          <div>
+            <Label className="font-semibold">Enable Post-Submit Video</Label>
+            <p className="text-xs text-muted-foreground mt-0.5">Show a video to users after they register</p>
+          </div>
+          <Switch
+            checked={videoEnabled}
+            onCheckedChange={(checked) => {
+              if (!checked) {
+                updateField("post_submit_video_asset_id", null);
+                updateField("post_submit_video_title", "");
+                updateField("post_submit_video_description", "");
+              }
+            }}
+          />
         </div>
+
+        {videoEnabled && (
+          <>
+            <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+              <Label className="font-semibold">Select Video</Label>
+              <Select value={form.post_submit_video_asset_id || "__none__"} onValueChange={(v) => updateField("post_submit_video_asset_id", v === "__none__" ? null : v)}>
+                <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select a video..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">None</SelectItem>
+                  {videos.map((v: any) => (
+                    <SelectItem key={v.id} value={v.id}>{v.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+              <div><Label>Video Title</Label><Input value={form.post_submit_video_title} onChange={(e) => updateField("post_submit_video_title", e.target.value)} className="mt-1.5 bg-muted border-border" /></div>
+              <div><Label>Video Description</Label><Textarea value={form.post_submit_video_description} onChange={(e) => updateField("post_submit_video_description", e.target.value)} rows={3} className="mt-1.5 bg-muted border-border" /></div>
+            </div>
+          </>
+        )}
+
         <div className="p-4 bg-muted/50 rounded-xl space-y-3">
-          <div><Label>Video Title</Label><Input value={form.post_submit_video_title} onChange={(e) => updateField("post_submit_video_title", e.target.value)} className="mt-1.5 bg-muted border-border" /></div>
-          <div><Label>Video Description</Label><Textarea value={form.post_submit_video_description} onChange={(e) => updateField("post_submit_video_description", e.target.value)} rows={3} className="mt-1.5 bg-muted border-border" /></div>
-        </div>
-        <div className="p-4 bg-muted/50 rounded-xl space-y-3">
-          <Label className="font-semibold">Link to Funnel (after video)</Label>
-          <Select value={form.linked_funnel_id || "__none__"} onValueChange={(v) => updateField("linked_funnel_id", v === "__none__" ? null : v)}>
-            <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="No linked funnel" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">None</SelectItem>
-              {funnels.map((f: any) => (
-                <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="font-semibold">Link to Funnel (after registration)</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">Redirect users to a funnel after they register</p>
+            </div>
+            <Switch
+              checked={!!form.linked_funnel_id}
+              onCheckedChange={(checked) => {
+                if (!checked) updateField("linked_funnel_id", null);
+              }}
+            />
+          </div>
+          {!!form.linked_funnel_id && (
+            <Select value={form.linked_funnel_id || "__none__"} onValueChange={(v) => updateField("linked_funnel_id", v === "__none__" ? null : v)}>
+              <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select funnel..." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">None</SelectItem>
+                {funnels.map((f: any) => (
+                  <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </div>
     </>

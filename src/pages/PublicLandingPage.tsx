@@ -225,24 +225,32 @@ const PublicLandingPage = () => {
       <main className="flex-1 px-4 md:px-8 py-8 max-w-7xl mx-auto w-full">
         {submitted ? (
           <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in">
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold">{page.post_submit_video_title}</h2>
-              {page.post_submit_video_description && (
-                <p className="text-muted-foreground">{page.post_submit_video_description}</p>
-              )}
-            </div>
             {video?.public_url ? (
-              <div className="aspect-video rounded-xl overflow-hidden bg-black">
-                <video
-                  src={video.public_url}
-                  controls
-                  className="w-full h-full"
-                  poster={video.thumbnail_url || undefined}
-                />
-              </div>
+              <>
+                {page.post_submit_video_title && (
+                  <div className="text-center space-y-2">
+                    <h2 className="text-2xl font-bold">{page.post_submit_video_title}</h2>
+                    {page.post_submit_video_description && (
+                      <p className="text-muted-foreground">{page.post_submit_video_description}</p>
+                    )}
+                  </div>
+                )}
+                <div className="aspect-video rounded-xl overflow-hidden bg-black">
+                  <video
+                    src={video.public_url}
+                    controls
+                    className="w-full h-full"
+                    poster={video.thumbnail_url || undefined}
+                  />
+                </div>
+              </>
             ) : (
-              <Card className="p-12 text-center">
-                <p className="text-muted-foreground">Thank you for registering! Stay tuned.</p>
+              <Card className="p-12 text-center space-y-3">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                  <Check className="text-primary" size={32} />
+                </div>
+                <h2 className="text-2xl font-bold">You're Registered!</h2>
+                <p className="text-muted-foreground">Thank you for registering. We'll see you at the session!</p>
               </Card>
             )}
             {page.linked_funnel_id && (
