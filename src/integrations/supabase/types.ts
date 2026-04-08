@@ -320,6 +320,7 @@ export type Database = {
           max_watched_seconds: number | null
           session_id: string | null
           status: string
+          unlock_scheduled_at: string | null
           unlocked_at: string | null
           unlocked_by: string | null
           updated_at: string
@@ -337,6 +338,7 @@ export type Database = {
           max_watched_seconds?: number | null
           session_id?: string | null
           status?: string
+          unlock_scheduled_at?: string | null
           unlocked_at?: string | null
           unlocked_by?: string | null
           updated_at?: string
@@ -354,6 +356,7 @@ export type Database = {
           max_watched_seconds?: number | null
           session_id?: string | null
           status?: string
+          unlock_scheduled_at?: string | null
           unlocked_at?: string | null
           unlocked_by?: string | null
           updated_at?: string
@@ -385,6 +388,10 @@ export type Database = {
       }
       funnel_steps: {
         Row: {
+          between_step_audio_enabled: boolean | null
+          between_step_audio_url: string | null
+          between_step_message: string | null
+          between_step_message_enabled: boolean | null
           booking_url: string | null
           created_at: string
           cta_text: string | null
@@ -396,12 +403,18 @@ export type Database = {
           step_order: number
           step_type: string
           title: string
+          unlock_after_percent: number | null
           unlock_rule_type: string
           unlock_rule_value: string | null
+          unlock_timer_minutes: number | null
           updated_at: string
           video_asset_id: string | null
         }
         Insert: {
+          between_step_audio_enabled?: boolean | null
+          between_step_audio_url?: string | null
+          between_step_message?: string | null
+          between_step_message_enabled?: boolean | null
           booking_url?: string | null
           created_at?: string
           cta_text?: string | null
@@ -413,12 +426,18 @@ export type Database = {
           step_order?: number
           step_type?: string
           title?: string
+          unlock_after_percent?: number | null
           unlock_rule_type?: string
           unlock_rule_value?: string | null
+          unlock_timer_minutes?: number | null
           updated_at?: string
           video_asset_id?: string | null
         }
         Update: {
+          between_step_audio_enabled?: boolean | null
+          between_step_audio_url?: string | null
+          between_step_message?: string | null
+          between_step_message_enabled?: boolean | null
           booking_url?: string | null
           created_at?: string
           cta_text?: string | null
@@ -430,8 +449,10 @@ export type Database = {
           step_order?: number
           step_type?: string
           title?: string
+          unlock_after_percent?: number | null
           unlock_rule_type?: string
           unlock_rule_value?: string | null
+          unlock_timer_minutes?: number | null
           updated_at?: string
           video_asset_id?: string | null
         }
@@ -659,6 +680,325 @@ export type Database = {
           {
             foreignKeyName: "funnels_video_asset_id_fkey"
             columns: ["video_asset_id"]
+            isOneToOne: false
+            referencedRelation: "video_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_page_registrations: {
+        Row: {
+          age: string | null
+          city: string | null
+          confirmation_email_sent: boolean | null
+          confirmation_email_sent_at: string | null
+          custom_1_value: string | null
+          custom_2_value: string | null
+          device_type: string | null
+          email: string | null
+          honeypot_triggered: boolean | null
+          id: string
+          ip_address: string | null
+          landing_page_id: string
+          name: string | null
+          occupation: string | null
+          owner_id: string
+          phone: string | null
+          referrer_url: string | null
+          state: string | null
+          submitted_at: string | null
+          user_agent: string | null
+          user_id: string | null
+          video_completed: boolean | null
+          video_started: boolean | null
+          video_watch_percentage: number | null
+        }
+        Insert: {
+          age?: string | null
+          city?: string | null
+          confirmation_email_sent?: boolean | null
+          confirmation_email_sent_at?: string | null
+          custom_1_value?: string | null
+          custom_2_value?: string | null
+          device_type?: string | null
+          email?: string | null
+          honeypot_triggered?: boolean | null
+          id?: string
+          ip_address?: string | null
+          landing_page_id: string
+          name?: string | null
+          occupation?: string | null
+          owner_id: string
+          phone?: string | null
+          referrer_url?: string | null
+          state?: string | null
+          submitted_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          video_completed?: boolean | null
+          video_started?: boolean | null
+          video_watch_percentage?: number | null
+        }
+        Update: {
+          age?: string | null
+          city?: string | null
+          confirmation_email_sent?: boolean | null
+          confirmation_email_sent_at?: string | null
+          custom_1_value?: string | null
+          custom_2_value?: string | null
+          device_type?: string | null
+          email?: string | null
+          honeypot_triggered?: boolean | null
+          id?: string
+          ip_address?: string | null
+          landing_page_id?: string
+          name?: string | null
+          occupation?: string | null
+          owner_id?: string
+          phone?: string | null
+          referrer_url?: string | null
+          state?: string | null
+          submitted_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          video_completed?: boolean | null
+          video_started?: boolean | null
+          video_watch_percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_registrations_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_registrations_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_registrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_page_view_logs: {
+        Row: {
+          id: string
+          ip_address: string | null
+          landing_page_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          id?: string
+          ip_address?: string | null
+          landing_page_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          id?: string
+          ip_address?: string | null
+          landing_page_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_view_logs_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_pages: {
+        Row: {
+          allow_login: boolean | null
+          allow_signup: boolean | null
+          background_style: string | null
+          created_at: string | null
+          description: string | null
+          email_body: string | null
+          email_footer_text: string | null
+          email_heading: string | null
+          email_subject: string | null
+          field_age_enabled: boolean | null
+          field_age_required: boolean | null
+          field_city_enabled: boolean | null
+          field_city_required: boolean | null
+          field_custom_1_enabled: boolean | null
+          field_custom_1_label: string | null
+          field_custom_1_required: boolean | null
+          field_custom_2_enabled: boolean | null
+          field_custom_2_label: string | null
+          field_custom_2_required: boolean | null
+          field_email_enabled: boolean | null
+          field_email_required: boolean | null
+          field_name_enabled: boolean | null
+          field_name_required: boolean | null
+          field_occupation_enabled: boolean | null
+          field_occupation_required: boolean | null
+          field_phone_enabled: boolean | null
+          field_phone_required: boolean | null
+          field_state_enabled: boolean | null
+          field_state_required: boolean | null
+          form_button_text: string | null
+          form_subtitle: string | null
+          form_title: string | null
+          id: string
+          invite_code: string | null
+          invite_code_required: boolean | null
+          linked_funnel_id: string | null
+          og_description: string | null
+          og_image_url: string | null
+          og_title: string | null
+          owner_id: string
+          post_submit_video_asset_id: string | null
+          post_submit_video_description: string | null
+          post_submit_video_title: string | null
+          sections: Json | null
+          send_confirmation_email: boolean | null
+          slug: string
+          status: string
+          theme_color: string | null
+          title: string
+          total_registrations: number | null
+          total_views: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          allow_login?: boolean | null
+          allow_signup?: boolean | null
+          background_style?: string | null
+          created_at?: string | null
+          description?: string | null
+          email_body?: string | null
+          email_footer_text?: string | null
+          email_heading?: string | null
+          email_subject?: string | null
+          field_age_enabled?: boolean | null
+          field_age_required?: boolean | null
+          field_city_enabled?: boolean | null
+          field_city_required?: boolean | null
+          field_custom_1_enabled?: boolean | null
+          field_custom_1_label?: string | null
+          field_custom_1_required?: boolean | null
+          field_custom_2_enabled?: boolean | null
+          field_custom_2_label?: string | null
+          field_custom_2_required?: boolean | null
+          field_email_enabled?: boolean | null
+          field_email_required?: boolean | null
+          field_name_enabled?: boolean | null
+          field_name_required?: boolean | null
+          field_occupation_enabled?: boolean | null
+          field_occupation_required?: boolean | null
+          field_phone_enabled?: boolean | null
+          field_phone_required?: boolean | null
+          field_state_enabled?: boolean | null
+          field_state_required?: boolean | null
+          form_button_text?: string | null
+          form_subtitle?: string | null
+          form_title?: string | null
+          id?: string
+          invite_code?: string | null
+          invite_code_required?: boolean | null
+          linked_funnel_id?: string | null
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          owner_id: string
+          post_submit_video_asset_id?: string | null
+          post_submit_video_description?: string | null
+          post_submit_video_title?: string | null
+          sections?: Json | null
+          send_confirmation_email?: boolean | null
+          slug: string
+          status?: string
+          theme_color?: string | null
+          title: string
+          total_registrations?: number | null
+          total_views?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          allow_login?: boolean | null
+          allow_signup?: boolean | null
+          background_style?: string | null
+          created_at?: string | null
+          description?: string | null
+          email_body?: string | null
+          email_footer_text?: string | null
+          email_heading?: string | null
+          email_subject?: string | null
+          field_age_enabled?: boolean | null
+          field_age_required?: boolean | null
+          field_city_enabled?: boolean | null
+          field_city_required?: boolean | null
+          field_custom_1_enabled?: boolean | null
+          field_custom_1_label?: string | null
+          field_custom_1_required?: boolean | null
+          field_custom_2_enabled?: boolean | null
+          field_custom_2_label?: string | null
+          field_custom_2_required?: boolean | null
+          field_email_enabled?: boolean | null
+          field_email_required?: boolean | null
+          field_name_enabled?: boolean | null
+          field_name_required?: boolean | null
+          field_occupation_enabled?: boolean | null
+          field_occupation_required?: boolean | null
+          field_phone_enabled?: boolean | null
+          field_phone_required?: boolean | null
+          field_state_enabled?: boolean | null
+          field_state_required?: boolean | null
+          form_button_text?: string | null
+          form_subtitle?: string | null
+          form_title?: string | null
+          id?: string
+          invite_code?: string | null
+          invite_code_required?: boolean | null
+          linked_funnel_id?: string | null
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          owner_id?: string
+          post_submit_video_asset_id?: string | null
+          post_submit_video_description?: string | null
+          post_submit_video_title?: string | null
+          sections?: Json | null
+          send_confirmation_email?: boolean | null
+          slug?: string
+          status?: string
+          theme_color?: string | null
+          title?: string
+          total_registrations?: number | null
+          total_views?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_pages_linked_funnel_id_fkey"
+            columns: ["linked_funnel_id"]
+            isOneToOne: false
+            referencedRelation: "funnels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_pages_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_pages_post_submit_video_asset_id_fkey"
+            columns: ["post_submit_video_asset_id"]
             isOneToOne: false
             referencedRelation: "video_assets"
             referencedColumns: ["id"]
@@ -1340,6 +1680,10 @@ export type Database = {
       }
       increment_funnel_views: {
         Args: { _funnel_id: string }
+        Returns: undefined
+      }
+      increment_landing_page_views: {
+        Args: { _landing_page_id: string }
         Returns: undefined
       }
     }
