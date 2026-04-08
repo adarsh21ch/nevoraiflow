@@ -492,6 +492,17 @@ const PublicFunnel = () => {
 
   const isDraft = funnel && !funnel.is_published;
   const canView = funnel && funnel.is_published;
+  const isPrivateFunnel = funnel?.visibility === "private";
+  const requiredFields = funnel?.required_fields || { email: false, city: false, state: false, whatsapp: false };
+
+  // Check localStorage for existing code verification and lead submission
+  useEffect(() => {
+    if (!funnel) return;
+    const codeVerified = localStorage.getItem(`nf_code_verified_${funnel.id}`);
+    if (codeVerified) setCodeGateUnlocked(true);
+    const leadStored = localStorage.getItem(`nf_lead_${funnel.id}`);
+    if (leadStored) setPrivateLeadSubmitted(true);
+  }, [funnel]);
 
   useEffect(() => {
     if (!funnel || funnel.cta_enabled !== true) return;
