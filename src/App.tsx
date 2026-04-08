@@ -73,6 +73,7 @@ const App = () => (
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/refund-policy" element={<RefundPolicyPage />} />
+              <Route path="/install" element={<InstallApp />} />
               <Route path="/f/:slug" element={<PublicFunnel />} />
               <Route path="/l/:slug" element={<PublicLandingPage />} />
               <Route path="/video/:id" element={<PublicVideoPage />} />
