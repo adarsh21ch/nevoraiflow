@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     const senderDomain = 'notify.flow.nevorai.com'
     const fromName = senderDisplayName
 
-    const plainText = `${page.email_heading || 'You are registered!'}\n\n${emailBody}\n\n${page.email_footer_text || ''}\n\nPowered by Nevorai Flow`
+    const plainText = `${page.email_heading || 'You are registered!'}\n\n${emailBody}\n\n${page.email_footer_text || ''}\n\n${trustBadgeText}`
 
     // Generate or fetch unsubscribe token for this email
     const unsubscribeToken = crypto.randomUUID()
