@@ -14,7 +14,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   FileText, Video, Settings, ClipboardList, Mic, MessageCircle, IndianRupee,
   Radio, Rocket, Check, Copy, Plus, Trash2, GripVertical, Lock, ExternalLink,
-  Play, CreditCard, UserCheck, Calendar, Layers, ChevronDown, ChevronUp, Pencil
+  Play, CreditCard, UserCheck, Calendar, Layers, ChevronDown, ChevronUp, Pencil,
+  User, ListChecks, X
 } from "lucide-react";
 import { VideoPickerModal } from "@/components/VideoPickerModal";
 import { StepTypeSelector, getStepTypeMeta } from "@/components/funnel/StepTypeSelector";
