@@ -87,17 +87,19 @@ Deno.serve(async (req) => {
     const senderDomain = 'notify.flow.nevorai.com'
     const fromName = creator?.full_name || 'Nevorai Flow'
 
-    const result = await sendLovableEmail({
-      apiKey: LOVABLE_API_KEY,
-      senderDomain,
-      to: reg.email,
-      subject,
-      html,
-      from: `${fromName} <noreply@flow.nevorai.com>`,
-      replyTo: creator?.email || undefined,
-      purpose: 'transactional',
-      idempotencyKey: `lp-confirm-${registration_id}`,
-    })
+    const result = await sendLovableEmail(
+      {
+        to: reg.email,
+        subject,
+        html,
+        from: `${fromName} <noreply@flow.nevorai.com>`,
+        sender_domain: senderDomain,
+        purpose: 'transactional',
+        idempotency_key: `lp-confirm-${registration_id}`,
+        message_id: `lp-confirm-${registration_id}`,
+      },
+      { apiKey: LOVABLE_API_KEY }
+    )
 
     console.log('Email sent result:', JSON.stringify(result))
 
