@@ -923,7 +923,10 @@ const FunnelEditor = () => {
               <Label className="font-semibold">Show Video Topics on funnel page</Label>
               <p className="text-xs text-muted-foreground mt-0.5">Display key points below the video</p>
             </div>
-            <Switch checked={funnel.video_topics_enabled} onCheckedChange={(v) => update("video_topics_enabled", v)} />
+            <Switch checked={funnel.video_topics_enabled} onCheckedChange={(v) => {
+              update("video_topics_enabled", v);
+              if (v && funnel.video_topics.length === 0) update("video_topics", ["", "", ""]);
+            }} />
           </div>
 
           {!funnel.video_topics_enabled && (
