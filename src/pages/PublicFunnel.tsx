@@ -245,12 +245,19 @@ const CustomVideoPlayer = ({
     }
   };
 
+  const showSeekDisabledToast = useCallback(() => {
+    if (seekToastTimer.current) clearTimeout(seekToastTimer.current);
+    setSeekToast(true);
+    seekToastTimer.current = setTimeout(() => setSeekToast(false), 2500);
+  }, []);
+
   const handleSeeking = () => {
     const v = videoRef.current;
     if (!v || allowSeek) return;
     if (v.currentTime > maxWatched.current + 0.5) {
       isSeeking.current = true;
       v.currentTime = maxWatched.current;
+      showSeekDisabledToast();
       requestAnimationFrame(() => { isSeeking.current = false; });
     }
   };
