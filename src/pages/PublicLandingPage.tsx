@@ -122,7 +122,7 @@ const PublicLandingPage = () => {
     { key: "email", label: "Email Address", enabled: page.field_email_enabled, required: page.field_email_required, type: "email" },
     { key: "age", label: "Age", enabled: page.field_age_enabled, required: page.field_age_required },
     { key: "city", label: "City", enabled: page.field_city_enabled, required: page.field_city_required },
-    { key: "state", label: "State", enabled: page.field_state_enabled, required: page.field_state_required },
+    { key: "state", label: "State", enabled: page.field_state_enabled, required: page.field_state_required, fieldType: "state_dropdown" },
     { key: "occupation", label: "Occupation", enabled: page.field_occupation_enabled, required: page.field_occupation_required },
     ...(page.field_custom_1_enabled ? [{ key: "custom_1_value", label: page.field_custom_1_label || "Custom 1", enabled: true, required: page.field_custom_1_required }] : []),
     ...(page.field_custom_2_enabled ? [{ key: "custom_2_value", label: page.field_custom_2_label || "Custom 2", enabled: true, required: page.field_custom_2_required }] : []),
