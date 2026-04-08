@@ -497,10 +497,10 @@ const LandingPageEditor = () => {
             <Card className="p-6 space-y-5">
               <div className="space-y-2">
                 <Label>Post-Submit Video</Label>
-                <Select value={form.post_submit_video_asset_id || ""} onValueChange={(v) => updateField("post_submit_video_asset_id", v || null)}>
+                <Select value={form.post_submit_video_asset_id || "__none__"} onValueChange={(v) => updateField("post_submit_video_asset_id", v === "__none__" ? null : v)}>
                   <SelectTrigger><SelectValue placeholder="Select a video..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     {videos.map((v: any) => (
                       <SelectItem key={v.id} value={v.id}>{v.title}</SelectItem>
                     ))}
@@ -517,10 +517,10 @@ const LandingPageEditor = () => {
               </div>
               <div className="space-y-2">
                 <Label>Link to Funnel (after video)</Label>
-                <Select value={form.linked_funnel_id || ""} onValueChange={(v) => updateField("linked_funnel_id", v || null)}>
+                <Select value={form.linked_funnel_id || "__none__"} onValueChange={(v) => updateField("linked_funnel_id", v === "__none__" ? null : v)}>
                   <SelectTrigger><SelectValue placeholder="No linked funnel" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     {funnels.map((f: any) => (
                       <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>
                     ))}
