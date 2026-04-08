@@ -37,12 +37,13 @@ const AuthPage = () => {
     try {
       if (tab === "signup") {
         if (!form.name.trim()) { toast.error("Please enter your name"); return; }
-        if (!form.phone.trim()) { toast.error("Please enter your phone number"); return; }
+        if (!form.email.trim()) { toast.error("Please enter your email"); return; }
         if (form.password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
         const { error } = await signUp(form.email, form.password, form.name, form.phone);
         if (error) { toast.error(error.message); return; }
         toast.success("Account created! Please check your email to verify.");
       } else {
+        if (!form.email.trim()) { toast.error("Please enter your email"); return; }
         const { error } = await signIn(form.email, form.password);
         if (error) {
           const newCount = failCount + 1;
@@ -95,16 +96,16 @@ const AuthPage = () => {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm">Email</Label>
+              <Label htmlFor="email" className="text-sm">Email <span className="text-destructive">*</span></Label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input id="email" type="email" placeholder="you@example.com" className="pl-9 bg-muted border-border"
+                <Input id="email" type="email" placeholder="you@example.com" className="pl-9 bg-muted border-border" required
                   value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
               </div>
             </div>
             {tab === "signup" && (
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm">Phone Number</Label>
+                <Label htmlFor="phone" className="text-sm">Phone Number <span className="text-muted-foreground text-xs">(optional)</span></Label>
                 <div className="relative">
                   <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input id="phone" placeholder="+91 9876543210" className="pl-9 bg-muted border-border"
@@ -114,13 +115,13 @@ const AuthPage = () => {
             )}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-sm">Password</Label>
+                <Label htmlFor="password" className="text-sm">Password <span className="text-destructive">*</span></Label>
                 {tab === "login" && <Link to="/auth/reset-password" className="text-xs text-primary hover:underline">Forgot password?</Link>}
               </div>
               <div className="relative">
                 <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input id="password" type={showPassword ? "text" : "password"} placeholder="••••••••"
-                  className="pl-9 pr-10 bg-muted border-border" value={form.password}
+                  className="pl-9 pr-10 bg-muted border-border" value={form.password} required
                   onChange={(e) => setForm({ ...form, password: e.target.value })} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
