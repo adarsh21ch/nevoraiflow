@@ -683,6 +683,10 @@ export type Database = {
           show_contact_after_cta: boolean | null
           show_contact_buttons: boolean | null
           slug: string
+          speaker_about: string | null
+          speaker_mode: string
+          speaker_name: string | null
+          speaker_photo_url: string | null
           thumbnail_url: string | null
           title: string
           total_leads: number | null
@@ -693,6 +697,8 @@ export type Database = {
           upi_id: string | null
           video_access_minutes: number | null
           video_asset_id: string | null
+          video_topics: Json | null
+          video_topics_enabled: boolean
           visibility: string | null
           whatsapp_auto_message: boolean | null
           whatsapp_message_template: string | null
@@ -733,6 +739,10 @@ export type Database = {
           show_contact_after_cta?: boolean | null
           show_contact_buttons?: boolean | null
           slug: string
+          speaker_about?: string | null
+          speaker_mode?: string
+          speaker_name?: string | null
+          speaker_photo_url?: string | null
           thumbnail_url?: string | null
           title: string
           total_leads?: number | null
@@ -743,6 +753,8 @@ export type Database = {
           upi_id?: string | null
           video_access_minutes?: number | null
           video_asset_id?: string | null
+          video_topics?: Json | null
+          video_topics_enabled?: boolean
           visibility?: string | null
           whatsapp_auto_message?: boolean | null
           whatsapp_message_template?: string | null
@@ -783,6 +795,10 @@ export type Database = {
           show_contact_after_cta?: boolean | null
           show_contact_buttons?: boolean | null
           slug?: string
+          speaker_about?: string | null
+          speaker_mode?: string
+          speaker_name?: string | null
+          speaker_photo_url?: string | null
           thumbnail_url?: string | null
           title?: string
           total_leads?: number | null
@@ -793,6 +809,8 @@ export type Database = {
           upi_id?: string | null
           video_access_minutes?: number | null
           video_asset_id?: string | null
+          video_topics?: Json | null
+          video_topics_enabled?: boolean
           visibility?: string | null
           whatsapp_auto_message?: boolean | null
           whatsapp_message_template?: string | null

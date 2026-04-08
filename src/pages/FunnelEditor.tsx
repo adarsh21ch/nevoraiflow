@@ -14,7 +14,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   FileText, Video, Settings, ClipboardList, Mic, MessageCircle, IndianRupee,
   Radio, Rocket, Check, Copy, Plus, Trash2, GripVertical, Lock, ExternalLink,
-  Play, CreditCard, UserCheck, Calendar, Layers, ChevronDown, ChevronUp, Pencil
+  Play, CreditCard, UserCheck, Calendar, Layers, ChevronDown, ChevronUp, Pencil,
+  User, ListChecks, X
 } from "lucide-react";
 import { VideoPickerModal } from "@/components/VideoPickerModal";
 import { StepTypeSelector, getStepTypeMeta } from "@/components/funnel/StepTypeSelector";
@@ -69,21 +70,25 @@ const SINGLE_STEPS = [
   { icon: FileText, label: "Name & Info", num: "1" },
   { icon: Video, label: "Video", num: "2" },
   { icon: Settings, label: "Video Settings", num: "3" },
-  { icon: ClipboardList, label: "Lead Capture", num: "4" },
-  { icon: MessageCircle, label: "Contact Info", num: "5" },
-  { icon: IndianRupee, label: "Payment", num: "6" },
-  { icon: Lock, label: "Privacy", num: "7" },
-  { icon: Rocket, label: "Publish", num: "8" },
+  { icon: User, label: "Speaker", num: "4" },
+  { icon: ListChecks, label: "Video Topics", num: "5" },
+  { icon: ClipboardList, label: "Lead Capture", num: "6" },
+  { icon: MessageCircle, label: "Contact Info", num: "7" },
+  { icon: IndianRupee, label: "Payment", num: "8" },
+  { icon: Lock, label: "Privacy", num: "9" },
+  { icon: Rocket, label: "Publish", num: "10" },
 ];
 
 const MULTI_STEPS = [
   { icon: FileText, label: "Name & Info", num: "1" },
   { icon: Layers, label: "Build Journey", num: "2" },
   { icon: Settings, label: "Video Settings", num: "3" },
-  { icon: MessageCircle, label: "Contact Info", num: "4" },
-  { icon: IndianRupee, label: "Payment", num: "5" },
-  { icon: Lock, label: "Privacy", num: "6" },
-  { icon: Rocket, label: "Publish", num: "7" },
+  { icon: User, label: "Speaker", num: "4" },
+  { icon: ListChecks, label: "Video Topics", num: "5" },
+  { icon: MessageCircle, label: "Contact Info", num: "6" },
+  { icon: IndianRupee, label: "Payment", num: "7" },
+  { icon: Lock, label: "Privacy", num: "8" },
+  { icon: Rocket, label: "Publish", num: "9" },
 ];
 
 const UNLOCK_LABELS: Record<string, string> = {
@@ -140,6 +145,10 @@ const FunnelEditor = () => {
     is_published: false,
     access_code_plain: "",
     required_fields: { email: false, city: false, state: false, whatsapp: false } as { email: boolean; city: boolean; state: boolean; whatsapp: boolean },
+    speaker_mode: "account" as "none" | "account" | "custom",
+    speaker_name: "", speaker_photo_url: "", speaker_about: "",
+    video_topics_enabled: false,
+    video_topics: [] as string[],
   });
 
   const [leadForm, setLeadForm] = useState({
@@ -152,6 +161,11 @@ const FunnelEditor = () => {
   const [flowSteps, setFlowSteps] = useState<FlowStep[]>([]);
 
   // ── Queries ──
+  const { data: userProfile } = useQuery({
+    queryKey: ["my-profile", user?.id],
+    queryFn: async () => { if (!user) return null; const { data } = await supabase.from("profiles").select("full_name, avatar_url, bio").eq("id", user.id).single(); return data; },
+    enabled: !!user,
+  });
   const { data: existingFunnel } = useQuery({
     queryKey: ["funnel", id],
     queryFn: async () => { if (!id) return null; const { data } = await supabase.from("funnels").select("*").eq("id", id).single(); return data; },
@@ -194,6 +208,12 @@ const FunnelEditor = () => {
         is_published: f.is_published || false,
         access_code_plain: (f as any).access_code_plain || "",
         required_fields: (f as any).required_fields || { email: false, city: false, state: false, whatsapp: false },
+        speaker_mode: (f as any).speaker_mode || "account",
+        speaker_name: (f as any).speaker_name || "",
+        speaker_photo_url: (f as any).speaker_photo_url || "",
+        speaker_about: (f as any).speaker_about || "",
+        video_topics_enabled: (f as any).video_topics_enabled ?? false,
+        video_topics: Array.isArray((f as any).video_topics) ? (f as any).video_topics : [],
       }));
       setModeChosen(true);
       if (f.audio_note_url) setAudioNoteEnabled(true);
@@ -265,6 +285,12 @@ const FunnelEditor = () => {
       is_published: funnel.is_published, video_asset_id: selectedVideo?.id || null,
       access_code_plain: funnel.access_code_plain || null,
       required_fields: funnel.required_fields,
+      speaker_mode: funnel.speaker_mode,
+      speaker_name: funnel.speaker_name || null,
+      speaker_photo_url: funnel.speaker_photo_url || null,
+      speaker_about: funnel.speaker_about || null,
+      video_topics_enabled: funnel.video_topics_enabled,
+      video_topics: funnel.video_topics.filter((t: string) => t.trim() !== ""),
     };
   }, [user, funnel, selectedVideo]);
 
@@ -368,16 +394,18 @@ const FunnelEditor = () => {
   // visibleSteps & nav computed
 
   // ── Render helper for common steps ──
-  // Single: 0=Controls, 1=LeadForm, 2=Whatsapp, 3=Payment, 4=Privacy, 5=Publish
-  // Multi:  0=Controls, 1=Whatsapp, 2=Payment, 3=Privacy, 4=Publish
+  // Single: 0=Controls, 1=Speaker, 2=VideoTopics, 3=LeadForm, 4=Whatsapp, 5=Payment, 6=Privacy, 7=Publish
+  // Multi:  0=Controls, 1=Speaker, 2=VideoTopics, 3=Whatsapp, 4=Payment, 5=Privacy, 6=Publish
   const renderCommonStep = (offset: number) => {
     const idx = wizardStep - offset;
     if (idx === 0) return renderControlsStep();
-    if (!isMulti && idx === 1) return renderLeadFormStep();
-    const whatsappIdx = isMulti ? 1 : 2;
-    const paymentIdx = isMulti ? 2 : 3;
-    const privacyIdx = isMulti ? 3 : 4;
-    const publishIdx = isMulti ? 4 : 5;
+    if (idx === 1) return renderSpeakerStep();
+    if (idx === 2) return renderVideoTopicsStep();
+    if (!isMulti && idx === 3) return renderLeadFormStep();
+    const whatsappIdx = isMulti ? 3 : 4;
+    const paymentIdx = isMulti ? 4 : 5;
+    const privacyIdx = isMulti ? 5 : 6;
+    const publishIdx = isMulti ? 6 : 7;
     if (idx === whatsappIdx) return renderWhatsappStep();
     if (idx === paymentIdx) return renderPaymentStep();
     if (idx === privacyIdx) return renderPrivacyStep();
@@ -768,6 +796,200 @@ const FunnelEditor = () => {
       </div>
     </>
   );
+
+  const renderSpeakerStep = () => (
+    <>
+      <h2 className="text-lg font-heading font-semibold">Speaker</h2>
+      <p className="text-sm text-muted-foreground">Choose how the speaker is shown on your funnel page.</p>
+      <div className="space-y-5 mt-4">
+        {/* Mode selector */}
+        <div className="flex rounded-xl border border-border overflow-hidden">
+          {(["none", "account", "custom"] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => update("speaker_mode", mode)}
+              className={`flex-1 py-2.5 text-sm font-semibold transition-all ${
+                funnel.speaker_mode === mode
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {mode === "none" ? "None" : mode === "account" ? "Account" : "Custom"}
+            </button>
+          ))}
+        </div>
+
+        {funnel.speaker_mode === "none" && (
+          <p className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-xl">No speaker info will be shown on the funnel page.</p>
+        )}
+
+        {funnel.speaker_mode === "account" && (
+          <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center overflow-hidden ring-2 ring-primary/20 shrink-0">
+                {userProfile?.avatar_url ? (
+                  <img src={userProfile.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-primary font-heading font-bold text-sm">{userProfile?.full_name?.charAt(0)?.toUpperCase() || "?"}</span>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="font-heading font-bold text-sm truncate">{userProfile?.full_name || "Your Name"}</p>
+                {userProfile?.bio && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{userProfile.bio}</p>}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">This is pulled from your account profile. Update it in Profile Settings.</p>
+          </div>
+        )}
+
+        {funnel.speaker_mode === "custom" && (
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium">Speaker Photo</Label>
+              <Input
+                value={funnel.speaker_photo_url}
+                onChange={(e) => update("speaker_photo_url", e.target.value)}
+                placeholder="Paste photo URL"
+                className="mt-1.5 bg-muted border-border"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Speaker Name</Label>
+              <Input
+                value={funnel.speaker_name}
+                onChange={(e) => update("speaker_name", e.target.value.slice(0, 60))}
+                placeholder="e.g. Anmol Kapoor"
+                className="mt-1.5 bg-muted border-border"
+                maxLength={60}
+              />
+              <p className="text-xs text-muted-foreground mt-1">{funnel.speaker_name.length}/60</p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium">About Speaker</Label>
+              <Textarea
+                value={funnel.speaker_about}
+                onChange={(e) => update("speaker_about", e.target.value.slice(0, 200))}
+                placeholder="e.g. Network Marketing Leader | Diamond Director at Forever Living"
+                className="mt-1.5 bg-muted border-border"
+                rows={3}
+                maxLength={200}
+              />
+              <p className="text-xs text-muted-foreground mt-1">{funnel.speaker_about.length}/200</p>
+            </div>
+            {/* Preview */}
+            <div className="pt-3 border-t border-border">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Preview</p>
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
+                <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center overflow-hidden ring-2 ring-primary/20 shrink-0">
+                  {funnel.speaker_photo_url ? (
+                    <img src={funnel.speaker_photo_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-primary font-heading font-bold text-sm">{funnel.speaker_name?.charAt(0)?.toUpperCase() || "?"}</span>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-heading font-bold text-sm">{funnel.speaker_name || "Speaker Name"}</p>
+                  {funnel.speaker_about && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{funnel.speaker_about}</p>}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+
+  const renderVideoTopicsStep = () => {
+    const topics = funnel.video_topics;
+    const updateTopics = (newTopics: string[]) => update("video_topics", newTopics);
+    const addTopic = () => { if (topics.length < 10) updateTopics([...topics, ""]); };
+    const removeTopic = (i: number) => updateTopics(topics.filter((_: string, idx: number) => idx !== i));
+    const updateTopic = (i: number, val: string) => updateTopics(topics.map((t: string, idx: number) => idx === i ? val.slice(0, 100) : t));
+    const moveTopic = (from: number, to: number) => {
+      if (to < 0 || to >= topics.length) return;
+      const arr = [...topics];
+      const [moved] = arr.splice(from, 1);
+      arr.splice(to, 0, moved);
+      updateTopics(arr);
+    };
+
+    return (
+      <>
+        <h2 className="text-lg font-heading font-semibold">Video Topics</h2>
+        <p className="text-sm text-muted-foreground">Add key points covered in your video. These will appear on your funnel page.</p>
+        <div className="space-y-5 mt-4">
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
+            <div>
+              <Label className="font-semibold">Show Video Topics on funnel page</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">Display key points below the video</p>
+            </div>
+            <Switch checked={funnel.video_topics_enabled} onCheckedChange={(v) => {
+              update("video_topics_enabled", v);
+              if (v && funnel.video_topics.length === 0) update("video_topics", ["", "", ""]);
+            }} />
+          </div>
+
+          {!funnel.video_topics_enabled && (
+            <p className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-xl">Video topics section will be hidden on the funnel page.</p>
+          )}
+
+          {funnel.video_topics_enabled && (
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Topics / Key Points</Label>
+              <p className="text-xs text-muted-foreground">Add what your prospects will learn from this video.</p>
+              <div className="space-y-2">
+                {topics.map((topic: string, idx: number) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <div className="flex flex-col gap-0.5">
+                      <button onClick={() => moveTopic(idx, idx - 1)} disabled={idx === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-20 p-0.5"><ChevronUp size={10} /></button>
+                      <button onClick={() => moveTopic(idx, idx + 1)} disabled={idx === topics.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-20 p-0.5"><ChevronDown size={10} /></button>
+                    </div>
+                    <Input
+                      value={topic}
+                      onChange={(e) => updateTopic(idx, e.target.value)}
+                      placeholder="Enter a topic..."
+                      className="flex-1 bg-muted border-border"
+                      maxLength={100}
+                    />
+                    {topics.length > 1 && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0" onClick={() => removeTopic(idx)}>
+                        <X size={14} />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {topics.length < 10 ? (
+                <Button variant="outline" className="w-full" onClick={addTopic}>
+                  <Plus size={14} /> Add Topic
+                </Button>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center">Maximum 10 topics allowed.</p>
+              )}
+
+              {/* Preview */}
+              {topics.filter((t: string) => t.trim()).length > 0 && (
+                <div className="pt-3 border-t border-border">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Preview</p>
+                  <div className="p-4 bg-muted/50 rounded-xl space-y-2">
+                    <p className="font-heading font-bold text-sm">What you'll learn in this session</p>
+                    {topics.filter((t: string) => t.trim()).map((topic: string, idx: number) => (
+                      <div key={idx} className="flex items-start gap-2.5">
+                        <div className="w-5 h-5 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                          <Check size={11} className="text-emerald-500" />
+                        </div>
+                        <span className="text-sm">{topic}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </>
+    );
+  };
 
   const renderPrivacyStep = () => (
     <PrivacySettings
