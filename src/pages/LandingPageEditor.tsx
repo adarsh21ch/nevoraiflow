@@ -58,7 +58,7 @@ Make sure to join on time and go through the complete session properly so you do
 We look forward to having you there.`,
   email_footer_text: "Regards,\nTeam Nevorai Flow",
   post_submit_video_asset_id: null as string | null,
-  post_submit_video_title: "Watch this introduction",
+  post_submit_video_title: "",
   post_submit_video_description: "",
   linked_funnel_id: null as string | null,
   invite_code_required: false,
