@@ -287,13 +287,32 @@ const PublicLandingPage = () => {
                   {formFields.map((f) => (
                     <div key={f.key} className="space-y-1.5">
                       <Label>{f.label} {f.required && <span className="text-destructive">*</span>}</Label>
-                      <Input
-                        type={(f as any).type || "text"}
-                        placeholder={(f as any).prefix ? `${(f as any).prefix} ` : ""}
-                        value={formData[f.key] || ""}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                        required={f.required}
-                      />
+                      {(f as any).fieldType === "state_dropdown" ? (
+                        <Select
+                          value={formData[f.key] || "__none__"}
+                          onValueChange={(val) => setFormData((prev) => ({ ...prev, [f.key]: val === "__none__" ? "" : val }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select State" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__" disabled>Select State</SelectItem>
+                            {[
+                              "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Andaman & Nicobar Islands","Chandigarh","Dadra & Nagar Haveli and Daman & Diu","Delhi","Jammu & Kashmir","Ladakh","Lakshadweep","Puducherry"
+                            ].map((s) => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          type={(f as any).type || "text"}
+                          placeholder={(f as any).prefix ? `${(f as any).prefix} ` : ""}
+                          value={formData[f.key] || ""}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                          required={f.required}
+                        />
+                      )}
                     </div>
                   ))}
 
