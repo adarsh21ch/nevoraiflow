@@ -505,12 +505,21 @@ const LandingPageEditor = () => {
                       type="radio"
                       name="sender_display_name"
                       checked={form.sender_display_name !== "Nevorai Flow"}
-                      onChange={() => updateField("sender_display_name", profile?.full_name || "Nevorai Flow")}
+                      onChange={() => updateField("sender_display_name", form.sender_display_name !== "Nevorai Flow" ? form.sender_display_name : (profile?.full_name || ""))}
                       className="accent-primary"
                     />
-                    <div>
-                      <p className="text-sm font-medium">My Name</p>
-                      <p className="text-xs text-muted-foreground">{profile?.full_name || "Your profile name"}</p>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Custom Name</p>
+                      <p className="text-xs text-muted-foreground mb-1">Type any name you want recipients to see</p>
+                      {form.sender_display_name !== "Nevorai Flow" && (
+                        <Input
+                          value={form.sender_display_name || ""}
+                          onChange={(e) => updateField("sender_display_name", e.target.value || "")}
+                          placeholder="e.g. Adarsh from LaunchPad"
+                          className="mt-1 bg-background border-border text-sm h-8"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      )}
                     </div>
                   </label>
                 </div>
