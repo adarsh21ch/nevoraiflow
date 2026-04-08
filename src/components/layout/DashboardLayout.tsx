@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { WhatsAppSupportFAB } from "@/components/WhatsAppSupportFAB";
+
 import { Logo } from "@/components/landing/Logo";
 import {
   LayoutDashboard, Layers, Video, Users, IndianRupee, BarChart3,
@@ -147,7 +147,6 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
         })}
       </nav>
 
-      <WhatsAppSupportFAB />
     </div>
   );
 };

@@ -67,9 +67,9 @@ const SINGLE_STEPS = [
   { icon: Video, label: "Video", num: "2" },
   { icon: Settings, label: "Video Settings", num: "3" },
   { icon: ClipboardList, label: "Lead Capture", num: "4" },
-  { icon: Lock, label: "Privacy", num: "5" },
-  { icon: MessageCircle, label: "Contact Info", num: "6" },
-  { icon: IndianRupee, label: "Payment", num: "7" },
+  { icon: MessageCircle, label: "Contact Info", num: "5" },
+  { icon: IndianRupee, label: "Payment", num: "6" },
+  { icon: Lock, label: "Privacy", num: "7" },
   { icon: Rocket, label: "Publish", num: "8" },
 ];
 
@@ -77,9 +77,9 @@ const MULTI_STEPS = [
   { icon: FileText, label: "Name & Info", num: "1" },
   { icon: Layers, label: "Build Journey", num: "2" },
   { icon: Settings, label: "Video Settings", num: "3" },
-  { icon: Lock, label: "Privacy", num: "4" },
-  { icon: MessageCircle, label: "Contact Info", num: "5" },
-  { icon: IndianRupee, label: "Payment", num: "6" },
+  { icon: MessageCircle, label: "Contact Info", num: "4" },
+  { icon: IndianRupee, label: "Payment", num: "5" },
+  { icon: Lock, label: "Privacy", num: "6" },
   { icon: Rocket, label: "Publish", num: "7" },
 ];
 
@@ -365,17 +365,19 @@ const FunnelEditor = () => {
   // visibleSteps & nav computed
 
   // ── Render helper for common steps ──
+  // Single: 0=Controls, 1=LeadForm, 2=Whatsapp, 3=Payment, 4=Privacy, 5=Publish
+  // Multi:  0=Controls, 1=Whatsapp, 2=Payment, 3=Privacy, 4=Publish
   const renderCommonStep = (offset: number) => {
     const idx = wizardStep - offset;
     if (idx === 0) return renderControlsStep();
     if (!isMulti && idx === 1) return renderLeadFormStep();
-    const privacyIdx = isMulti ? 1 : 2;
-    const whatsappIdx = isMulti ? 2 : 3;
-    const paymentIdx = isMulti ? 3 : 4;
+    const whatsappIdx = isMulti ? 1 : 2;
+    const paymentIdx = isMulti ? 2 : 3;
+    const privacyIdx = isMulti ? 3 : 4;
     const publishIdx = isMulti ? 4 : 5;
-    if (idx === privacyIdx) return renderPrivacyStep();
     if (idx === whatsappIdx) return renderWhatsappStep();
     if (idx === paymentIdx) return renderPaymentStep();
+    if (idx === privacyIdx) return renderPrivacyStep();
     if (idx === publishIdx) return renderPublishStep();
     return null;
   };
