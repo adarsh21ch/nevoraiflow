@@ -54,6 +54,9 @@ Deno.serve(async (req) => {
       .eq('id', page.owner_id)
       .single()
 
+    // Use sender_display_name from landing page settings; fall back to platform name
+    const senderDisplayName = (page as any).sender_display_name || 'Nevorai Flow'
+
     let emailBody = (page.email_body || '').replace(/\{\{name\}\}/g, reg.name || 'there')
       .replace(/\{\{email\}\}/g, reg.email || '')
       .replace(/\{\{phone\}\}/g, reg.phone || '')
