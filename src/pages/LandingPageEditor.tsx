@@ -115,6 +115,8 @@ const LandingPageEditor = () => {
   const [form, setForm] = useState(defaultFormState);
   const [slugEdited, setSlugEdited] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+  const [videoToggle, setVideoToggle] = useState(false);
+  const [funnelToggle, setFunnelToggle] = useState(false);
 
   const { data: existing, isLoading } = useQuery({
     queryKey: ["landing-page", id],
@@ -152,6 +154,8 @@ const LandingPageEditor = () => {
         sections: (existing.sections as any[]) || [],
       });
       setSlugEdited(true);
+      setVideoToggle(!!existing.post_submit_video_asset_id);
+      setFunnelToggle(!!existing.linked_funnel_id);
     }
   }, [existing]);
 
@@ -601,7 +605,6 @@ const LandingPageEditor = () => {
     </>
   );
 
-  const videoEnabled = !!form.post_submit_video_asset_id;
 
   const renderVideoStep = () => (
     <>
@@ -614,8 +617,9 @@ const LandingPageEditor = () => {
             <p className="text-xs text-muted-foreground mt-0.5">Show a video to users after they register</p>
           </div>
           <Switch
-            checked={videoEnabled}
+            checked={videoToggle}
             onCheckedChange={(checked) => {
+              setVideoToggle(checked);
               if (!checked) {
                 updateField("post_submit_video_asset_id", null);
                 updateField("post_submit_video_title", "");
@@ -625,7 +629,7 @@ const LandingPageEditor = () => {
           />
         </div>
 
-        {videoEnabled && (
+        {videoToggle && (
           <>
             <div className="p-4 bg-muted/50 rounded-xl space-y-3">
               <Label className="font-semibold">Select Video</Label>
@@ -653,13 +657,14 @@ const LandingPageEditor = () => {
               <p className="text-xs text-muted-foreground mt-0.5">Redirect users to a funnel after they register</p>
             </div>
             <Switch
-              checked={!!form.linked_funnel_id}
+              checked={funnelToggle}
               onCheckedChange={(checked) => {
+                setFunnelToggle(checked);
                 if (!checked) updateField("linked_funnel_id", null);
               }}
             />
           </div>
-          {!!form.linked_funnel_id && (
+          {funnelToggle && (
             <Select value={form.linked_funnel_id || "__none__"} onValueChange={(v) => updateField("linked_funnel_id", v === "__none__" ? null : v)}>
               <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select funnel..." /></SelectTrigger>
               <SelectContent>
