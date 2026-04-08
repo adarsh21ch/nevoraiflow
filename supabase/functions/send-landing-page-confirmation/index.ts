@@ -87,11 +87,14 @@ Deno.serve(async (req) => {
     const senderDomain = 'notify.flow.nevorai.com'
     const fromName = creator?.full_name || 'Nevorai Flow'
 
+    const plainText = `${page.email_heading || 'You are registered!'}\n\n${emailBody}\n\n${page.email_footer_text || ''}\n\nPowered by Nevorai Flow`
+
     const result = await sendLovableEmail(
       {
         to: reg.email,
         subject,
         html,
+        text: plainText,
         from: `${fromName} <noreply@flow.nevorai.com>`,
         sender_domain: senderDomain,
         purpose: 'transactional',
