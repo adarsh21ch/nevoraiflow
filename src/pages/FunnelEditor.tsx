@@ -280,6 +280,12 @@ const FunnelEditor = () => {
       is_published: funnel.is_published, video_asset_id: selectedVideo?.id || null,
       access_code_plain: funnel.access_code_plain || null,
       required_fields: funnel.required_fields,
+      speaker_mode: funnel.speaker_mode,
+      speaker_name: funnel.speaker_name || null,
+      speaker_photo_url: funnel.speaker_photo_url || null,
+      speaker_about: funnel.speaker_about || null,
+      video_topics_enabled: funnel.video_topics_enabled,
+      video_topics: funnel.video_topics.filter((t: string) => t.trim() !== ""),
     };
   }, [user, funnel, selectedVideo]);
 
