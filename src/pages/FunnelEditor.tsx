@@ -23,6 +23,7 @@ import { StepConfigPanel } from "@/components/funnel/StepConfigPanel";
 import { JourneyPreview } from "@/components/funnel/JourneyPreview";
 import { PrivacySettings } from "@/components/funnel/PrivacySettings";
 import { FunnelLivePreview } from "@/components/funnel/FunnelLivePreview";
+import { SpeakerPhotoUpload } from "@/components/funnel/SpeakerPhotoUpload";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface FlowStep {
