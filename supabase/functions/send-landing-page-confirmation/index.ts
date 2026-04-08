@@ -89,6 +89,13 @@ Deno.serve(async (req) => {
 
     const plainText = `${page.email_heading || 'You are registered!'}\n\n${emailBody}\n\n${page.email_footer_text || ''}\n\nPowered by Nevorai Flow`
 
+    // Generate or fetch unsubscribe token for this email
+    const unsubscribeToken = crypto.randomUUID()
+    await supabase.from('email_unsubscribe_tokens').upsert(
+      { email: reg.email, token: unsubscribeToken },
+      { onConflict: 'email' }
+    )
+
     const result = await sendLovableEmail(
       {
         to: reg.email,
@@ -100,6 +107,7 @@ Deno.serve(async (req) => {
         purpose: 'transactional',
         idempotency_key: `lp-confirm-${registration_id}`,
         message_id: `lp-confirm-${registration_id}`,
+        unsubscribe_token: unsubscribeToken,
       },
       { apiKey: LOVABLE_API_KEY }
     )
