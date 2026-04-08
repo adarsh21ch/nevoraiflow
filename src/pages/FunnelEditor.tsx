@@ -219,8 +219,8 @@ const FunnelEditor = () => {
       setModeChosen(true);
       if (f.audio_note_url) setAudioNoteEnabled(true);
       if (f.video_asset_id) {
-        supabase.from("video_assets").select("id, title, public_url").eq("id", f.video_asset_id).single().then(({ data }) => {
-          if (data) setSelectedVideo({ id: data.id, title: data.title, url: data.public_url });
+        supabase.from("video_assets").select("id, title, public_url, thumbnail_url").eq("id", f.video_asset_id).single().then(({ data }) => {
+          if (data) setSelectedVideo({ id: data.id, title: data.title, url: data.public_url, thumbnail: data.thumbnail_url });
         });
       }
     }
