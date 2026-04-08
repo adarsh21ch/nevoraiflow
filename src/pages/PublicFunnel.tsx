@@ -221,7 +221,7 @@ const CustomVideoPlayer = ({
     };
     window.addEventListener("keydown", handler, true);
     return () => window.removeEventListener("keydown", handler, true);
-  }, [allowSeek, togglePlay]);
+  }, [allowSeek, togglePlay, showSeekDisabledToast]);
 
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
