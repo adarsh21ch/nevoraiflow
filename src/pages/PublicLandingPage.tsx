@@ -1,15 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/landing/Logo";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
@@ -18,7 +14,6 @@ import { toast } from "sonner";
 
 const PublicLandingPage = () => {
   const { slug } = useParams();
-  const { user, signIn, signUp } = useAuth();
   const [page, setPage] = useState<any>(null);
   const [video, setVideo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -27,9 +22,6 @@ const PublicLandingPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [honeypot, setHoneypot] = useState("");
-  const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null);
-  const [authForm, setAuthForm] = useState({ email: "", password: "", name: "", phone: "" });
-  const [authLoading, setAuthLoading] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -42,10 +34,8 @@ const PublicLandingPage = () => {
         .single();
       if (data) {
         setPage(data);
-        // Check localStorage
         const saved = localStorage.getItem(`nf_registered_${data.id}`);
         if (saved) setSubmitted(true);
-        // Fetch video
         if (data.post_submit_video_asset_id) {
           const { data: v } = await supabase
             .from("video_assets")
@@ -54,7 +44,6 @@ const PublicLandingPage = () => {
             .single();
           if (v) setVideo(v);
         }
-        // Increment views
         supabase.rpc("increment_landing_page_views", { _landing_page_id: data.id });
       }
       setLoading(false);
@@ -65,7 +54,7 @@ const PublicLandingPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!page || submitting) return;
-    if (honeypot) { setSubmitted(true); return; } // Bot
+    if (honeypot) { setSubmitted(true); return; }
 
     setSubmitting(true);
     try {
@@ -75,13 +64,11 @@ const PublicLandingPage = () => {
         ...formData,
         device_type: /Mobi/i.test(navigator.userAgent) ? "mobile" : "desktop",
         user_agent: navigator.userAgent,
-        user_id: user?.id || null,
       };
 
       const { error } = await supabase.from("landing_page_registrations").insert(payload);
       if (error) throw error;
 
-      // Update count
       await supabase.from("landing_pages").update({
         total_registrations: (page.total_registrations || 0) + 1,
       } as any).eq("id", page.id);
@@ -96,26 +83,6 @@ const PublicLandingPage = () => {
       toast.error(err.message || "Something went wrong");
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleAuth = async (type: "login" | "signup") => {
-    setAuthLoading(true);
-    try {
-      if (type === "login") {
-        const { error } = await signIn(authForm.email, authForm.password);
-        if (error) throw error;
-        toast.success("Logged in!");
-      } else {
-        const { error } = await signUp(authForm.email, authForm.password, authForm.name, authForm.phone);
-        if (error) throw error;
-        toast.success("Account created! Check your email to verify.");
-      }
-      setAuthModal(null);
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setAuthLoading(false);
     }
   };
 
@@ -157,7 +124,6 @@ const PublicLandingPage = () => {
     ...(page.field_custom_2_enabled ? [{ key: "custom_2_value", label: page.field_custom_2_label || "Custom 2", enabled: true, required: page.field_custom_2_required }] : []),
   ].filter((f) => f.enabled);
 
-  // Render sections
   const renderSection = (section: any, i: number) => {
     switch (section.type) {
       case "hero":
@@ -166,9 +132,7 @@ const PublicLandingPage = () => {
             <h1 className="text-3xl md:text-4xl font-bold leading-tight">{section.headline}</h1>
             {section.subheadline && <p className="text-lg text-muted-foreground">{section.subheadline}</p>}
             {section.image_url && <img src={section.image_url} alt="" className="rounded-xl w-full max-h-80 object-cover" />}
-            {section.cta_text && (
-              <p className="text-primary font-semibold text-lg">{section.cta_text}</p>
-            )}
+            {section.cta_text && <p className="text-primary font-semibold text-lg">{section.cta_text}</p>}
           </div>
         );
       case "text":
@@ -248,18 +212,9 @@ const PublicLandingPage = () => {
 
   return (
     <div className={`min-h-screen flex flex-col ${bgClass}`}>
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 md:px-8 py-4 border-b border-border">
+      {/* Header — clean, no auth */}
+      <header className="flex items-center justify-center px-4 md:px-8 py-4 border-b border-border">
         <Logo size="sm" />
-        <div className="flex gap-2">
-          {page.allow_login && !user && (
-            <Button variant="ghost" size="sm" onClick={() => setAuthModal("login")}>Login</Button>
-          )}
-          {page.allow_signup && !user && (
-            <Button size="sm" onClick={() => setAuthModal("signup")}>Sign Up</Button>
-          )}
-          {user && <span className="text-sm text-muted-foreground">{user.email}</span>}
-        </div>
       </header>
 
       {/* Main Content */}
@@ -275,7 +230,6 @@ const PublicLandingPage = () => {
             </div>
           </div>
         ) : submitted ? (
-          /* Post-submit: video */
           <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold">{page.post_submit_video_title}</h2>
@@ -307,9 +261,7 @@ const PublicLandingPage = () => {
             )}
           </div>
         ) : (
-          /* Registration state */
           <div className="grid lg:grid-cols-5 gap-8 items-start">
-            {/* Left: sections */}
             <div className="lg:col-span-3 space-y-8">
               {sections.map(renderSection)}
               {sections.length === 0 && (
@@ -320,7 +272,6 @@ const PublicLandingPage = () => {
               )}
             </div>
 
-            {/* Right: registration form */}
             <div className="lg:col-span-2 lg:sticky lg:top-8">
               <Card className="p-6 space-y-5">
                 <div>
@@ -329,7 +280,6 @@ const PublicLandingPage = () => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Honeypot */}
                   <input
                     type="text"
                     name="website"
@@ -359,15 +309,6 @@ const PublicLandingPage = () => {
                   </Button>
                 </form>
 
-                {page.allow_login && !user && (
-                  <div className="text-center text-sm text-muted-foreground border-t pt-4">
-                    Already registered?{" "}
-                    <button onClick={() => setAuthModal("login")} className="text-primary hover:underline">
-                      Login here
-                    </button>
-                  </div>
-                )}
-
                 <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
                   <Lock size={12} /> Your information is safe with us
                 </p>
@@ -377,52 +318,9 @@ const PublicLandingPage = () => {
         )}
       </main>
 
-      {/* Footer */}
       <footer className="text-center py-6 text-xs text-muted-foreground border-t border-border">
-        © Nevora Flow · Powered by Nevora
+        © Nevorai Flow · Powered by Nevorai
       </footer>
-
-      {/* Auth Modal */}
-      <Dialog open={!!authModal} onOpenChange={() => setAuthModal(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{authModal === "login" ? "Login" : "Sign Up"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {authModal === "signup" && (
-              <>
-                <div className="space-y-1.5">
-                  <Label>Full Name</Label>
-                  <Input value={authForm.name} onChange={(e) => setAuthForm((p) => ({ ...p, name: e.target.value }))} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Phone</Label>
-                  <Input value={authForm.phone} onChange={(e) => setAuthForm((p) => ({ ...p, phone: e.target.value }))} />
-                </div>
-              </>
-            )}
-            <div className="space-y-1.5">
-              <Label>Email</Label>
-              <Input type="email" value={authForm.email} onChange={(e) => setAuthForm((p) => ({ ...p, email: e.target.value }))} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Password</Label>
-              <Input type="password" value={authForm.password} onChange={(e) => setAuthForm((p) => ({ ...p, password: e.target.value }))} />
-            </div>
-            <Button className="w-full" onClick={() => handleAuth(authModal!)} disabled={authLoading}>
-              {authLoading ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
-              {authModal === "login" ? "Login" : "Create Account"}
-            </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              {authModal === "login" ? (
-                <>Don't have an account?{" "}<button onClick={() => setAuthModal("signup")} className="text-primary hover:underline">Sign Up</button></>
-              ) : (
-                <>Already have an account?{" "}<button onClick={() => setAuthModal("login")} className="text-primary hover:underline">Login</button></>
-              )}
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

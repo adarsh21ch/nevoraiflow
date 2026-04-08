@@ -9,12 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { ImageUploadField } from "@/components/ui/image-upload-field";
+import { LandingPagePreview } from "@/components/funnel/LandingPagePreview";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   FileText, Palette, ClipboardList, Mail, Video, Link2, Rocket,
-  Save, ArrowLeft, Check, X, Plus, Trash2, GripVertical,
+  Save, ArrowLeft, Check, X, Plus, Trash2, GripVertical, Eye, Edit3,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -48,8 +50,6 @@ const defaultFormState = {
   post_submit_video_title: "Watch this introduction",
   post_submit_video_description: "",
   linked_funnel_id: null as string | null,
-  allow_login: true,
-  allow_signup: true,
   invite_code_required: false,
   invite_code: "",
   og_title: "",
@@ -85,7 +85,7 @@ const WIZARD_STEPS = [
   { icon: ClipboardList, label: "Form", num: "3" },
   { icon: Mail, label: "Email", num: "4" },
   { icon: Video, label: "Video", num: "5" },
-  { icon: Link2, label: "Links", num: "6" },
+  { icon: Link2, label: "SEO", num: "6" },
   { icon: Rocket, label: "Publish", num: "7" },
 ];
 
@@ -95,9 +95,11 @@ const LandingPageEditor = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isEdit = !!id;
+  const isMobile = useIsMobile();
   const [wizardStep, setWizardStep] = useState(0);
   const [form, setForm] = useState(defaultFormState);
   const [slugEdited, setSlugEdited] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
 
   const { data: existing, isLoading } = useQuery({
     queryKey: ["landing-page", id],
@@ -265,7 +267,12 @@ const LandingPageEditor = () => {
                 <div className="space-y-3">
                   <Input placeholder="Headline" value={section.headline || ""} onChange={(e) => updateSection(i, { headline: e.target.value })} className="bg-muted border-border" />
                   <Input placeholder="Subheadline" value={section.subheadline || ""} onChange={(e) => updateSection(i, { subheadline: e.target.value })} className="bg-muted border-border" />
-                  <Input placeholder="Hero image URL" value={section.image_url || ""} onChange={(e) => updateSection(i, { image_url: e.target.value })} className="bg-muted border-border" />
+                  <ImageUploadField
+                    label="Hero Image"
+                    value={section.image_url || ""}
+                    onChange={(url) => updateSection(i, { image_url: url })}
+                    folder="hero"
+                  />
                   <Input placeholder="CTA text above form" value={section.cta_text || ""} onChange={(e) => updateSection(i, { cta_text: e.target.value })} className="bg-muted border-border" />
                 </div>
               )}
@@ -351,13 +358,23 @@ const LandingPageEditor = () => {
                 <div className="space-y-3">
                   <Input placeholder="Speaker name" value={section.name || ""} onChange={(e) => updateSection(i, { name: e.target.value })} className="bg-muted border-border" />
                   <Input placeholder="Title / Role" value={section.title || ""} onChange={(e) => updateSection(i, { title: e.target.value })} className="bg-muted border-border" />
-                  <Input placeholder="Photo URL" value={section.photo_url || ""} onChange={(e) => updateSection(i, { photo_url: e.target.value })} className="bg-muted border-border" />
+                  <ImageUploadField
+                    label="Speaker Photo"
+                    value={section.photo_url || ""}
+                    onChange={(url) => updateSection(i, { photo_url: url })}
+                    folder="speakers"
+                  />
                   <Textarea placeholder="Bio" value={section.bio || ""} onChange={(e) => updateSection(i, { bio: e.target.value })} rows={3} className="bg-muted border-border" />
                 </div>
               )}
               {section.type === "image" && (
                 <div className="space-y-3">
-                  <Input placeholder="Image URL" value={section.url || ""} onChange={(e) => updateSection(i, { url: e.target.value })} className="bg-muted border-border" />
+                  <ImageUploadField
+                    label="Section Image"
+                    value={section.url || ""}
+                    onChange={(url) => updateSection(i, { url })}
+                    folder="sections"
+                  />
                   <Input placeholder="Caption (optional)" value={section.caption || ""} onChange={(e) => updateSection(i, { caption: e.target.value })} className="bg-muted border-border" />
                 </div>
               )}
@@ -410,7 +427,6 @@ const LandingPageEditor = () => {
           </div>
         </div>
 
-        {/* Custom fields */}
         {[1, 2].map((n) => {
           const enabledKey = `field_custom_${n}_enabled` as keyof typeof form;
           const labelKey = `field_custom_${n}_label` as keyof typeof form;
@@ -503,10 +519,10 @@ const LandingPageEditor = () => {
     </>
   );
 
-  const renderLinksStep = () => (
+  const renderSeoStep = () => (
     <>
-      <h2 className="text-lg font-heading font-semibold">Links & Auth</h2>
-      <p className="text-sm text-muted-foreground">Configure URL, authentication, and SEO settings.</p>
+      <h2 className="text-lg font-heading font-semibold">SEO & Social</h2>
+      <p className="text-sm text-muted-foreground">Optimize how your page appears in search and social shares.</p>
       <div className="space-y-4 mt-4">
         <div className="p-4 bg-muted/50 rounded-xl space-y-3">
           <Label className="font-semibold">Landing Page URL</Label>
@@ -519,22 +535,16 @@ const LandingPageEditor = () => {
         </div>
 
         <div className="p-4 bg-muted/50 rounded-xl space-y-3">
-          <h3 className="font-semibold">Authentication</h3>
-          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-            <Label className="text-sm">Show Login button</Label>
-            <Switch checked={form.allow_login} onCheckedChange={(v) => updateField("allow_login", v)} />
-          </div>
-          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-            <Label className="text-sm">Show Sign Up button</Label>
-            <Switch checked={form.allow_signup} onCheckedChange={(v) => updateField("allow_signup", v)} />
-          </div>
-        </div>
-
-        <div className="p-4 bg-muted/50 rounded-xl space-y-3">
-          <h3 className="font-semibold">SEO / Social</h3>
+          <h3 className="font-semibold">SEO / Social Preview</h3>
           <div><Label>OG Title</Label><Input value={form.og_title || ""} onChange={(e) => updateField("og_title", e.target.value)} placeholder={form.title} className="mt-1.5 bg-muted border-border" /></div>
           <div><Label>OG Description</Label><Textarea value={form.og_description || ""} onChange={(e) => updateField("og_description", e.target.value)} rows={2} className="mt-1.5 bg-muted border-border" /></div>
-          <div><Label>OG Image URL</Label><Input value={form.og_image_url || ""} onChange={(e) => updateField("og_image_url", e.target.value)} className="mt-1.5 bg-muted border-border" /></div>
+          <ImageUploadField
+            label="Social Preview Image"
+            helperText="This image appears when your page is shared on social media"
+            value={form.og_image_url || ""}
+            onChange={(url) => updateField("og_image_url", url)}
+            folder="og-images"
+          />
         </div>
       </div>
     </>
@@ -595,11 +605,30 @@ const LandingPageEditor = () => {
       case 2: return renderFormStep();
       case 3: return renderEmailStep();
       case 4: return renderVideoStep();
-      case 5: return renderLinksStep();
+      case 5: return renderSeoStep();
       case 6: return renderPublishStep();
       default: return null;
     }
   };
+
+  // Mobile: show preview toggle
+  if (isMobile && previewMode) {
+    return (
+      <DashboardLayout>
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-heading font-bold">Live Preview</h2>
+            <Button variant="outline" size="sm" onClick={() => setPreviewMode(false)}>
+              <Edit3 size={14} className="mr-1.5" /> Edit
+            </Button>
+          </div>
+          <div className="rounded-xl border border-border overflow-hidden bg-card" style={{ minHeight: "60vh" }}>
+            <LandingPagePreview form={form} />
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -624,61 +653,84 @@ const LandingPageEditor = () => {
           ))}
         </div>
 
-        {/* Main content */}
-        <div className="flex-1 max-w-2xl min-w-0">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate("/landing-pages")}>
-                <ArrowLeft size={18} />
-              </Button>
-              <h1 className="text-lg sm:text-xl font-heading font-bold truncate">{form.title || (isEdit ? "Edit Landing Page" : "New Landing Page")}</h1>
+        {/* Main editor area */}
+        <div className="flex-1 min-w-0 flex gap-6">
+          {/* Editor column */}
+          <div className="flex-1 max-w-2xl min-w-0">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate("/landing-pages")}>
+                  <ArrowLeft size={18} />
+                </Button>
+                <h1 className="text-lg sm:text-xl font-heading font-bold truncate">{form.title || (isEdit ? "Edit Landing Page" : "New Landing Page")}</h1>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 ml-2">
+                {isMobile && (
+                  <Button variant="outline" size="sm" onClick={() => setPreviewMode(true)}>
+                    <Eye size={14} className="mr-1.5" /> Preview
+                  </Button>
+                )}
+                <Button variant="hero" size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !form.title}>
+                  <Save size={14} className="mr-1.5" /> {saveMutation.isPending ? "Saving..." : "Save"}
+                </Button>
+              </div>
             </div>
-            <Button variant="hero" size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !form.title} className="shrink-0 ml-2">
-              <Save size={14} className="mr-1.5" /> {saveMutation.isPending ? "Saving..." : "Save"}
-            </Button>
+
+            {/* Mobile compact step selector */}
+            <div className="lg:hidden grid grid-cols-4 sm:grid-cols-5 gap-1.5 pb-3 mb-3">
+              {WIZARD_STEPS.map((s, i) => (
+                <button key={i} onClick={() => setWizardStep(i)}
+                  className={`flex flex-col items-center gap-1 px-1.5 py-2 rounded-lg text-[10px] font-semibold transition-all ${
+                    wizardStep === i
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted/60 text-muted-foreground"
+                  }`}
+                >
+                  <s.icon size={14} />
+                  <span className="truncate w-full text-center leading-tight">{s.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Progress bar */}
+            <div className="flex items-center gap-1 mb-4">
+              {WIZARD_STEPS.map((_, i) => (
+                <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= wizardStep ? "bg-primary" : "bg-muted"}`} />
+              ))}
+            </div>
+
+            {/* Content card */}
+            <div className="glass-card p-4 sm:p-6 space-y-4">
+              {renderWizardContent()}
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-3 mt-4">
+              {wizardStep > 0 && <Button variant="outline" size="sm" onClick={() => setWizardStep(wizardStep - 1)}>Previous</Button>}
+              <div className="flex-1" />
+              {wizardStep < lastStepIdx ? (
+                <Button variant="default" size="sm" onClick={() => setWizardStep(wizardStep + 1)}>Next</Button>
+              ) : (
+                <Button variant="hero" size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !form.title}>
+                  {saveMutation.isPending ? "Saving..." : isEdit ? "Update" : "Create Landing Page"}
+                </Button>
+              )}
+            </div>
           </div>
 
-          {/* Mobile compact step selector */}
-          <div className="lg:hidden grid grid-cols-4 sm:grid-cols-5 gap-1.5 pb-3 mb-3">
-            {WIZARD_STEPS.map((s, i) => (
-              <button key={i} onClick={() => setWizardStep(i)}
-                className={`flex flex-col items-center gap-1 px-1.5 py-2 rounded-lg text-[10px] font-semibold transition-all ${
-                  wizardStep === i
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted/60 text-muted-foreground"
-                }`}
-              >
-                <s.icon size={14} />
-                <span className="truncate w-full text-center leading-tight">{s.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Progress bar */}
-          <div className="flex items-center gap-1 mb-4">
-            {WIZARD_STEPS.map((_, i) => (
-              <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= wizardStep ? "bg-primary" : "bg-muted"}`} />
-            ))}
-          </div>
-
-          {/* Content card */}
-          <div className="glass-card p-4 sm:p-6 space-y-4">
-            {renderWizardContent()}
-          </div>
-
-          {/* Navigation */}
-          <div className="flex gap-3 mt-4">
-            {wizardStep > 0 && <Button variant="outline" size="sm" onClick={() => setWizardStep(wizardStep - 1)}>Previous</Button>}
-            <div className="flex-1" />
-            {wizardStep < lastStepIdx ? (
-              <Button variant="default" size="sm" onClick={() => setWizardStep(wizardStep + 1)}>Next</Button>
-            ) : (
-              <Button variant="hero" size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !form.title}>
-                {saveMutation.isPending ? "Saving..." : isEdit ? "Update" : "Create Landing Page"}
-              </Button>
-            )}
-          </div>
+          {/* Live Preview — desktop only */}
+          {!isMobile && (
+            <div className="hidden xl:block w-[380px] shrink-0 sticky top-20 self-start">
+              <div className="flex items-center gap-2 mb-3">
+                <Eye size={14} className="text-muted-foreground" />
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Live Preview</span>
+              </div>
+              <div className="rounded-xl border border-border overflow-hidden shadow-xl" style={{ maxHeight: "calc(100vh - 10rem)", overflowY: "auto" }}>
+                <LandingPagePreview form={form} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>

@@ -1,31 +1,43 @@
 
-# Nevora Flow — Landing Pages + Enhanced Steps
+# Phase 1 — Nevorai Flow Production Upgrade
 
-## Phase 1: Database & Navigation
-1. **Database migration** — Create `landing_pages`, `landing_page_registrations`, `landing_page_view_logs` tables + alter `funnel_steps` with new columns
-2. **Sidebar update** — Add "Landing Pages" nav item between Funnels and Videos
+## Batch A: Landing Page Cleanup & Auth Removal
+1. **Remove login/signup toggles** from landing page editor (`allow_login`, `allow_signup` fields)
+2. **Remove auth-related UI** from public landing pages
+3. **Fix labels** — replace "Hero image URL", "Photo URL", "Image URL" with upload buttons across the landing page editor
 
-## Phase 2: Landing Pages CRUD
-3. **Landing Pages list** — `/landing-pages` with cards, search, filters, empty state
-4. **Landing Page builder** — 7-tab editor (Page Info, Design, Form, Email, Video, Links, Publish)
+## Batch B: Image Upload System
+4. **Create a reusable `ImageUploadField` component** that handles device upload → storage bucket → returns URL
+5. **Create `landing-page-assets` storage bucket** for landing page media
+6. **Replace all URL input fields** in the landing page editor with the upload component:
+   - Hero image
+   - Section images
+   - Speaker/Host photo
+   - OG image
+7. **Show image previews** with change/remove options
 
-## Phase 3: Edge Functions & Public Page
-5. **submit-landing-page-registration** — Form submission with honeypot, rate limiting, validation
-6. **send-landing-page-confirmation** — Confirmation email via Resend
-7. **get-landing-page-data** — Public data fetch with caching
-8. **Public landing page** — `/l/:slug` with registration form, post-submit video, localStorage persistence
+## Batch C: Private Funnel Flow Polish
+8. **Improve CodeGateScreen** wording — use "Unlock Program", "Get Access" instead of generic text
+9. **Improve PrivateLeadForm** — premium wording, "Continue to Program" button
+10. **Add success popup/modal** after form submission with content visible behind
+11. **Add loading state** "Unlocking your access…" between form submit and content reveal
 
-## Phase 4: Login/Signup & Registrations
-9. **Auth modals** on landing page (login/signup)
-10. **Registrations dashboard** — Table with search, filters, CSV export, detail expand
+## Batch D: Live Preview for Landing Page Editor
+12. **Add split-pane layout** — editor left, live preview right (desktop)
+13. **Add Edit/Preview tabs** on mobile
+14. **Build `LandingPagePreview` component** that renders sections in real-time
 
-## Phase 5: Enhanced Step Unlocks
-11. **Builder UI** — Timer settings, between-step audio/text config in funnel step editor
-12. **Public viewer** — Countdown timer, between-step audio/text display, auto-unlock logic
-
-## Phase 6: Analytics
-13. **Landing page analytics** — Views, registrations, conversion rates, charts
+## Batch E: Mobile & UX Polish
+15. **Mobile-optimize** the landing page editor (touch-friendly, collapsible sections)
+16. **Fix section labels** and helper text across editors for non-technical users
+17. **Add friendly error messages** for uploads, form validation, missing fields
 
 ---
 
-Each phase will be implemented sequentially. I'll start with Phase 1 (database + navigation) and proceed through each phase after confirmation.
+### Not in Phase 1 (Future phases):
+- Email confirmation system (needs email domain setup)
+- Multiple access codes per funnel
+- Advanced analytics
+- WhatsApp notifications
+- Paid funnels
+- Team access
