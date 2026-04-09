@@ -18,35 +18,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { usePlan } from "@/hooks/usePlan";
-import { useResourceCount } from "@/hooks/useResourceCount";
-import { LimitBadge } from "@/components/LimitGate";
-
-const CreateLPButton = () => {
-  const { canCreate } = usePlan();
-  const counts = useResourceCount();
-  const navigate = useNavigate();
-
-  const handleClick = () => {
-    if (!canCreate("landing_page", counts.landing_pages)) {
-      toast.error("Landing page limit reached. Upgrade your plan for more.");
-      return;
-    }
-    navigate("/landing-pages/create");
-  };
-
-  return (
-    <Button onClick={handleClick} className="bg-primary">
-      <Plus size={16} className="mr-2" /> Create Landing Page
-    </Button>
-  );
-};
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 const LandingPagesPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<"upgrade" | "limit">("upgrade");
+
+  const { isFree, canCreateLandingPage, config, counts, tier } = usePlanLimits();
 
   const { data: pages = [], isLoading } = useQuery({
     queryKey: ["landing-pages", user?.id],
@@ -62,13 +45,23 @@ const LandingPagesPage = () => {
     enabled: !!user,
   });
 
+  const handleCreate = () => {
+    if (isFree) {
+      setModalType("upgrade");
+      setModalOpen(true);
+      return;
+    }
+    if (!canCreateLandingPage) {
+      setModalType("limit");
+      setModalOpen(true);
+      return;
+    }
+    navigate("/landing-pages/create");
+  };
+
   const filtered = pages.filter((p: any) => {
-    const matchesSearch =
-      !search ||
-      p.title.toLowerCase().includes(search.toLowerCase()) ||
-      p.slug.toLowerCase().includes(search.toLowerCase());
-    const matchesFilter =
-      filter === "all" || p.status === filter;
+    const matchesSearch = !search || p.title.toLowerCase().includes(search.toLowerCase()) || p.slug.toLowerCase().includes(search.toLowerCase());
+    const matchesFilter = filter === "all" || p.status === filter;
     return matchesSearch && matchesFilter;
   });
 
@@ -89,6 +82,12 @@ const LandingPagesPage = () => {
     return "outline";
   };
 
+  const limitBadge = !isFree && config.max_landing_pages !== -1 ? (
+    <span className={`text-xs px-2 py-0.5 rounded-full ${counts.landing_pages >= config.max_landing_pages ? "bg-destructive/10 text-destructive" : counts.landing_pages >= config.max_landing_pages - 1 ? "bg-amber-500/10 text-amber-600" : "bg-muted text-muted-foreground"}`}>
+      {counts.landing_pages}/{config.max_landing_pages}
+    </span>
+  ) : null;
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -98,20 +97,17 @@ const LandingPagesPage = () => {
               <h1 className="text-2xl font-bold">Landing Pages</h1>
               <p className="text-muted-foreground text-sm">Create registration pages for your sessions & events</p>
             </div>
-            <LimitBadge resource="landing_page" />
+            {limitBadge}
           </div>
-          <CreateLPButton />
+          <Button onClick={handleCreate} className="bg-primary">
+            <Plus size={16} className="mr-2" /> Create Landing Page
+          </Button>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search landing pages..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
+            <Input placeholder="Search landing pages..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
           <Tabs value={filter} onValueChange={setFilter}>
             <TabsList>
@@ -125,19 +121,17 @@ const LandingPagesPage = () => {
 
         {isLoading ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="p-5 animate-pulse h-48" />
-            ))}
+            {[1, 2, 3].map((i) => <Card key={i} className="p-5 animate-pulse h-48" />)}
           </div>
         ) : filtered.length === 0 ? (
           <Card className="p-12 text-center">
             <FileText size={48} className="mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No landing pages yet</h3>
             <p className="text-muted-foreground mb-6">
-              Create your first landing page to collect registrations for your sessions and events.
+              {isFree ? "Subscribe to a plan to start creating landing pages." : "Create your first landing page to collect registrations."}
             </p>
-            <Button onClick={() => navigate("/landing-pages/create")}>
-              <Plus size={16} className="mr-2" /> Create Landing Page
+            <Button onClick={handleCreate}>
+              <Plus size={16} className="mr-2" /> {isFree ? "See Plans" : "Create Landing Page"}
             </Button>
           </Card>
         ) : (
@@ -145,63 +139,46 @@ const LandingPagesPage = () => {
             {filtered.map((page: any) => (
               <Card key={page.id} className="p-5 space-y-3">
                 <div className="flex items-start justify-between">
-                  <Badge variant={statusColor(page.status) as any} className="capitalize">
-                    {page.status}
-                  </Badge>
+                  <Badge variant={statusColor(page.status) as any} className="capitalize">{page.status}</Badge>
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical size={16} />
-                      </Button>
-                    </DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical size={16} /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => navigate(`/landing-pages/${page.id}/edit`)}>
-                        <Pencil size={14} className="mr-2" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => window.open(`/l/${page.slug}`, "_blank")}>
-                        <ExternalLink size={14} className="mr-2" /> Preview
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => deletePage(page.id)} className="text-destructive">
-                        <Trash2 size={14} className="mr-2" /> Delete
-                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/landing-pages/${page.id}/edit`)}><Pencil size={14} className="mr-2" /> Edit</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => window.open(`/l/${page.slug}`, "_blank")}><ExternalLink size={14} className="mr-2" /> Preview</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => deletePage(page.id)} className="text-destructive"><Trash2 size={14} className="mr-2" /> Delete</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-
                 <h3 className="font-semibold text-lg leading-tight">{page.title}</h3>
-
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span className="truncate">{window.location.origin}/l/{page.slug}</span>
-                  <button onClick={() => copyLink(page.slug)} className="hover:text-foreground">
-                    <Copy size={12} />
-                  </button>
+                  <button onClick={() => copyLink(page.slug)} className="hover:text-foreground"><Copy size={12} /></button>
                 </div>
-
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1"><Eye size={14} /> {page.total_views || 0} views</span>
                   <span className="flex items-center gap-1"><Users size={14} /> {page.total_registrations || 0} registrations</span>
                 </div>
-
-                <p className="text-xs text-muted-foreground">
-                  Created {format(new Date(page.created_at), "d MMM yyyy")}
-                </p>
-
+                <p className="text-xs text-muted-foreground">Created {format(new Date(page.created_at), "d MMM yyyy")}</p>
                 <div className="flex gap-2 pt-1">
-                  <Button variant="outline" size="sm" onClick={() => navigate(`/landing-pages/${page.id}/edit`)}>
-                    Edit
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => navigate(`/landing-pages/${page.id}`)}>
-                    Registrations
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => window.open(`/l/${page.slug}`, "_blank")}>
-                    Preview
-                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/landing-pages/${page.id}/edit`)}>Edit</Button>
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/landing-pages/${page.id}`)}>Registrations</Button>
+                  <Button variant="outline" size="sm" onClick={() => window.open(`/l/${page.slug}`, "_blank")}>Preview</Button>
                 </div>
               </Card>
             ))}
           </div>
         )}
       </div>
+
+      <UpgradeModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        type={modalType}
+        resource="landing pages"
+        currentCount={counts.landing_pages}
+        limit={config.max_landing_pages}
+        tier={tier}
+      />
     </DashboardLayout>
   );
 };

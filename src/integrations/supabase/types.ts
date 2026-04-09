@@ -1429,6 +1429,48 @@ export type Database = {
           },
         ]
       }
+      plan_config: {
+        Row: {
+          id: string
+          max_funnels: number
+          max_landing_pages: number
+          max_live_sessions: number
+          max_team_members: number
+          monthly_price: number
+          multilevel_funnel_enabled: boolean
+          plan_name: string
+          updated_at: string | null
+          yearly_price: number
+          yearly_validity_days: number
+        }
+        Insert: {
+          id?: string
+          max_funnels?: number
+          max_landing_pages?: number
+          max_live_sessions?: number
+          max_team_members?: number
+          monthly_price?: number
+          multilevel_funnel_enabled?: boolean
+          plan_name: string
+          updated_at?: string | null
+          yearly_price?: number
+          yearly_validity_days?: number
+        }
+        Update: {
+          id?: string
+          max_funnels?: number
+          max_landing_pages?: number
+          max_live_sessions?: number
+          max_team_members?: number
+          monthly_price?: number
+          multilevel_funnel_enabled?: boolean
+          plan_name?: string
+          updated_at?: string | null
+          yearly_price?: number
+          yearly_validity_days?: number
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           id: string
@@ -1466,6 +1508,7 @@ export type Database = {
           onboarding_completed: boolean | null
           onboarding_data: Json | null
           phone: string | null
+          team_owner_id: string | null
           team_size: string | null
           updated_at: string | null
           whatsapp_number: string | null
@@ -1485,6 +1528,7 @@ export type Database = {
           onboarding_completed?: boolean | null
           onboarding_data?: Json | null
           phone?: string | null
+          team_owner_id?: string | null
           team_size?: string | null
           updated_at?: string | null
           whatsapp_number?: string | null
@@ -1504,11 +1548,64 @@ export type Database = {
           onboarding_completed?: boolean | null
           onboarding_data?: Json | null
           phone?: string | null
+          team_owner_id?: string | null
           team_size?: string | null
           updated_at?: string | null
           whatsapp_number?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_team_owner_id_fkey"
+            columns: ["team_owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_logs: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          event_type: string
+          id: string
+          plan_billing: string | null
+          plan_tier: string | null
+          razorpay_payment_id: string | null
+          razorpay_subscription_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          plan_billing?: string | null
+          plan_tier?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_subscription_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          plan_billing?: string | null
+          plan_tier?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_subscription_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suppressed_emails: {
         Row: {
@@ -1533,6 +1630,51 @@ export type Database = {
           reason?: string
         }
         Relationships: []
+      }
+      team_members: {
+        Row: {
+          id: string
+          invited_at: string | null
+          invited_email: string
+          joined_at: string | null
+          member_id: string
+          owner_id: string
+          status: string
+        }
+        Insert: {
+          id?: string
+          invited_at?: string | null
+          invited_email: string
+          joined_at?: string | null
+          member_id: string
+          owner_id: string
+          status?: string
+        }
+        Update: {
+          id?: string
+          invited_at?: string | null
+          invited_email?: string
+          joined_at?: string | null
+          member_id?: string
+          owner_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_kyc_submissions: {
         Row: {

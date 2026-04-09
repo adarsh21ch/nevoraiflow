@@ -4,11 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Search, Crown, Ban, CheckCircle2, XCircle, RefreshCw, Pencil, Save } from "lucide-react";
+import { Search, Crown, Ban, CheckCircle2, XCircle, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import type { PlanConfig } from "@/hooks/usePlanLimits";
 
 const AdminSubscriptionsPage = () => {
   const [search, setSearch] = useState("");
@@ -38,11 +39,11 @@ const AdminSubscriptionsPage = () => {
     },
   });
 
-  const { data: activePlans = [] } = useQuery({
-    queryKey: ["admin-plans"],
+  const { data: planConfigs = [] } = useQuery({
+    queryKey: ["admin-plan-configs"],
     queryFn: async () => {
-      const { data } = await supabase.from("admin_subscription_plans").select("*").order("price_inr");
-      return data || [];
+      const { data } = await supabase.from("plan_config").select("*");
+      return (data || []) as (PlanConfig & { id: string })[];
     },
   });
 
@@ -66,64 +67,106 @@ const AdminSubscriptionsPage = () => {
 
   const totalRevenue = subscriptions.reduce((a, s) => a + (s.amount_paid || 0), 0);
   const activeCount = subscriptions.filter((s) => s.status === "active" && s.tier !== "free").length;
+  const basicCount = subscriptions.filter((s) => s.status === "active" && s.tier === "basic").length;
+  const proCount = subscriptions.filter((s) => s.status === "active" && s.tier === "pro").length;
   const failedCount = subscriptions.filter((s) => s.status === "payment_failed").length;
 
   const handleManualGrant = async (userId: string, tier: string) => {
     const now = new Date();
     const expires = new Date(now.getTime() + 30 * 86400000);
-
-    await supabase.from("user_subscriptions")
-      .update({ status: "replaced" })
-      .eq("user_id", userId).eq("status", "active");
-
+    await supabase.from("user_subscriptions").update({ status: "replaced" }).eq("user_id", userId).eq("status", "active");
     const planKey = tier === "basic" ? "basic_monthly" : "pro_monthly";
     const { error } = await supabase.from("user_subscriptions").insert({
       user_id: userId, plan_key: planKey, tier, status: "active",
       billing_type: "manual", amount_paid: 0,
       started_at: now.toISOString(), expires_at: expires.toISOString(),
     });
-
     if (error) toast.error(error.message);
     else { toast.success(`${tier} access granted`); queryClient.invalidateQueries({ queryKey: ["admin-all-subscriptions"] }); }
   };
 
   const handleRevoke = async (subId: string) => {
-    const { error } = await supabase.from("user_subscriptions")
-      .update({ status: "cancelled" }).eq("id", subId);
+    const { error } = await supabase.from("user_subscriptions").update({ status: "cancelled" }).eq("id", subId);
     if (error) toast.error(error.message);
     else { toast.success("Access revoked"); queryClient.invalidateQueries({ queryKey: ["admin-all-subscriptions"] }); }
   };
 
+  // Plan config editing (per-field save)
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [fieldValue, setFieldValue] = useState<any>(null);
+
+  const saveField = async (planName: string, field: string, value: any) => {
+    const updateObj: Record<string, any> = { [field]: value, updated_at: new Date().toISOString() };
+    const { error } = await supabase
+      .from("plan_config")
+      .update(updateObj as any)
+      .eq("plan_name", planName);
+    if (error) {
+      toast.error("Failed to save");
+    } else {
+      toast.success("Updated!");
+      setEditingField(null);
+      queryClient.invalidateQueries({ queryKey: ["admin-plan-configs"] });
+    }
+  };
+
+  const PlanField = ({ planName, field, label, type = "number", disabled = false, hint }: {
+    planName: string; field: string; label: string; type?: string; disabled?: boolean; hint?: string;
+  }) => {
+    const config = planConfigs.find(c => c.plan_name === planName) as any;
+    if (!config) return null;
+    const key = `${planName}-${field}`;
+    const isEditing = editingField === key;
+    const currentVal = isEditing ? fieldValue : config[field];
+
+    return (
+      <div className="flex items-center gap-3 py-2">
+        <div className="flex-1">
+          <Label className="text-xs font-medium">{label}</Label>
+          {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
+        </div>
+        {type === "boolean" ? (
+          <Switch
+            checked={currentVal}
+            disabled={disabled}
+            onCheckedChange={(v) => saveField(planName, field, v)}
+          />
+        ) : (
+          <div className="flex items-center gap-1.5">
+            <Input
+              type="number"
+              value={currentVal ?? ""}
+              disabled={disabled}
+              className="w-24 h-8 text-sm"
+              placeholder={field.includes("team") && planName === "basic" ? "N/A" : "-1 = ∞"}
+              onChange={(e) => {
+                setEditingField(key);
+                setFieldValue(e.target.value === "" ? null : parseInt(e.target.value));
+              }}
+            />
+            {isEditing && (
+              <Button
+                size="sm"
+                className="h-8 gap-1 text-xs"
+                onClick={() => saveField(planName, field, fieldValue)}
+              >
+                <Save size={12} /> Save
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const [editingSettings, setEditingSettings] = useState<Record<string, string>>({});
-  const [editingPlans, setEditingPlans] = useState<Record<string, any>>({});
 
   const handleSettingSave = async (key: string) => {
     const val = editingSettings[key];
     if (val === undefined) return;
-    const { error } = await supabase.from("platform_settings")
-      .update({ value: val }).eq("key", key);
+    const { error } = await supabase.from("platform_settings").update({ value: val }).eq("key", key);
     if (error) toast.error(error.message);
     else { toast.success("Setting updated"); queryClient.invalidateQueries({ queryKey: ["admin-platform-settings"] }); }
-  };
-
-  const handlePlanSave = async (planId: string) => {
-    const updates = editingPlans[planId];
-    if (!updates) return;
-    const { error } = await supabase.from("admin_subscription_plans")
-      .update(updates).eq("id", planId);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Plan updated");
-      setEditingPlans(prev => { const n = { ...prev }; delete n[planId]; return n; });
-      queryClient.invalidateQueries({ queryKey: ["admin-plans"] });
-    }
-  };
-
-  const updatePlanField = (planId: string, field: string, value: any) => {
-    setEditingPlans(prev => ({
-      ...prev,
-      [planId]: { ...(prev[planId] || {}), [field]: value },
-    }));
   };
 
   const getSettingValue = (key: string) => settings.find(s => s.key === key)?.value || "";
@@ -133,7 +176,7 @@ const AdminSubscriptionsPage = () => {
       <div className="space-y-6">
         <h1 className="text-2xl font-heading font-bold">Subscriptions & Billing</h1>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="glass-card p-5">
             <p className="text-xs text-muted-foreground mb-1">Total Revenue</p>
             <p className="text-2xl font-heading font-bold">₹{totalRevenue.toLocaleString("en-IN")}</p>
@@ -143,12 +186,16 @@ const AdminSubscriptionsPage = () => {
             <p className="text-2xl font-heading font-bold text-primary">{activeCount}</p>
           </div>
           <div className="glass-card p-5">
-            <p className="text-xs text-muted-foreground mb-1">Failed Payments</p>
-            <p className="text-2xl font-heading font-bold text-destructive">{failedCount}</p>
+            <p className="text-xs text-muted-foreground mb-1">Basic</p>
+            <p className="text-2xl font-heading font-bold text-blue-600">{basicCount}</p>
           </div>
           <div className="glass-card p-5">
-            <p className="text-xs text-muted-foreground mb-1">Total Records</p>
-            <p className="text-2xl font-heading font-bold">{subscriptions.length}</p>
+            <p className="text-xs text-muted-foreground mb-1">Pro</p>
+            <p className="text-2xl font-heading font-bold text-green-600">{proCount}</p>
+          </div>
+          <div className="glass-card p-5">
+            <p className="text-xs text-muted-foreground mb-1">Failed</p>
+            <p className="text-2xl font-heading font-bold text-destructive">{failedCount}</p>
           </div>
         </div>
 
@@ -192,12 +239,10 @@ const AdminSubscriptionsPage = () => {
                           <td className="p-4 text-xs">{s.plan_key}</td>
                           <td className="p-4">
                             <span className={`px-2 py-0.5 rounded-full text-xs ${
-                              s.tier === "pro" ? "bg-primary/10 text-primary" :
+                              s.tier === "pro" ? "bg-green-500/10 text-green-600" :
                               s.tier === "basic" ? "bg-blue-500/10 text-blue-600" :
                               "bg-muted text-muted-foreground"
-                            }`}>
-                              {s.tier}
-                            </span>
+                            }`}>{s.tier}</span>
                           </td>
                           <td className="p-4">
                             <span className={`px-2 py-0.5 rounded-full text-xs inline-flex items-center gap-1 ${
@@ -239,119 +284,65 @@ const AdminSubscriptionsPage = () => {
             </div>
           </TabsContent>
 
-          {/* Plans & Limits Tab */}
+          {/* Plans & Limits Tab — Two side-by-side cards */}
           <TabsContent value="plans" className="space-y-4">
-            <p className="text-sm text-muted-foreground">Edit pricing, limits, and features for each plan. Changes apply immediately.</p>
-            <div className="grid gap-4">
-              {activePlans.map((p: any) => {
-                const edits = editingPlans[p.id] || {};
-                const val = (field: string) => edits[field] !== undefined ? edits[field] : p[field];
-                return (
-                  <div key={p.id} className="glass-card p-5 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-heading font-semibold">{p.label}</h3>
-                        <p className="text-xs text-muted-foreground">{p.plan_key} · {p.tier} · {p.billing_type}</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <Label className="text-xs">Active</Label>
-                          <Switch
-                            checked={val("is_active")}
-                            onCheckedChange={(v) => updatePlanField(p.id, "is_active", v)}
-                          />
-                        </div>
-                        {editingPlans[p.id] && (
-                          <Button size="sm" className="gap-1" onClick={() => handlePlanSave(p.id)}>
-                            <Save size={14} /> Save
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+            <p className="text-sm text-muted-foreground">Edit pricing, limits, and features for each plan. Changes apply immediately. Enter -1 for unlimited.</p>
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Basic Card */}
+              <div className="glass-card p-6 space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-semibold">Basic</span>
+                  <span className="text-xs text-muted-foreground">For Individuals</span>
+                </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div>
-                        <Label className="text-xs">Price (₹)</Label>
-                        <Input
-                          type="number"
-                          value={val("price_inr")}
-                          onChange={(e) => updatePlanField(p.id, "price_inr", parseInt(e.target.value) || 0)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Duration (days)</Label>
-                        <Input
-                          type="number"
-                          value={val("duration_days") || ""}
-                          placeholder="∞"
-                          onChange={(e) => updatePlanField(p.id, "duration_days", e.target.value ? parseInt(e.target.value) : null)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Funnel Limit</Label>
-                        <Input
-                          type="number"
-                          value={val("funnel_limit") ?? ""}
-                          placeholder="Unlimited"
-                          onChange={(e) => updatePlanField(p.id, "funnel_limit", e.target.value ? parseInt(e.target.value) : null)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Video Limit</Label>
-                        <Input
-                          type="number"
-                          value={val("video_limit") ?? ""}
-                          placeholder="Unlimited"
-                          onChange={(e) => updatePlanField(p.id, "video_limit", e.target.value ? parseInt(e.target.value) : null)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Landing Page Limit</Label>
-                        <Input
-                          type="number"
-                          value={val("landing_page_limit") ?? ""}
-                          placeholder="Unlimited"
-                          onChange={(e) => updatePlanField(p.id, "landing_page_limit", e.target.value ? parseInt(e.target.value) : null)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Live Session Limit</Label>
-                        <Input
-                          type="number"
-                          value={val("live_session_limit") ?? ""}
-                          placeholder="Unlimited"
-                          onChange={(e) => updatePlanField(p.id, "live_session_limit", e.target.value ? parseInt(e.target.value) : null)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Max Video Size (MB)</Label>
-                        <Input
-                          type="number"
-                          value={val("video_max_size_mb") ?? ""}
-                          placeholder="Unlimited"
-                          onChange={(e) => updatePlanField(p.id, "video_max_size_mb", e.target.value ? parseInt(e.target.value) : null)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div className="flex items-end gap-2 pb-1">
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={val("multi_step_funnel_enabled")}
-                            onCheckedChange={(v) => updatePlanField(p.id, "multi_step_funnel_enabled", v)}
-                          />
-                          <Label className="text-xs">Multi-step Funnels</Label>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                <div className="border-b border-border pb-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pricing</p>
+                  <PlanField planName="basic" field="monthly_price" label="Monthly Price (₹)" />
+                  <PlanField planName="basic" field="yearly_price" label="Yearly Price (₹)" />
+                  <PlanField planName="basic" field="yearly_validity_days" label="Yearly Validity (days)" />
+                </div>
+
+                <div className="border-b border-border pb-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Limits</p>
+                  <PlanField planName="basic" field="max_funnels" label="Max Funnels" hint="-1 = unlimited" />
+                  <PlanField planName="basic" field="max_landing_pages" label="Max Landing Pages" hint="-1 = unlimited" />
+                  <PlanField planName="basic" field="max_live_sessions" label="Max Live Sessions" hint="-1 = unlimited" />
+                  <PlanField planName="basic" field="max_team_members" label="Max Team Members" disabled hint="N/A — Basic plan has no team" />
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Features</p>
+                  <PlanField planName="basic" field="multilevel_funnel_enabled" label="Multi-level Funnel Access" type="boolean" />
+                </div>
+              </div>
+
+              {/* Pro Card */}
+              <div className="glass-card p-6 space-y-4 border-primary/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-semibold">Pro</span>
+                  <span className="text-xs text-muted-foreground">For Teams</span>
+                </div>
+
+                <div className="border-b border-border pb-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pricing</p>
+                  <PlanField planName="pro" field="monthly_price" label="Monthly Price (₹)" />
+                  <PlanField planName="pro" field="yearly_price" label="Yearly Price (₹)" />
+                  <PlanField planName="pro" field="yearly_validity_days" label="Yearly Validity (days)" />
+                </div>
+
+                <div className="border-b border-border pb-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Limits</p>
+                  <PlanField planName="pro" field="max_funnels" label="Max Funnels" hint="-1 = unlimited" />
+                  <PlanField planName="pro" field="max_landing_pages" label="Max Landing Pages" hint="-1 = unlimited" />
+                  <PlanField planName="pro" field="max_live_sessions" label="Max Live Sessions" hint="-1 = unlimited" />
+                  <PlanField planName="pro" field="max_team_members" label="Max Team Members" hint="-1 = unlimited" />
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Features</p>
+                  <PlanField planName="pro" field="multilevel_funnel_enabled" label="Multi-level Funnel Access" type="boolean" />
+                </div>
+              </div>
             </div>
           </TabsContent>
 

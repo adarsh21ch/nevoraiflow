@@ -16,9 +16,8 @@ import {
   Pencil, Trash2, Video, Lock, Globe, IndianRupee, X
 } from "lucide-react";
 import { format, formatDistanceToNow, isPast, isFuture } from "date-fns";
-import { usePlan } from "@/hooks/usePlan";
-import { useResourceCount } from "@/hooks/useResourceCount";
-import { LimitBadge } from "@/components/LimitGate";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 const generateSlug = (title: string) =>
   title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 60) || "my-session";
@@ -48,10 +47,12 @@ const accessIcon = (type: string) => {
 
 const LivePage = () => {
   const { user } = useAuth();
-  const { canCreate } = usePlan();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [creating, setCreating] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<"upgrade" | "limit">("upgrade");
+  const { isFree, canCreateLive, config, counts, tier } = usePlanLimits();
 
   // New session form
   const [form, setForm] = useState({
@@ -157,12 +158,21 @@ const LivePage = () => {
                 Create live sessions, collect registrations, and share meeting links with your audience.
               </p>
             </div>
-            <LimitBadge resource="live_session" />
+            {!isFree && config.max_live_sessions !== -1 && (
+              <span className={`text-xs px-2 py-0.5 rounded-full ${counts.live_sessions >= config.max_live_sessions ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>
+                {counts.live_sessions}/{config.max_live_sessions}
+              </span>
+            )}
           </div>
           <Button variant="hero" onClick={() => {
-            const counts = sessions?.length || 0;
-            if (!canCreate("live_session", counts)) {
-              toast.error("Live session limit reached. Upgrade your plan for more.");
+            if (isFree) {
+              setModalType("upgrade");
+              setModalOpen(true);
+              return;
+            }
+            if (!canCreateLive) {
+              setModalType("limit");
+              setModalOpen(true);
               return;
             }
             setCreating(true);
@@ -397,6 +407,15 @@ const LivePage = () => {
           </div>
         )}
       </div>
+      <UpgradeModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        type={modalType}
+        resource="live sessions"
+        currentCount={counts.live_sessions}
+        limit={config.max_live_sessions}
+        tier={tier}
+      />
     </DashboardLayout>
   );
 };
