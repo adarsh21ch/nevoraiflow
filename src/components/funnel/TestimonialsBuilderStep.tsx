@@ -11,7 +11,7 @@ import {
   MessageSquare, Video, Plus, Trash2, GripVertical, Star, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { uploadVideoToR2 } from "@/lib/r2VideoUpload";
+
 
 interface TestimonialsBuilderStepProps {
   landingPageId: string | undefined;
