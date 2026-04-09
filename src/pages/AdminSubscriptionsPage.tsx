@@ -4,9 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Search, Crown, Ban, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
+import { Search, Crown, Ban, CheckCircle2, XCircle, RefreshCw, Pencil, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const AdminSubscriptionsPage = () => {
   const [search, setSearch] = useState("");
@@ -36,6 +38,14 @@ const AdminSubscriptionsPage = () => {
     },
   });
 
+  const { data: activePlans = [] } = useQuery({
+    queryKey: ["admin-plans"],
+    queryFn: async () => {
+      const { data } = await supabase.from("admin_subscription_plans").select("*").order("price_inr");
+      return data || [];
+    },
+  });
+
   const { data: settings = [] } = useQuery({
     queryKey: ["admin-platform-settings"],
     queryFn: async () => {
@@ -58,7 +68,7 @@ const AdminSubscriptionsPage = () => {
   const activeCount = subscriptions.filter((s) => s.status === "active" && s.tier !== "free").length;
   const failedCount = subscriptions.filter((s) => s.status === "payment_failed").length;
 
-  const handleManualGrant = async (userId: string, planKey: string) => {
+  const handleManualGrant = async (userId: string, tier: string) => {
     const now = new Date();
     const expires = new Date(now.getTime() + 30 * 86400000);
 
@@ -66,14 +76,15 @@ const AdminSubscriptionsPage = () => {
       .update({ status: "replaced" })
       .eq("user_id", userId).eq("status", "active");
 
+    const planKey = tier === "basic" ? "basic_monthly" : "pro_monthly";
     const { error } = await supabase.from("user_subscriptions").insert({
-      user_id: userId, plan_key: planKey, tier: "pro", status: "active",
+      user_id: userId, plan_key: planKey, tier, status: "active",
       billing_type: "manual", amount_paid: 0,
       started_at: now.toISOString(), expires_at: expires.toISOString(),
     });
 
     if (error) toast.error(error.message);
-    else { toast.success("Access granted"); queryClient.invalidateQueries({ queryKey: ["admin-all-subscriptions"] }); }
+    else { toast.success(`${tier} access granted`); queryClient.invalidateQueries({ queryKey: ["admin-all-subscriptions"] }); }
   };
 
   const handleRevoke = async (subId: string) => {
@@ -84,6 +95,7 @@ const AdminSubscriptionsPage = () => {
   };
 
   const [editingSettings, setEditingSettings] = useState<Record<string, string>>({});
+  const [editingPlans, setEditingPlans] = useState<Record<string, any>>({});
 
   const handleSettingSave = async (key: string) => {
     const val = editingSettings[key];
@@ -92,6 +104,26 @@ const AdminSubscriptionsPage = () => {
       .update({ value: val }).eq("key", key);
     if (error) toast.error(error.message);
     else { toast.success("Setting updated"); queryClient.invalidateQueries({ queryKey: ["admin-platform-settings"] }); }
+  };
+
+  const handlePlanSave = async (planId: string) => {
+    const updates = editingPlans[planId];
+    if (!updates) return;
+    const { error } = await supabase.from("admin_subscription_plans")
+      .update(updates).eq("id", planId);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Plan updated");
+      setEditingPlans(prev => { const n = { ...prev }; delete n[planId]; return n; });
+      queryClient.invalidateQueries({ queryKey: ["admin-plans"] });
+    }
+  };
+
+  const updatePlanField = (planId: string, field: string, value: any) => {
+    setEditingPlans(prev => ({
+      ...prev,
+      [planId]: { ...(prev[planId] || {}), [field]: value },
+    }));
   };
 
   const getSettingValue = (key: string) => settings.find(s => s.key === key)?.value || "";
@@ -123,8 +155,9 @@ const AdminSubscriptionsPage = () => {
         <Tabs defaultValue="subscriptions">
           <TabsList>
             <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+            <TabsTrigger value="plans">Plans & Limits</TabsTrigger>
             <TabsTrigger value="audit">Audit Logs</TabsTrigger>
-            <TabsTrigger value="settings">Pricing & Settings</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="subscriptions" className="space-y-4">
@@ -140,6 +173,7 @@ const AdminSubscriptionsPage = () => {
                     <tr className="border-b border-border text-left">
                       <th className="p-4 text-xs text-muted-foreground font-medium">User</th>
                       <th className="p-4 text-xs text-muted-foreground font-medium">Plan</th>
+                      <th className="p-4 text-xs text-muted-foreground font-medium">Tier</th>
                       <th className="p-4 text-xs text-muted-foreground font-medium">Status</th>
                       <th className="p-4 text-xs text-muted-foreground font-medium">Amount</th>
                       <th className="p-4 text-xs text-muted-foreground font-medium">Expires</th>
@@ -155,9 +189,14 @@ const AdminSubscriptionsPage = () => {
                             <p className="font-medium">{profile?.full_name || "—"}</p>
                             <p className="text-xs text-muted-foreground">{profile?.email}</p>
                           </td>
+                          <td className="p-4 text-xs">{s.plan_key}</td>
                           <td className="p-4">
-                            <span className={`px-2 py-0.5 rounded-full text-xs ${s.tier === "pro" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-                              {s.plan_key}
+                            <span className={`px-2 py-0.5 rounded-full text-xs ${
+                              s.tier === "pro" ? "bg-primary/10 text-primary" :
+                              s.tier === "basic" ? "bg-blue-500/10 text-blue-600" :
+                              "bg-muted text-muted-foreground"
+                            }`}>
+                              {s.tier}
                             </span>
                           </td>
                           <td className="p-4">
@@ -174,16 +213,21 @@ const AdminSubscriptionsPage = () => {
                           <td className="p-4 text-xs text-muted-foreground">
                             {s.expires_at ? new Date(s.expires_at).toLocaleDateString("en-IN") : "—"}
                           </td>
-                          <td className="p-4 space-x-2">
+                          <td className="p-4 space-x-1">
                             {s.status === "active" && s.tier !== "free" && (
                               <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => handleRevoke(s.id)}>
                                 <Ban size={12} /> Revoke
                               </Button>
                             )}
                             {(s.status !== "active" || s.tier === "free") && (
-                              <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => handleManualGrant(s.user_id, "pro_manual")}>
-                                <Crown size={12} /> Grant Pro
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => handleManualGrant(s.user_id, "basic")}>
+                                  Grant Basic
+                                </Button>
+                                <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => handleManualGrant(s.user_id, "pro")}>
+                                  <Crown size={12} /> Grant Pro
+                                </Button>
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -192,6 +236,122 @@ const AdminSubscriptionsPage = () => {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </TabsContent>
+
+          {/* Plans & Limits Tab */}
+          <TabsContent value="plans" className="space-y-4">
+            <p className="text-sm text-muted-foreground">Edit pricing, limits, and features for each plan. Changes apply immediately.</p>
+            <div className="grid gap-4">
+              {activePlans.map((p: any) => {
+                const edits = editingPlans[p.id] || {};
+                const val = (field: string) => edits[field] !== undefined ? edits[field] : p[field];
+                return (
+                  <div key={p.id} className="glass-card p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-heading font-semibold">{p.label}</h3>
+                        <p className="text-xs text-muted-foreground">{p.plan_key} · {p.tier} · {p.billing_type}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs">Active</Label>
+                          <Switch
+                            checked={val("is_active")}
+                            onCheckedChange={(v) => updatePlanField(p.id, "is_active", v)}
+                          />
+                        </div>
+                        {editingPlans[p.id] && (
+                          <Button size="sm" className="gap-1" onClick={() => handlePlanSave(p.id)}>
+                            <Save size={14} /> Save
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div>
+                        <Label className="text-xs">Price (₹)</Label>
+                        <Input
+                          type="number"
+                          value={val("price_inr")}
+                          onChange={(e) => updatePlanField(p.id, "price_inr", parseInt(e.target.value) || 0)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Duration (days)</Label>
+                        <Input
+                          type="number"
+                          value={val("duration_days") || ""}
+                          placeholder="∞"
+                          onChange={(e) => updatePlanField(p.id, "duration_days", e.target.value ? parseInt(e.target.value) : null)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Funnel Limit</Label>
+                        <Input
+                          type="number"
+                          value={val("funnel_limit") ?? ""}
+                          placeholder="Unlimited"
+                          onChange={(e) => updatePlanField(p.id, "funnel_limit", e.target.value ? parseInt(e.target.value) : null)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Video Limit</Label>
+                        <Input
+                          type="number"
+                          value={val("video_limit") ?? ""}
+                          placeholder="Unlimited"
+                          onChange={(e) => updatePlanField(p.id, "video_limit", e.target.value ? parseInt(e.target.value) : null)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Landing Page Limit</Label>
+                        <Input
+                          type="number"
+                          value={val("landing_page_limit") ?? ""}
+                          placeholder="Unlimited"
+                          onChange={(e) => updatePlanField(p.id, "landing_page_limit", e.target.value ? parseInt(e.target.value) : null)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Live Session Limit</Label>
+                        <Input
+                          type="number"
+                          value={val("live_session_limit") ?? ""}
+                          placeholder="Unlimited"
+                          onChange={(e) => updatePlanField(p.id, "live_session_limit", e.target.value ? parseInt(e.target.value) : null)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Max Video Size (MB)</Label>
+                        <Input
+                          type="number"
+                          value={val("video_max_size_mb") ?? ""}
+                          placeholder="Unlimited"
+                          onChange={(e) => updatePlanField(p.id, "video_max_size_mb", e.target.value ? parseInt(e.target.value) : null)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="flex items-end gap-2 pb-1">
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={val("multi_step_funnel_enabled")}
+                            onCheckedChange={(v) => updatePlanField(p.id, "multi_step_funnel_enabled", v)}
+                          />
+                          <Label className="text-xs">Multi-step Funnels</Label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </TabsContent>
 
@@ -237,11 +397,8 @@ const AdminSubscriptionsPage = () => {
 
           <TabsContent value="settings" className="space-y-4">
             <div className="glass-card p-6 space-y-6">
-              <h3 className="font-heading font-semibold">Pricing Settings</h3>
+              <h3 className="font-heading font-semibold">Platform Settings</h3>
               {[
-                { key: "razorpay_monthly_price", label: "Monthly Price (₹)" },
-                { key: "razorpay_onetime_price", label: "One-time/Yearly Price (₹)" },
-                { key: "razorpay_onetime_validity_days", label: "One-time Validity (days)" },
                 { key: "support_whatsapp", label: "Support WhatsApp Number" },
                 { key: "support_message_template", label: "Support Message Template" },
               ].map(({ key, label }) => (
