@@ -23,9 +23,6 @@ Deno.serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-    if (!isAdmin) return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
     const { videoId, fileSizeBytes, durationSeconds, failed, errorMessage } = await req.json();
     if (!videoId) return new Response(JSON.stringify({ error: "Missing videoId" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
@@ -33,6 +30,18 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    const { data: video } = await serviceClient
+      .from("video_assets")
+      .select("owner_id,r2_key")
+      .eq("id", videoId)
+      .single();
+
+    if (!video) return new Response(JSON.stringify({ error: "Video not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    if (video.owner_id !== user.id) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // Handle failed upload marking
     if (failed) {
@@ -42,9 +51,6 @@ Deno.serve(async (req) => {
       }).eq("id", videoId);
       return new Response(JSON.stringify({ success: true, status: "failed" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-
-    const { data: video } = await serviceClient.from("video_assets").select("r2_key").eq("id", videoId).single();
-    if (!video) return new Response(JSON.stringify({ error: "Video not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const publicUrl = R2_PUBLIC_URL ? `${R2_PUBLIC_URL}/${video.r2_key}` : null;
 

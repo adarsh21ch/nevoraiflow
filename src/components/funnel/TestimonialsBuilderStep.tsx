@@ -11,6 +11,7 @@ import {
   MessageSquare, Video, Plus, Trash2, GripVertical, Star, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { uploadVideoToR2 } from "@/lib/r2VideoUpload";
 
 interface TestimonialsBuilderStepProps {
   landingPageId: string | undefined;
@@ -525,20 +526,27 @@ const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
   const [fileName, setFileName] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const ALLOWED_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
-  const MAX_SIZE = 100 * 1024 * 1024;
+  const MAX_SIZE_MB = 250;
+  const MAX_SIZE = MAX_SIZE_MB * 1024 * 1024;
+  const UPLOAD_TIMEOUT_MS = 30 * 60 * 1000;
 
   const getVideoDuration = (file: File): Promise<number> => {
     return new Promise((resolve, reject) => {
       const video = document.createElement("video");
+      const objectUrl = URL.createObjectURL(file);
       video.preload = "metadata";
       video.onloadedmetadata = () => {
         resolve(Math.round(video.duration));
-        URL.revokeObjectURL(video.src);
+        URL.revokeObjectURL(objectUrl);
       };
-      video.onerror = () => reject(new Error("Could not read video metadata"));
-      video.src = URL.createObjectURL(file);
+      video.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error("Could not read video metadata"));
+      };
+      video.src = objectUrl;
     });
   };
 
@@ -550,7 +558,7 @@ const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }
       return;
     }
     if (file.size > MAX_SIZE) {
-      setError("File too large. Maximum size is 100MB.");
+      setError(`File too large. Maximum size is ${MAX_SIZE_MB}MB.`);
       return;
     }
 
@@ -562,36 +570,25 @@ const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }
       const duration = await getVideoDuration(file);
       if (duration > maxSeconds) {
         setError(`Your video is ${duration} seconds. Max allowed is ${maxSeconds} seconds.`);
-        setUploading(false);
         return;
       }
 
-      const ext = file.name.split(".").pop()?.toLowerCase() || "mp4";
-      const path = `testimonial-videos/${landingPageId}/${testimonialId}.${ext}`;
-
-      const progressInterval = setInterval(() => {
-        setProgress((p) => Math.min(p + 10, 90));
-      }, 300);
-
-      const { error: uploadError } = await supabase.storage
-        .from("landing-page-assets")
-        .upload(path, file, { cacheControl: "3600", upsert: true, contentType: file.type });
-
-      clearInterval(progressInterval);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("landing-page-assets")
-        .getPublicUrl(path);
+      const { publicUrl } = await uploadVideoToR2({
+        file,
+        title: `Testimonial ${testimonialId}`,
+        timeoutMs: UPLOAD_TIMEOUT_MS,
+        onProgress: setProgress,
+      });
 
       setProgress(100);
       onUploaded(publicUrl, duration);
       toast.success("Video uploaded!");
     } catch (err: any) {
+      setProgress(0);
       setError(err.message || "Upload failed. Try again.");
     } finally {
       setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
     }
   };
 
@@ -625,9 +622,10 @@ const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }
             Upload video (MP4, MOV, WEBM)
           </p>
           <p className="text-[10px] text-muted-foreground">
-            Max {maxSeconds} seconds · Max 100MB
+            Max {maxSeconds} seconds · Max {MAX_SIZE_MB}MB
           </p>
           <input
+            ref={inputRef}
             type="file"
             accept="video/mp4,video/quicktime,video/webm"
             className="hidden"
@@ -641,9 +639,7 @@ const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }
             variant="outline"
             size="sm"
             className="mt-2 text-xs"
-            onClick={() =>
-              document.getElementById(`video-upload-${testimonialId}`)?.click()
-            }
+            onClick={() => inputRef.current?.click()}
           >
             Choose file
           </Button>

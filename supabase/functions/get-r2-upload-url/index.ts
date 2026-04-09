@@ -38,9 +38,6 @@ Deno.serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-    if (!isAdmin) return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
     const { filename, contentType, title } = await req.json();
     if (!filename || !contentType) return new Response(JSON.stringify({ error: "Missing filename/contentType" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
@@ -56,6 +53,7 @@ Deno.serve(async (req) => {
       title: title || filename,
       original_filename: filename,
       status: "uploading",
+      upload_percent: 0,
       is_shared: true,
     }).select("id").single();
 

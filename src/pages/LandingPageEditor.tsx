@@ -119,6 +119,7 @@ const LandingPageEditor = () => {
   const [form, setForm] = useState(defaultFormState);
   const [slugEdited, setSlugEdited] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+  const [previewStage, setPreviewStage] = useState<"form" | "after-submit">("form");
   const [videoToggle, setVideoToggle] = useState(false);
   const [funnelToggle, setFunnelToggle] = useState(false);
 
@@ -163,6 +164,8 @@ const LandingPageEditor = () => {
     },
     enabled: !!user,
   });
+
+  const selectedPostSubmitVideo = videos.find((video) => video.id === form.post_submit_video_asset_id) || null;
 
   useEffect(() => {
     if (existing) {
@@ -818,14 +821,35 @@ const LandingPageEditor = () => {
     return (
       <DashboardLayout>
         <div className="p-4">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <h2 className="text-lg font-heading font-bold">Live Preview</h2>
-            <Button variant="outline" size="sm" onClick={() => setPreviewMode(false)}>
-              <Edit3 size={14} className="mr-1.5" /> Edit
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={previewStage === "form" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPreviewStage("form")}
+              >
+                Form
+              </Button>
+              <Button
+                variant={previewStage === "after-submit" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPreviewStage("after-submit")}
+              >
+                After registration
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setPreviewMode(false)}>
+                <Edit3 size={14} className="mr-1.5" /> Edit
+              </Button>
+            </div>
           </div>
           <div className="rounded-xl border border-border overflow-hidden bg-card" style={{ minHeight: "60vh" }}>
-           <LandingPagePreview form={form} testimonials={previewTestimonials} />
+           <LandingPagePreview
+             form={form}
+             testimonials={previewTestimonials}
+             previewStage={previewStage}
+             postSubmitVideo={selectedPostSubmitVideo}
+           />
           </div>
         </div>
       </DashboardLayout>
@@ -924,12 +948,35 @@ const LandingPageEditor = () => {
           {/* Live Preview — desktop only */}
           {!isMobile && (
             <div className="hidden xl:block w-[380px] shrink-0 sticky top-20 self-start">
-              <div className="flex items-center gap-2 mb-3">
-                <Eye size={14} className="text-muted-foreground" />
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Live Preview</span>
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <Eye size={14} className="text-muted-foreground" />
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Live Preview</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={previewStage === "form" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setPreviewStage("form")}
+                  >
+                    Form
+                  </Button>
+                  <Button
+                    variant={previewStage === "after-submit" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setPreviewStage("after-submit")}
+                  >
+                    After registration
+                  </Button>
+                </div>
               </div>
               <div className="rounded-xl border border-border overflow-hidden shadow-xl" style={{ maxHeight: "calc(100vh - 10rem)", overflowY: "auto" }}>
-                <LandingPagePreview form={form} testimonials={previewTestimonials} />
+                <LandingPagePreview
+                  form={form}
+                  testimonials={previewTestimonials}
+                  previewStage={previewStage}
+                  postSubmitVideo={selectedPostSubmitVideo}
+                />
               </div>
             </div>
           )}
