@@ -22,6 +22,26 @@ import { usePlan } from "@/hooks/usePlan";
 import { useResourceCount } from "@/hooks/useResourceCount";
 import { LimitBadge } from "@/components/LimitGate";
 
+const CreateLPButton = () => {
+  const { canCreate } = usePlan();
+  const counts = useResourceCount();
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (!canCreate("landing_page", counts.landing_pages)) {
+      toast.error("Landing page limit reached. Upgrade your plan for more.");
+      return;
+    }
+    navigate("/landing-pages/create");
+  };
+
+  return (
+    <Button onClick={handleClick} className="bg-primary">
+      <Plus size={16} className="mr-2" /> Create Landing Page
+    </Button>
+  );
+};
+
 const LandingPagesPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();

@@ -16,6 +16,9 @@ import {
   Pencil, Trash2, Video, Lock, Globe, IndianRupee, X
 } from "lucide-react";
 import { format, formatDistanceToNow, isPast, isFuture } from "date-fns";
+import { usePlan } from "@/hooks/usePlan";
+import { useResourceCount } from "@/hooks/useResourceCount";
+import { LimitBadge } from "@/components/LimitGate";
 
 const generateSlug = (title: string) =>
   title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 60) || "my-session";
