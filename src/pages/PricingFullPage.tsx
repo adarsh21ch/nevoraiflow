@@ -1,7 +1,7 @@
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
-import { Check, X, Crown, Shield, ArrowRight, Loader2, Users, User, Lock } from "lucide-react";
+import { Check, X, Crown, Shield, Loader2, Users, User, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
 import { useWhatsAppSupport } from "@/hooks/useWhatsAppSupport";
@@ -11,7 +11,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
-import type { PlanConfig } from "@/hooks/usePlanLimits";
 
 declare global {
   interface Window { Razorpay: any; }
@@ -28,6 +27,87 @@ function loadRazorpayScript(): Promise<boolean> {
   });
 }
 
+interface FeatureItem {
+  text: string;
+  enabled: boolean;
+  locked?: boolean;
+}
+
+const buildFeatureList = (config: any): FeatureItem[] => {
+  const items: FeatureItem[] = [];
+
+  // Funnels
+  if (config.max_funnels === -1) items.push({ text: "Unlimited Funnels", enabled: true });
+  else if (config.max_funnels > 0) items.push({ text: `Up to ${config.max_funnels} Funnels`, enabled: true });
+  else items.push({ text: "Funnels", enabled: false });
+
+  // Landing Pages
+  if (config.feature_landing_pages && config.max_landing_pages === -1) items.push({ text: "Unlimited Landing Pages", enabled: true });
+  else if (config.feature_landing_pages && config.max_landing_pages > 0) items.push({ text: `Up to ${config.max_landing_pages} Landing Pages`, enabled: true });
+  else items.push({ text: "Landing Pages", enabled: false });
+
+  // Live Sessions
+  if (config.feature_go_live && config.max_live_sessions === -1) items.push({ text: "Unlimited Live Sessions", enabled: true });
+  else if (config.feature_go_live && config.max_live_sessions > 0) items.push({ text: `Up to ${config.max_live_sessions} Live Sessions`, enabled: true });
+  else items.push({ text: "Live Sessions", enabled: false });
+
+  // Feature flags
+  items.push({ text: "Lead Capture", enabled: !!config.feature_lead_capture });
+  items.push({ text: "Analytics", enabled: !!config.feature_analytics });
+  items.push({ text: "WhatsApp Automation", enabled: !!config.feature_whatsapp_automation });
+
+  if (config.multilevel_funnel_enabled) items.push({ text: "Multi-level Funnels", enabled: true });
+  else items.push({ text: "Multi-level Funnels", enabled: false, locked: true });
+
+  if (config.feature_team_members !== false && config.max_team_members !== 0) {
+    if (config.max_team_members === -1) items.push({ text: "Unlimited Team Members", enabled: true });
+    else if (config.max_team_members > 0) items.push({ text: `Team Members (up to ${config.max_team_members})`, enabled: true });
+    else items.push({ text: "Team Members", enabled: false, locked: true });
+  } else {
+    items.push({ text: "Team Members", enabled: false, locked: true });
+  }
+
+  if (config.feature_team_analytics) items.push({ text: "Team Analytics Dashboard", enabled: true });
+  else items.push({ text: "Team Analytics", enabled: false, locked: true });
+
+  if (config.feature_video_sharing) items.push({ text: "Video Sharing", enabled: true });
+  if (config.feature_advanced_analytics) items.push({ text: "Advanced Analytics", enabled: true });
+  if (config.feature_priority_support) items.push({ text: "Priority Support", enabled: true });
+
+  return items;
+};
+
+const FeatureRow = ({ item }: { item: FeatureItem }) => {
+  if (item.enabled) {
+    return (
+      <li className="flex items-center gap-2 text-sm">
+        <Check size={14} className="text-primary shrink-0" /> {item.text}
+      </li>
+    );
+  }
+  if (item.locked) {
+    return (
+      <li className="flex items-center gap-2 text-sm text-muted-foreground/60">
+        <Lock size={14} className="shrink-0" /> {item.text}
+      </li>
+    );
+  }
+  return (
+    <li className="flex items-center gap-2 text-sm text-muted-foreground/60">
+      <X size={14} className="shrink-0" /> {item.text}
+    </li>
+  );
+};
+
+const ComparisonCell = ({ value }: { value: boolean | string }) => {
+  if (typeof value === "string") {
+    return <span className="text-muted-foreground">{value}</span>;
+  }
+  return value
+    ? <Check size={16} className="text-primary mx-auto" />
+    : <X size={16} className="text-muted-foreground/40 mx-auto" />;
+};
+
 const PricingFullPage = () => {
   const { user, profile } = useAuth();
   const { plan, refreshPlan } = usePlan();
@@ -40,22 +120,23 @@ const PricingFullPage = () => {
     queryKey: ["plan-configs"],
     queryFn: async () => {
       const { data } = await supabase.from("plan_config").select("*");
-      return (data || []) as (PlanConfig & { is_enabled: boolean })[];
+      return (data || []) as any[];
     },
-    staleTime: 60000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
-  const basicConfig = planConfigs.find(c => c.plan_name === "basic");
-  const proConfig = planConfigs.find(c => c.plan_name === "pro");
+  const basicConfig = planConfigs.find((c: any) => c.plan_name === "basic");
+  const proConfig = planConfigs.find((c: any) => c.plan_name === "pro");
   const basicEnabled = basicConfig?.is_enabled !== false;
   const proEnabled = proConfig?.is_enabled !== false;
 
-  const getPrice = (config: PlanConfig | undefined) => {
+  const getPrice = (config: any) => {
     if (!config) return 0;
     return billing === "monthly" ? config.monthly_price : config.yearly_price;
   };
 
-  const getSavings = (config: PlanConfig | undefined) => {
+  const getSavings = (config: any) => {
     if (!config) return 0;
     return config.monthly_price * 12 - config.yearly_price;
   };
@@ -65,7 +146,7 @@ const PricingFullPage = () => {
       navigate("/auth?tab=signup&redirect=/pricing");
       return;
     }
-    const config = planConfigs.find(c => c.plan_name === planName);
+    const config = planConfigs.find((c: any) => c.plan_name === planName);
     if (!config) return;
 
     const amount = billing === "monthly" ? config.monthly_price : config.yearly_price;
@@ -90,7 +171,7 @@ const PricingFullPage = () => {
         order_id: data.order_id,
         handler: async (response: any) => {
           try {
-            const { data: verifyData, error: verifyError } = await supabase.functions.invoke("razorpay-portal", {
+            const { error: verifyError } = await supabase.functions.invoke("razorpay-portal", {
               body: {
                 action: "verify_payment",
                 razorpay_order_id: response.razorpay_order_id,
@@ -132,11 +213,37 @@ const PricingFullPage = () => {
 
   const isCurrentTier = (t: string) => plan.isPaid && plan.tier === t && !plan.isExpired;
 
-  const limitDisplay = (val: number) => val === -1 ? "Unlimited" : String(val);
+  // Dynamic comparison table
+  const buildComparisonRows = () => {
+    const limitDisplay = (val: number | undefined) => {
+      if (val === undefined || val === null) return "—";
+      if (val === -1) return "Unlimited";
+      if (val === 0) return "—";
+      return String(val);
+    };
 
-  // Determine how many plan cards to show
+    const rows: { name: string; free: boolean | string; basic: boolean | string; pro: boolean | string }[] = [
+      { name: "Funnels", free: "0 (view only)", basic: limitDisplay(basicConfig?.max_funnels), pro: limitDisplay(proConfig?.max_funnels) },
+      { name: "Landing Pages", free: "—", basic: basicConfig?.feature_landing_pages ? limitDisplay(basicConfig?.max_landing_pages) : "—", pro: proConfig?.feature_landing_pages ? limitDisplay(proConfig?.max_landing_pages) : "—" },
+      { name: "Live Sessions", free: "—", basic: basicConfig?.feature_go_live ? limitDisplay(basicConfig?.max_live_sessions) : "—", pro: proConfig?.feature_go_live ? limitDisplay(proConfig?.max_live_sessions) : "—" },
+      { name: "Lead Capture", free: false, basic: !!basicConfig?.feature_lead_capture, pro: !!proConfig?.feature_lead_capture },
+      { name: "Analytics", free: false, basic: !!basicConfig?.feature_analytics, pro: !!proConfig?.feature_analytics },
+      { name: "WhatsApp Automation", free: false, basic: !!basicConfig?.feature_whatsapp_automation, pro: !!proConfig?.feature_whatsapp_automation },
+      { name: "Multi-level Funnels", free: false, basic: !!basicConfig?.multilevel_funnel_enabled, pro: !!proConfig?.multilevel_funnel_enabled },
+      { name: "Team Members", free: false, basic: false, pro: proConfig?.max_team_members === -1 ? true : (proConfig?.max_team_members > 0 ? `Up to ${proConfig?.max_team_members}` : false) },
+      { name: "Video Sharing", free: false, basic: !!basicConfig?.feature_video_sharing, pro: !!proConfig?.feature_video_sharing },
+      { name: "Advanced Analytics", free: false, basic: !!basicConfig?.feature_advanced_analytics, pro: !!proConfig?.feature_advanced_analytics },
+      { name: "Priority Support", free: false, basic: !!basicConfig?.feature_priority_support, pro: !!proConfig?.feature_priority_support },
+      { name: "Team Analytics", free: false, basic: !!basicConfig?.feature_team_analytics, pro: !!proConfig?.feature_team_analytics },
+    ];
+    return rows;
+  };
+
   const enabledPlans = [basicEnabled, proEnabled].filter(Boolean).length;
   const gridCols = enabledPlans === 0 ? "max-w-md mx-auto" : enabledPlans === 1 ? "md:grid-cols-2 max-w-3xl mx-auto" : "md:grid-cols-3 max-w-5xl mx-auto";
+
+  const basicFeatures = basicConfig ? buildFeatureList(basicConfig) : [];
+  const proFeatures = proConfig ? buildFeatureList(proConfig) : [];
 
   return (
     <div className="min-h-screen">
@@ -169,11 +276,18 @@ const PricingFullPage = () => {
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all relative ${billing === "yearly" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
               >
                 Yearly
-                {basicConfig && getSavings(basicConfig) > 0 && (
-                  <span className="absolute -top-2 -right-2 text-[10px] bg-green-500 text-white px-1.5 py-0.5 rounded-full font-bold">
-                    Save {Math.round((1 - (basicEnabled ? basicConfig : proConfig!)?.yearly_price / ((basicEnabled ? basicConfig : proConfig!)?.monthly_price * 12)) * 100)}%
-                  </span>
-                )}
+                {(() => {
+                  const refConfig = basicEnabled ? basicConfig : proConfig;
+                  if (refConfig && refConfig.monthly_price > 0) {
+                    const pct = Math.round((1 - refConfig.yearly_price / (refConfig.monthly_price * 12)) * 100);
+                    if (pct > 0) return (
+                      <span className="absolute -top-2 -right-2 text-[10px] bg-green-500 text-white px-1.5 py-0.5 rounded-full font-bold">
+                        Save {pct}%
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
               </button>
             </div>
           )}
@@ -206,42 +320,27 @@ const PricingFullPage = () => {
             </motion.div>
 
             {/* Basic */}
-            {basicEnabled && (
+            {basicEnabled && basicConfig && (
               <motion.div className="glass-card p-6 flex flex-col relative" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-card border border-border text-xs font-semibold flex items-center gap-1">
-                  <User size={12} /> For Individuals · 1 Person
-                </div>
+                {basicConfig.plan_badge_text && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-card border border-border text-xs font-semibold flex items-center gap-1 whitespace-nowrap">
+                    <User size={12} /> {basicConfig.plan_badge_text}
+                  </div>
+                )}
                 <div className="mb-6">
                   <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium">Basic</span>
                   <div className="flex items-baseline gap-1 mt-3">
                     <span className="text-3xl font-heading font-bold">₹{getPrice(basicConfig).toLocaleString("en-IN")}</span>
                     <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
                   </div>
-                  {billing === "monthly" && basicConfig && getSavings(basicConfig) > 0 && (
+                  {billing === "monthly" && getSavings(basicConfig) > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
                       or ₹{basicConfig.yearly_price.toLocaleString("en-IN")}/year — save ₹{getSavings(basicConfig).toLocaleString("en-IN")}
                     </p>
                   )}
                 </div>
                 <ul className="space-y-2.5 flex-1 mb-6">
-                  {[
-                    basicConfig?.max_funnels === -1 ? "Unlimited Funnels" : `Up to ${basicConfig?.max_funnels || 3} Funnels`,
-                    basicConfig?.max_landing_pages === -1 ? "Unlimited Landing Pages" : `Up to ${basicConfig?.max_landing_pages || 2} Landing Pages`,
-                    basicConfig?.max_live_sessions === -1 ? "Unlimited Live Sessions" : `Up to ${basicConfig?.max_live_sessions || 1} Live Sessions`,
-                    "Lead Capture",
-                    "Analytics",
-                    "WhatsApp Automation",
-                    basicConfig?.multilevel_funnel_enabled ? "Multi-level Funnels" : null,
-                  ].filter(Boolean).map(f => (
-                    <li key={f} className="flex items-center gap-2 text-sm"><Check size={14} className="text-primary shrink-0" /> {f}</li>
-                  ))}
-                  {[
-                    !basicConfig?.multilevel_funnel_enabled ? "Multi-level Funnels" : null,
-                    "Team Members",
-                    "Team Analytics",
-                  ].filter(Boolean).map(f => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground/60"><Lock size={14} className="shrink-0" /> {f}</li>
-                  ))}
+                  {basicFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
                 </ul>
                 {isCurrentTier("basic") ? (
                   <Button disabled className="w-full">Current Plan</Button>
@@ -255,39 +354,27 @@ const PricingFullPage = () => {
             )}
 
             {/* Pro */}
-            {proEnabled && (
+            {proEnabled && proConfig && (
               <motion.div className="glass-card p-6 flex flex-col relative border-primary/40 glow-primary" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-primary text-xs font-semibold text-primary-foreground flex items-center gap-1">
-                  <Users size={12} /> For Your Whole Team
-                </div>
+                {proConfig.plan_badge_text && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-primary text-xs font-semibold text-primary-foreground flex items-center gap-1 whitespace-nowrap">
+                    <Users size={12} /> {proConfig.plan_badge_text}
+                  </div>
+                )}
                 <div className="mb-6">
                   <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-medium">Pro</span>
                   <div className="flex items-baseline gap-1 mt-3">
                     <span className="text-3xl font-heading font-bold">₹{getPrice(proConfig).toLocaleString("en-IN")}</span>
                     <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
                   </div>
-                  {billing === "monthly" && proConfig && getSavings(proConfig) > 0 && (
+                  {billing === "monthly" && getSavings(proConfig) > 0 && (
                     <p className="text-xs text-primary mt-1">
                       or ₹{proConfig.yearly_price.toLocaleString("en-IN")}/year — save ₹{getSavings(proConfig).toLocaleString("en-IN")}
                     </p>
                   )}
                 </div>
                 <ul className="space-y-2.5 flex-1 mb-6">
-                  {[
-                    proConfig?.max_funnels === -1 ? "Unlimited Funnels" : `Up to ${proConfig?.max_funnels || 10} Funnels`,
-                    proConfig?.max_landing_pages === -1 ? "Unlimited Landing Pages" : `Up to ${proConfig?.max_landing_pages || 5} Landing Pages`,
-                    proConfig?.max_live_sessions === -1 ? "Unlimited Live Sessions" : `Up to ${proConfig?.max_live_sessions || 5} Live Sessions`,
-                    proConfig?.multilevel_funnel_enabled ? "Multi-level Funnels ✓" : null,
-                    `Team Members (up to ${proConfig?.max_team_members === -1 ? "∞" : proConfig?.max_team_members || 10})`,
-                    "Team Analytics Dashboard",
-                    "Lead Capture",
-                    "Advanced Analytics",
-                    "WhatsApp Automation",
-                    "Video Sharing",
-                    "Priority Support",
-                  ].filter(Boolean).map(f => (
-                    <li key={f} className="flex items-center gap-2 text-sm"><Check size={14} className="text-primary shrink-0" /> {f}</li>
-                  ))}
+                  {proFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
                 </ul>
                 {isCurrentTier("pro") ? (
                   <Button disabled className="w-full">Current Plan</Button>
@@ -301,7 +388,7 @@ const PricingFullPage = () => {
             )}
           </div>
 
-          {/* Comparison table */}
+          {/* Dynamic comparison table */}
           <div className="glass-card overflow-hidden max-w-5xl mx-auto mb-12">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -314,40 +401,12 @@ const PricingFullPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    { name: "Funnels", free: "0 (view only)", basic: limitDisplay(basicConfig?.max_funnels || 3), pro: limitDisplay(proConfig?.max_funnels || 10) },
-                    { name: "Landing Pages", free: "0", basic: limitDisplay(basicConfig?.max_landing_pages || 2), pro: limitDisplay(proConfig?.max_landing_pages || 5) },
-                    { name: "Live Sessions", free: "0", basic: limitDisplay(basicConfig?.max_live_sessions || 1), pro: limitDisplay(proConfig?.max_live_sessions || 5) },
-                    { name: "Multi-level Funnels", free: false, basic: basicConfig?.multilevel_funnel_enabled || false, pro: proConfig?.multilevel_funnel_enabled || true },
-                    { name: "Team Members", free: false, basic: false, pro: proConfig?.max_team_members === -1 ? true : `Up to ${proConfig?.max_team_members || 10}` },
-                    { name: "Lead Capture", free: false, basic: true, pro: true },
-                    { name: "Analytics", free: false, basic: "Basic", pro: "Advanced" },
-                    { name: "WhatsApp Automation", free: false, basic: true, pro: true },
-                    { name: "Video Sharing", free: false, basic: false, pro: true },
-                    { name: "Priority Support", free: false, basic: false, pro: true },
-                    { name: "Team Analytics", free: false, basic: false, pro: true },
-                  ].map((f) => (
-                    <tr key={f.name} className="border-b border-border/50">
-                      <td className="p-4">{f.name}</td>
-                      <td className="p-4 text-center">
-                        {typeof f.free === "boolean" ? (
-                          f.free ? <Check size={16} className="text-primary mx-auto" /> : <X size={16} className="text-muted-foreground/40 mx-auto" />
-                        ) : <span className="text-muted-foreground">{f.free}</span>}
-                      </td>
-                      {basicEnabled && (
-                        <td className="p-4 text-center">
-                          {typeof f.basic === "boolean" ? (
-                            f.basic ? <Check size={16} className="text-primary mx-auto" /> : <X size={16} className="text-muted-foreground/40 mx-auto" />
-                          ) : <span className="text-muted-foreground">{f.basic}</span>}
-                        </td>
-                      )}
-                      {proEnabled && (
-                        <td className="p-4 text-center">
-                          {typeof f.pro === "boolean" ? (
-                            f.pro ? <Check size={16} className="text-primary mx-auto" /> : <X size={16} className="text-muted-foreground/40 mx-auto" />
-                          ) : <span className="text-muted-foreground">{f.pro}</span>}
-                        </td>
-                      )}
+                  {buildComparisonRows().map((row) => (
+                    <tr key={row.name} className="border-b border-border/50">
+                      <td className="p-4">{row.name}</td>
+                      <td className="p-4 text-center"><ComparisonCell value={row.free} /></td>
+                      {basicEnabled && <td className="p-4 text-center"><ComparisonCell value={row.basic} /></td>}
+                      {proEnabled && <td className="p-4 text-center"><ComparisonCell value={row.pro} /></td>}
                     </tr>
                   ))}
                 </tbody>

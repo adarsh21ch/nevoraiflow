@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Search, Crown, Ban, CheckCircle2, XCircle, Save } from "lucide-react";
+import { Search, Crown, Ban, CheckCircle2, XCircle, Save, Target, BarChart3, MessageSquare, Video, FileText, Users, TrendingUp, Shield, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -21,7 +21,6 @@ const PlanField = ({ planName, field, label, type = "number", disabled = false, 
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync from parent only when not editing
   useEffect(() => {
     if (!isDirty) {
       setLocalValue(String(initialValue ?? ""));
@@ -30,7 +29,7 @@ const PlanField = ({ planName, field, label, type = "number", disabled = false, 
 
   const handleSave = async () => {
     setSaving(true);
-    const parsed = localValue === "" ? null : parseInt(localValue);
+    const parsed = type === "text" ? localValue : (localValue === "" ? null : parseInt(localValue));
     await onSave(planName, field, parsed);
     setIsDirty(false);
     setSaving(false);
@@ -61,11 +60,11 @@ const PlanField = ({ planName, field, label, type = "number", disabled = false, 
       <div className="flex items-center gap-1.5">
         <Input
           ref={inputRef}
-          type="number"
+          type={type === "text" ? "text" : "number"}
           value={localValue}
           disabled={disabled}
-          className="w-24 h-8 text-sm"
-          placeholder={field.includes("team") && planName === "basic" ? "N/A" : "-1 = ∞"}
+          className="w-28 h-8 text-sm"
+          placeholder={type === "text" ? "" : "-1 = ∞"}
           onChange={(e) => {
             setLocalValue(e.target.value);
             setIsDirty(true);
@@ -88,6 +87,19 @@ const PlanField = ({ planName, field, label, type = "number", disabled = false, 
     </div>
   );
 };
+
+const FEATURE_TOGGLES = [
+  { field: "feature_lead_capture", label: "Lead Capture", desc: "Collect leads via funnel forms", icon: Target },
+  { field: "feature_analytics", label: "Analytics", desc: "View funnel performance analytics", icon: BarChart3 },
+  { field: "feature_whatsapp_automation", label: "WhatsApp Automation", desc: "Send automated WhatsApp messages", icon: MessageSquare },
+  { field: "feature_go_live", label: "Go Live", desc: "Host live sessions", icon: Video },
+  { field: "feature_landing_pages", label: "Landing Pages", desc: "Create standalone landing pages", icon: FileText },
+  { field: "feature_video_sharing", label: "Video Sharing", desc: "Share videos with prospects", icon: Video },
+  { field: "multilevel_funnel_enabled", label: "Multi-level Funnels", desc: "Create step-by-step video funnel sequences", icon: TrendingUp },
+  { field: "feature_team_analytics", label: "Team Analytics", desc: "View analytics for your entire team", icon: Users },
+  { field: "feature_advanced_analytics", label: "Advanced Analytics", desc: "Detailed conversion and engagement data", icon: Zap },
+  { field: "feature_priority_support", label: "Priority Support", desc: "Priority WhatsApp/email support", icon: Shield },
+];
 
 const AdminSubscriptionsPage = () => {
   const [search, setSearch] = useState("");
@@ -121,7 +133,7 @@ const AdminSubscriptionsPage = () => {
     queryKey: ["admin-plan-configs"],
     queryFn: async () => {
       const { data } = await supabase.from("plan_config").select("*");
-      return (data || []) as (PlanConfig & { id: string; is_enabled: boolean })[];
+      return (data || []) as any[];
     },
   });
 
@@ -211,6 +223,92 @@ const AdminSubscriptionsPage = () => {
   };
 
   const getSettingValue = (key: string) => settings.find(s => s.key === key)?.value || "";
+
+  const renderPlanCard = (planName: string, config: any, colorClass: string, badgeClass: string) => {
+    const isDisabled = config?.is_enabled === false;
+    const isBasic = planName === "basic";
+
+    return (
+      <div className={`glass-card p-6 space-y-4 transition-opacity ${isDisabled ? "opacity-50" : ""} ${!isBasic ? "border-primary/30" : ""}`}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${badgeClass}`}>
+              {planName.charAt(0).toUpperCase() + planName.slice(1)}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {isBasic ? "For Individuals" : "For Teams"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-muted-foreground">
+              {!isDisabled ? "Enabled" : "Disabled"}
+            </Label>
+            <Switch
+              checked={!isDisabled}
+              onCheckedChange={(v) => handleTogglePlan(planName, v)}
+            />
+          </div>
+        </div>
+
+        <Tabs defaultValue="pricing" className="w-full">
+          <TabsList className="w-full grid grid-cols-3 h-8">
+            <TabsTrigger value="pricing" className="text-xs">Pricing</TabsTrigger>
+            <TabsTrigger value="limits" className="text-xs">Limits</TabsTrigger>
+            <TabsTrigger value="features" className="text-xs">Features</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="pricing" className="pt-3 space-y-1">
+            <PlanField planName={planName} field="monthly_price" label="Monthly Price (₹)" value={config?.monthly_price} onSave={saveField} disabled={isDisabled} />
+            <PlanField planName={planName} field="yearly_price" label="Yearly Price (₹)" value={config?.yearly_price} onSave={saveField} disabled={isDisabled} />
+            <PlanField planName={planName} field="yearly_validity_days" label="Yearly Validity (days)" value={config?.yearly_validity_days} onSave={saveField} disabled={isDisabled} />
+            <PlanField planName={planName} field="plan_badge_text" label="Plan Badge Text" type="text" value={config?.plan_badge_text || ""} onSave={saveField} disabled={isDisabled} hint="Shown above plan card on pricing page" />
+          </TabsContent>
+
+          <TabsContent value="limits" className="pt-3 space-y-1">
+            <PlanField planName={planName} field="max_funnels" label="Max Funnels" hint="-1 = unlimited" value={config?.max_funnels} onSave={saveField} disabled={isDisabled} />
+            <PlanField planName={planName} field="max_landing_pages" label="Max Landing Pages" hint="-1 = unlimited" value={config?.max_landing_pages} onSave={saveField} disabled={isDisabled} />
+            <PlanField planName={planName} field="max_live_sessions" label="Max Live Sessions" hint="-1 = unlimited" value={config?.max_live_sessions} onSave={saveField} disabled={isDisabled} />
+            <PlanField
+              planName={planName}
+              field="max_team_members"
+              label="Max Team Members"
+              hint={isBasic ? "N/A — Basic plan has no team" : "-1 = unlimited"}
+              value={isBasic ? 0 : config?.max_team_members}
+              onSave={saveField}
+              disabled={isDisabled || isBasic}
+            />
+          </TabsContent>
+
+          <TabsContent value="features" className="pt-3 space-y-0.5">
+            {FEATURE_TOGGLES.map(({ field, label, desc, icon: Icon }) => {
+              // Hide team-related toggles for basic
+              if (isBasic && (field === "feature_team_analytics")) return null;
+              return (
+                <div key={field} className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0">
+                  <Icon size={14} className="text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium">{label}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{desc}</p>
+                  </div>
+                  <Switch
+                    checked={!!config?.[field]}
+                    disabled={isDisabled}
+                    onCheckedChange={(v) => saveField(planName, field, v)}
+                  />
+                </div>
+              );
+            })}
+          </TabsContent>
+        </Tabs>
+
+        {isDisabled && (
+          <p className="text-xs text-amber-500 bg-amber-500/10 rounded-lg p-3">
+            ⚠️ {planName.charAt(0).toUpperCase() + planName.slice(1)} plan is disabled. It won't appear on the pricing page.
+          </p>
+        )}
+      </div>
+    );
+  };
 
   return (
     <DashboardLayout>
@@ -325,99 +423,11 @@ const AdminSubscriptionsPage = () => {
             </div>
           </TabsContent>
 
-          {/* Plans & Limits Tab */}
           <TabsContent value="plans" className="space-y-4">
-            <p className="text-sm text-muted-foreground">Edit pricing, limits, and features for each plan. Changes apply immediately. Enter -1 for unlimited.</p>
+            <p className="text-sm text-muted-foreground">Edit pricing, limits, and features for each plan. Changes apply immediately to the pricing page.</p>
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Basic Card */}
-              <div className={`glass-card p-6 space-y-4 transition-opacity ${basicConfig?.is_enabled === false ? "opacity-50" : ""}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-semibold">Basic</span>
-                    <span className="text-xs text-muted-foreground">For Individuals</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs text-muted-foreground">
-                      {basicConfig?.is_enabled !== false ? "Enabled" : "Disabled"}
-                    </Label>
-                    <Switch
-                      checked={basicConfig?.is_enabled !== false}
-                      onCheckedChange={(v) => handleTogglePlan("basic", v)}
-                    />
-                  </div>
-                </div>
-
-                <div className="border-b border-border pb-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pricing</p>
-                  <PlanField planName="basic" field="monthly_price" label="Monthly Price (₹)" value={basicConfig?.monthly_price} onSave={saveField} disabled={basicConfig?.is_enabled === false} />
-                  <PlanField planName="basic" field="yearly_price" label="Yearly Price (₹)" value={basicConfig?.yearly_price} onSave={saveField} disabled={basicConfig?.is_enabled === false} />
-                  <PlanField planName="basic" field="yearly_validity_days" label="Yearly Validity (days)" value={basicConfig?.yearly_validity_days} onSave={saveField} disabled={basicConfig?.is_enabled === false} />
-                </div>
-
-                <div className="border-b border-border pb-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Limits</p>
-                  <PlanField planName="basic" field="max_funnels" label="Max Funnels" hint="-1 = unlimited" value={basicConfig?.max_funnels} onSave={saveField} disabled={basicConfig?.is_enabled === false} />
-                  <PlanField planName="basic" field="max_landing_pages" label="Max Landing Pages" hint="-1 = unlimited" value={basicConfig?.max_landing_pages} onSave={saveField} disabled={basicConfig?.is_enabled === false} />
-                  <PlanField planName="basic" field="max_live_sessions" label="Max Live Sessions" hint="-1 = unlimited" value={basicConfig?.max_live_sessions} onSave={saveField} disabled={basicConfig?.is_enabled === false} />
-                  <PlanField planName="basic" field="max_team_members" label="Max Team Members" disabled hint="N/A — Basic plan has no team" value={0} onSave={saveField} />
-                </div>
-
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Features</p>
-                  <PlanField planName="basic" field="multilevel_funnel_enabled" label="Multi-level Funnel Access" type="boolean" value={basicConfig?.multilevel_funnel_enabled} onSave={saveField} disabled={basicConfig?.is_enabled === false} />
-                </div>
-
-                {basicConfig?.is_enabled === false && (
-                  <p className="text-xs text-amber-500 bg-amber-500/10 rounded-lg p-3">
-                    ⚠️ Basic plan is disabled. Users will only see Free and Pro options on the pricing page.
-                  </p>
-                )}
-              </div>
-
-              {/* Pro Card */}
-              <div className={`glass-card p-6 space-y-4 border-primary/30 transition-opacity ${proConfig?.is_enabled === false ? "opacity-50" : ""}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-semibold">Pro</span>
-                    <span className="text-xs text-muted-foreground">For Teams</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs text-muted-foreground">
-                      {proConfig?.is_enabled !== false ? "Enabled" : "Disabled"}
-                    </Label>
-                    <Switch
-                      checked={proConfig?.is_enabled !== false}
-                      onCheckedChange={(v) => handleTogglePlan("pro", v)}
-                    />
-                  </div>
-                </div>
-
-                <div className="border-b border-border pb-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pricing</p>
-                  <PlanField planName="pro" field="monthly_price" label="Monthly Price (₹)" value={proConfig?.monthly_price} onSave={saveField} disabled={proConfig?.is_enabled === false} />
-                  <PlanField planName="pro" field="yearly_price" label="Yearly Price (₹)" value={proConfig?.yearly_price} onSave={saveField} disabled={proConfig?.is_enabled === false} />
-                  <PlanField planName="pro" field="yearly_validity_days" label="Yearly Validity (days)" value={proConfig?.yearly_validity_days} onSave={saveField} disabled={proConfig?.is_enabled === false} />
-                </div>
-
-                <div className="border-b border-border pb-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Limits</p>
-                  <PlanField planName="pro" field="max_funnels" label="Max Funnels" hint="-1 = unlimited" value={proConfig?.max_funnels} onSave={saveField} disabled={proConfig?.is_enabled === false} />
-                  <PlanField planName="pro" field="max_landing_pages" label="Max Landing Pages" hint="-1 = unlimited" value={proConfig?.max_landing_pages} onSave={saveField} disabled={proConfig?.is_enabled === false} />
-                  <PlanField planName="pro" field="max_live_sessions" label="Max Live Sessions" hint="-1 = unlimited" value={proConfig?.max_live_sessions} onSave={saveField} disabled={proConfig?.is_enabled === false} />
-                  <PlanField planName="pro" field="max_team_members" label="Max Team Members" hint="-1 = unlimited" value={proConfig?.max_team_members} onSave={saveField} disabled={proConfig?.is_enabled === false} />
-                </div>
-
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Features</p>
-                  <PlanField planName="pro" field="multilevel_funnel_enabled" label="Multi-level Funnel Access" type="boolean" value={proConfig?.multilevel_funnel_enabled} onSave={saveField} disabled={proConfig?.is_enabled === false} />
-                </div>
-
-                {proConfig?.is_enabled === false && (
-                  <p className="text-xs text-amber-500 bg-amber-500/10 rounded-lg p-3">
-                    ⚠️ Pro plan is disabled. Users will only see Free and Basic options on the pricing page.
-                  </p>
-                )}
-              </div>
+              {renderPlanCard("basic", basicConfig, "blue", "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400")}
+              {renderPlanCard("pro", proConfig, "green", "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400")}
             </div>
           </TabsContent>
 
