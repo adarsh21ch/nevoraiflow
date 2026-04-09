@@ -1,4 +1,7 @@
 project_id = "atwnmovdnblcqyvhaxls"
 
+[storage]
+file_size_limit = "250MB"
+
 [functions.process-email-queue]
 verify_jwt = true

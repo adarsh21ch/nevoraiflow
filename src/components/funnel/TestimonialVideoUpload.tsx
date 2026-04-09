@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { uploadVideoToR2 } from "@/lib/r2VideoUpload";
 import { Loader2, Play, Upload, Video, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,7 +20,7 @@ interface TestimonialVideoUploadProps {
 }
 
 const ALLOWED_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
-const MAX_SIZE_MB = 500;
+const MAX_SIZE_MB = 250;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
 const formatDuration = (seconds?: number | null) => {
@@ -176,25 +175,38 @@ export const TestimonialVideoUpload = ({
       setProgress(20);
       setStatusLabel("Uploading video");
 
-      const { publicUrl } = await uploadVideoToR2({
-        file,
-        title: `Testimonial ${testimonialId}`,
-        timeoutMs: 45 * 60 * 1000,
-        onProgress: (nextProgress) => setProgress(20 + Math.round(nextProgress * 0.8)),
-      });
+      // Upload directly to Supabase Storage (bypasses R2 CORS issues)
+      const videoPath = `testimonial-videos/${landingPageId}/${testimonialId}-${Date.now()}.${file.name.split('.').pop()?.toLowerCase() || 'mp4'}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("landing-page-assets")
+        .upload(videoPath, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.type,
+        });
+
+      if (uploadError) throw new Error(uploadError.message || "Video upload failed");
+
+      setProgress(90);
+      setStatusLabel("Finalizing");
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("landing-page-assets")
+        .getPublicUrl(videoPath);
 
       setProgress(100);
       setStatusLabel("Upload complete");
       onUploaded({
-        videoUrl: publicUrl,
+        videoUrl: publicUrl!,
         thumbnailUrl: uploadedThumbnailUrl,
         durationSeconds: duration,
       });
-      toast.success("Video uploaded");
-    } catch (uploadError) {
+      toast.success("Video uploaded successfully");
+    } catch (err) {
       setProgress(0);
       setStatusLabel("Upload failed");
-      setError(uploadError instanceof Error ? uploadError.message : "Upload failed. Try again.");
+      setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
