@@ -7,12 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
-  MessageSquare, Video, Plus, Trash2, GripVertical, Star, Loader2,
+  Plus, Trash2, GripVertical, Star, Loader2, MessageSquare, Video, FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TestimonialPhotoUpload } from "@/components/funnel/TestimonialPhotoUpload";
 import { TestimonialVideoUpload } from "@/components/funnel/TestimonialVideoUpload";
-
 
 interface TestimonialsBuilderStepProps {
   landingPageId: string | undefined;
@@ -23,27 +22,16 @@ interface TestimonialsBuilderStepProps {
   onTitleChange: (v: string) => void;
 }
 
-// Debounced input that keeps local state and only saves after user stops typing
-const DebouncedInput = memo(({
-  value: externalValue,
-  onSave,
-  placeholder,
-  className,
-}: {
-  value: string;
-  onSave: (val: string) => void;
-  placeholder?: string;
-  className?: string;
+// Debounced input
+const DebouncedInput = memo(({ value: externalValue, onSave, placeholder, className }: {
+  value: string; onSave: (val: string) => void; placeholder?: string; className?: string;
 }) => {
   const [localValue, setLocalValue] = useState(externalValue);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
 
-  // Sync from external only if not currently editing
-  useEffect(() => {
-    setLocalValue(externalValue);
-  }, [externalValue]);
+  useEffect(() => { setLocalValue(externalValue); }, [externalValue]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -54,40 +42,19 @@ const DebouncedInput = memo(({
 
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
-  return (
-    <Input
-      placeholder={placeholder}
-      value={localValue}
-      onChange={handleChange}
-      className={className}
-    />
-  );
+  return <Input placeholder={placeholder} value={localValue} onChange={handleChange} className={className} />;
 });
 DebouncedInput.displayName = "DebouncedInput";
 
-const DebouncedTextarea = memo(({
-  value: externalValue,
-  onSave,
-  placeholder,
-  className,
-  maxLength,
-  rows,
-}: {
-  value: string;
-  onSave: (val: string) => void;
-  placeholder?: string;
-  className?: string;
-  maxLength?: number;
-  rows?: number;
+const DebouncedTextarea = memo(({ value: externalValue, onSave, placeholder, className, maxLength, rows }: {
+  value: string; onSave: (val: string) => void; placeholder?: string; className?: string; maxLength?: number; rows?: number;
 }) => {
   const [localValue, setLocalValue] = useState(externalValue);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
 
-  useEffect(() => {
-    setLocalValue(externalValue);
-  }, [externalValue]);
+  useEffect(() => { setLocalValue(externalValue); }, [externalValue]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
@@ -100,46 +67,29 @@ const DebouncedTextarea = memo(({
 
   return (
     <div>
-      <Textarea
-        placeholder={placeholder}
-        value={localValue}
-        maxLength={maxLength}
-        onChange={handleChange}
-        rows={rows}
-        className={className}
-      />
+      <Textarea placeholder={placeholder} value={localValue} maxLength={maxLength} onChange={handleChange} rows={rows} className={className} />
       {maxLength && (
-        <p className="text-[10px] text-muted-foreground text-right mt-1">
-          {localValue.length}/{maxLength}
-        </p>
+        <p className="text-[10px] text-muted-foreground text-right mt-1">{localValue.length}/{maxLength}</p>
       )}
     </div>
   );
 });
 DebouncedTextarea.displayName = "DebouncedTextarea";
 
+type TestimonialContentType = "text" | "video" | "both";
+
 export const TestimonialsBuilderStep = ({
-  landingPageId,
-  userId,
-  testimonialsEnabled,
-  testimonialsSectionTitle,
-  onToggleEnabled,
-  onTitleChange,
+  landingPageId, userId, testimonialsEnabled, testimonialsSectionTitle, onToggleEnabled, onTitleChange,
 }: TestimonialsBuilderStepProps) => {
   const queryClient = useQueryClient();
+  const MAX_PER_PAGE = 4;
 
-  // Fetch platform settings for limits
   const { data: platformSettings = [] } = useQuery({
     queryKey: ["platform-settings-testimonials"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("platform_settings")
-        .select("key,value")
-        .in("key", [
-          "testimonial_max_video_seconds",
-          "testimonial_max_per_page",
-          "testimonial_video_feature_enabled",
-        ]);
+        .from("platform_settings").select("key,value")
+        .in("key", ["testimonial_max_video_seconds", "testimonial_video_feature_enabled"]);
       return data || [];
     },
     staleTime: 60000,
@@ -148,18 +98,14 @@ export const TestimonialsBuilderStep = ({
   const getSetting = (key: string, fallback: string) =>
     platformSettings.find((s) => s.key === key)?.value || fallback;
 
-  const maxPerPage = parseInt(getSetting("testimonial_max_per_page", "4"), 10);
   const maxVideoSeconds = parseInt(getSetting("testimonial_max_video_seconds", "60"), 10);
-  const videoFeatureEnabled = getSetting("testimonial_video_feature_enabled", "true") === "true";
 
-  // Fetch existing testimonials
   const { data: testimonials = [], isLoading } = useQuery({
     queryKey: ["landing-page-testimonials", landingPageId],
     queryFn: async () => {
       if (!landingPageId) return [];
       const { data } = await supabase
-        .from("landing_page_testimonials")
-        .select("*")
+        .from("landing_page_testimonials").select("*")
         .eq("landing_page_id", landingPageId)
         .order("display_order", { ascending: true });
       return data || [];
@@ -168,21 +114,17 @@ export const TestimonialsBuilderStep = ({
     staleTime: 10000,
   });
 
-  const textTestimonials = testimonials.filter((t: any) => t.type === "text");
-  const videoTestimonials = testimonials.filter((t: any) => t.type === "video");
   const totalCount = testimonials.length;
-  const limitReached = totalCount >= maxPerPage;
+  const limitReached = totalCount >= MAX_PER_PAGE;
 
-  // Add testimonial mutation
   const addMutation = useMutation({
-    mutationFn: async (type: "text" | "video") => {
-      if (!landingPageId) {
-        throw new Error("Please save the landing page first before adding testimonials.");
-      }
+    mutationFn: async (contentType: TestimonialContentType) => {
+      if (!landingPageId) throw new Error("Please save the landing page first.");
+      // For "both", we store as "both" type; for text/video store that type
       const { error } = await supabase.from("landing_page_testimonials").insert({
         landing_page_id: landingPageId,
         owner_id: userId,
-        type,
+        type: contentType,
         student_name: "",
         display_order: totalCount,
       });
@@ -194,35 +136,20 @@ export const TestimonialsBuilderStep = ({
     onError: (e: any) => toast.error(e.message),
   });
 
-  // Update testimonial — no query invalidation, optimistic local
   const updateField = useCallback(async (id: string, updates: Record<string, any>) => {
-    const { error } = await supabase
-      .from("landing_page_testimonials")
-      .update(updates as any)
-      .eq("id", id);
+    const { error } = await supabase.from("landing_page_testimonials").update(updates as any).eq("id", id);
     if (error) toast.error(error.message);
   }, []);
 
-  // For changes that need UI refresh (photo, toggle, video)
   const updateAndRefresh = useCallback(async (id: string, updates: Record<string, any>) => {
-    const { error } = await supabase
-      .from("landing_page_testimonials")
-      .update(updates as any)
-      .eq("id", id);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      queryClient.invalidateQueries({ queryKey: ["landing-page-testimonials", landingPageId] });
-    }
+    const { error } = await supabase.from("landing_page_testimonials").update(updates as any).eq("id", id);
+    if (error) toast.error(error.message);
+    else queryClient.invalidateQueries({ queryKey: ["landing-page-testimonials", landingPageId] });
   }, [landingPageId, queryClient]);
 
-  // Delete testimonial
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("landing_page_testimonials")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("landing_page_testimonials").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -232,13 +159,8 @@ export const TestimonialsBuilderStep = ({
     onError: (e: any) => toast.error(e.message),
   });
 
-  const handleDelete = useCallback((id: string, type: string) => {
-    const msg = type === "video"
-      ? "Delete this testimonial? The video will be permanently removed."
-      : "Delete this testimonial?";
-    if (confirm(msg)) {
-      deleteMutation.mutate(id);
-    }
+  const handleDelete = useCallback((id: string) => {
+    if (confirm("Delete this testimonial?")) deleteMutation.mutate(id);
   }, [deleteMutation]);
 
   if (!landingPageId) {
@@ -247,9 +169,7 @@ export const TestimonialsBuilderStep = ({
         <h2 className="text-lg font-heading font-semibold flex items-center gap-2">
           <Star size={18} className="text-primary" /> Testimonials
         </h2>
-        <p className="text-sm text-muted-foreground">
-          Save the landing page first to add testimonials.
-        </p>
+        <p className="text-sm text-muted-foreground">Save the landing page first to add testimonials.</p>
       </>
     );
   }
@@ -259,24 +179,18 @@ export const TestimonialsBuilderStep = ({
       <h2 className="text-lg font-heading font-semibold flex items-center gap-2">
         <Star size={18} className="text-primary" /> Testimonials
       </h2>
-      <p className="text-sm text-muted-foreground">
-        Add text and video testimonials to show social proof after registration.
-      </p>
+      <p className="text-sm text-muted-foreground">Add testimonials with text, video, or both to show social proof.</p>
 
       <div className="space-y-4 mt-4">
-        {/* Enable toggle */}
         <div className="p-4 bg-muted/50 rounded-xl flex items-center justify-between">
           <div>
             <Label className="font-semibold">Enable Testimonials Section</Label>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Show testimonials on the post-registration page
-            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">Show testimonials on the post-registration page</p>
           </div>
           <Switch checked={testimonialsEnabled} onCheckedChange={onToggleEnabled} />
         </div>
 
         <div className={!testimonialsEnabled ? "opacity-50 pointer-events-none" : ""}>
-          {/* Section title */}
           <div className="p-4 bg-muted/50 rounded-xl space-y-2">
             <Label>Section Title</Label>
             <Input
@@ -287,10 +201,9 @@ export const TestimonialsBuilderStep = ({
             />
           </div>
 
-          {/* Text Testimonials */}
           <div className="mt-4 space-y-3">
             <h3 className="font-semibold text-sm flex items-center gap-2">
-              <MessageSquare size={14} className="text-primary" /> Text Testimonials
+              <Star size={14} className="text-primary" /> All Testimonials
             </h3>
 
             {isLoading ? (
@@ -299,7 +212,7 @@ export const TestimonialsBuilderStep = ({
               </div>
             ) : (
               <>
-                {textTestimonials.map((t: any) => (
+                {testimonials.map((t: any) => (
                   <TestimonialCard
                     key={t.id}
                     testimonial={t}
@@ -311,83 +224,62 @@ export const TestimonialsBuilderStep = ({
                   />
                 ))}
 
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  disabled={limitReached || addMutation.isPending}
-                  onClick={() => addMutation.mutate("text")}
-                  title={limitReached ? `Maximum ${maxPerPage} testimonials reached` : ""}
-                >
-                  <Plus size={14} className="mr-1.5" />
-                  {addMutation.isPending ? "Adding..." : "Add Text Testimonial"}
-                </Button>
+                {/* Add testimonial buttons */}
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    variant="outline" size="sm"
+                    disabled={limitReached || addMutation.isPending}
+                    onClick={() => addMutation.mutate("text")}
+                    className="flex items-center gap-1.5"
+                  >
+                    <MessageSquare size={13} /> Text
+                  </Button>
+                  <Button
+                    variant="outline" size="sm"
+                    disabled={limitReached || addMutation.isPending}
+                    onClick={() => addMutation.mutate("video")}
+                    className="flex items-center gap-1.5"
+                  >
+                    <Video size={13} /> Video
+                  </Button>
+                  <Button
+                    variant="outline" size="sm"
+                    disabled={limitReached || addMutation.isPending}
+                    onClick={() => addMutation.mutate("both")}
+                    className="flex items-center gap-1.5"
+                  >
+                    <FileText size={13} /> Both
+                  </Button>
+                </div>
                 {limitReached && (
-                  <p className="text-xs text-amber-500">
-                    Maximum {maxPerPage} testimonials reached. Remove one to add another.
-                  </p>
+                  <p className="text-xs text-amber-500">Maximum {MAX_PER_PAGE} testimonials reached.</p>
                 )}
               </>
             )}
           </div>
-
-          {/* Video Testimonials */}
-          {videoFeatureEnabled && (
-            <div className="mt-6 space-y-3">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                <Video size={14} className="text-primary" /> Video Testimonials
-              </h3>
-
-              {videoTestimonials.map((t: any) => (
-                <TestimonialCard
-                  key={t.id}
-                  testimonial={t}
-                  onUpdateField={updateField}
-                  onUpdateAndRefresh={updateAndRefresh}
-                  onDelete={handleDelete}
-                  landingPageId={landingPageId}
-                  maxVideoSeconds={maxVideoSeconds}
-                />
-              ))}
-
-              <Button
-                variant="outline"
-                className="w-full"
-                disabled={limitReached || addMutation.isPending}
-                onClick={() => addMutation.mutate("video")}
-                title={limitReached ? `Maximum ${maxPerPage} testimonials reached` : ""}
-              >
-                <Plus size={14} className="mr-1.5" />
-                {addMutation.isPending ? "Adding..." : "Add Video Testimonial"}
-              </Button>
-              {limitReached && (
-                <p className="text-xs text-amber-500">
-                  Maximum {maxPerPage} testimonials reached. Remove one to add another.
-                </p>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </>
   );
 };
 
-// ── Testimonial Card (memoized) ──
+// ── Testimonial Card ──
 const TestimonialCard = memo(({
-  testimonial: t,
-  onUpdateField,
-  onUpdateAndRefresh,
-  onDelete,
-  landingPageId,
-  maxVideoSeconds,
+  testimonial: t, onUpdateField, onUpdateAndRefresh, onDelete, landingPageId, maxVideoSeconds,
 }: {
   testimonial: any;
   onUpdateField: (id: string, updates: Record<string, any>) => void;
   onUpdateAndRefresh: (id: string, updates: Record<string, any>) => void;
-  onDelete: (id: string, type: string) => void;
+  onDelete: (id: string) => void;
   landingPageId: string;
   maxVideoSeconds: number;
 }) => {
+  const contentType: TestimonialContentType = t.type || "text";
+  const showText = contentType === "text" || contentType === "both";
+  const showVideo = contentType === "video" || contentType === "both";
+
+  const typeLabel = contentType === "both" ? "Text + Video" : contentType === "video" ? "Video" : "Text";
+
   return (
     <div className="p-4 bg-muted/50 rounded-xl space-y-3 border border-border">
       <div className="flex items-start gap-3">
@@ -395,7 +287,14 @@ const TestimonialCard = memo(({
           <GripVertical size={16} />
         </div>
         <div className="flex-1 space-y-3">
-          {/* Photo + name row */}
+          {/* Type badge */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+              {typeLabel}
+            </span>
+          </div>
+
+          {/* Photo + name + location */}
           <div className="flex items-start gap-4">
             <TestimonialPhotoUpload
               value={t.student_photo_url || ""}
@@ -404,7 +303,6 @@ const TestimonialCard = memo(({
               testimonialId={t.id}
               studentName={t.student_name || "Student"}
             />
-
             <div className="min-w-0 flex-1 space-y-3">
               <DebouncedInput
                 value={t.student_name || ""}
@@ -412,17 +310,25 @@ const TestimonialCard = memo(({
                 placeholder="Student name *"
                 className="bg-muted border-border h-8 text-sm"
               />
-
               <DebouncedInput
                 value={t.student_location || ""}
                 onSave={(val) => onUpdateField(t.id, { student_location: val })}
-                placeholder="Location (optional, e.g. Mumbai, India)"
+                placeholder="Location (e.g. Mumbai, India)"
                 className="bg-muted border-border h-8 text-sm"
               />
             </div>
           </div>
 
-          {t.type === "text" && (
+          {/* Star rating — always 5 stars */}
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground mr-1">Rating:</span>
+            {[1, 2, 3, 4, 5].map((s) => (
+              <Star key={s} size={16} className="fill-amber-400 text-amber-400" />
+            ))}
+          </div>
+
+          {/* Text section */}
+          {showText && (
             <DebouncedTextarea
               value={t.review_text || ""}
               onSave={(val) => onUpdateField(t.id, { review_text: val })}
@@ -433,7 +339,8 @@ const TestimonialCard = memo(({
             />
           )}
 
-          {t.type === "video" && (
+          {/* Video section */}
+          {showVideo && (
             <TestimonialVideoUpload
               testimonialId={t.id}
               landingPageId={landingPageId}
@@ -454,22 +361,19 @@ const TestimonialCard = memo(({
             />
           )}
 
-          {/* Bottom row: active toggle + delete */}
+          {/* Bottom: active toggle + delete */}
           <div className="flex items-center justify-between pt-1">
             <div className="flex items-center gap-2">
               <Switch
                 checked={t.is_active}
                 onCheckedChange={(v) => onUpdateAndRefresh(t.id, { is_active: v })}
               />
-              <span className="text-xs text-muted-foreground">
-                {t.is_active ? "Visible" : "Hidden"}
-              </span>
+              <span className="text-xs text-muted-foreground">{t.is_active ? "Visible" : "Hidden"}</span>
             </div>
             <Button
-              variant="ghost"
-              size="sm"
+              variant="ghost" size="sm"
               className="text-destructive hover:text-destructive h-7"
-              onClick={() => onDelete(t.id, t.type)}
+              onClick={() => onDelete(t.id)}
             >
               <Trash2 size={14} />
             </Button>

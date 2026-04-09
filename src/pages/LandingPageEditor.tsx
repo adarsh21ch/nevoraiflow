@@ -859,8 +859,8 @@ const LandingPageEditor = () => {
   return (
     <DashboardLayout>
       <div className="flex gap-6 min-h-[calc(100vh-8rem)]">
-        {/* Sidebar nav — desktop only */}
-        <div className="hidden lg:flex flex-col gap-1 w-48 shrink-0">
+        {/* Sidebar nav — desktop only, sticky */}
+        <div className="hidden lg:flex flex-col gap-1 w-48 shrink-0 sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
           {WIZARD_STEPS.map((s, i) => (
             <button key={i} onClick={() => setWizardStep(i)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${

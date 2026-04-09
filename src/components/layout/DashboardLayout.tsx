@@ -106,8 +106,8 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
   return (
     <div className="min-h-screen flex">
       {/* Desktop sidebar */}
-      <aside className={cn("hidden md:flex flex-col border-r border-border bg-sidebar transition-all duration-200", collapsed ? "w-16" : "w-60")}>
-        <div className="flex items-center justify-between h-16 px-4 border-b border-border">
+      <aside className={cn("hidden md:flex flex-col border-r border-border bg-sidebar transition-all duration-200 sticky top-0 h-screen", collapsed ? "w-16" : "w-60")}>
+        <div className="flex items-center justify-between h-16 px-4 border-b border-border shrink-0">
           {!collapsed && <Logo size="sm" />}
           <div className="flex items-center gap-1">
             <button onClick={toggleTheme} className="text-muted-foreground hover:text-foreground p-1.5 rounded-md hover:bg-muted transition-colors" title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
@@ -135,7 +135,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
           )}
         </nav>
 
-        <div className="border-t border-border py-4 px-2 space-y-1">
+        <div className="border-t border-border py-4 px-2 space-y-1 shrink-0">
           {bottomItems.map((item) => renderNavItem(item))}
           <button onClick={handleLogout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-all w-full">
             <LogOut size={18} />
