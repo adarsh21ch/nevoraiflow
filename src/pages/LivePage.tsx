@@ -158,12 +158,21 @@ const LivePage = () => {
                 Create live sessions, collect registrations, and share meeting links with your audience.
               </p>
             </div>
-            <LimitBadge resource="live_session" />
+            {!isFree && config.max_live_sessions !== -1 && (
+              <span className={`text-xs px-2 py-0.5 rounded-full ${counts.live_sessions >= config.max_live_sessions ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>
+                {counts.live_sessions}/{config.max_live_sessions}
+              </span>
+            )}
           </div>
           <Button variant="hero" onClick={() => {
-            const counts = sessions?.length || 0;
-            if (!canCreate("live_session", counts)) {
-              toast.error("Live session limit reached. Upgrade your plan for more.");
+            if (isFree) {
+              setModalType("upgrade");
+              setModalOpen(true);
+              return;
+            }
+            if (!canCreateLive) {
+              setModalType("limit");
+              setModalOpen(true);
               return;
             }
             setCreating(true);
