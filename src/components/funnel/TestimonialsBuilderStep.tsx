@@ -100,7 +100,7 @@ export const TestimonialsBuilderStep = ({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
       const { error } = await supabase
         .from("landing_page_testimonials")
-        .update(updates)
+        .update(updates as any)
         .eq("id", id);
       if (error) throw error;
     },
