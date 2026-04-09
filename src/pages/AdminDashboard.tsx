@@ -44,13 +44,6 @@ const AdminDashboard = () => {
     { icon: Shield, label: "KYC Pending", value: String(kycPending.length), color: "text-destructive" },
   ];
 
-  const adminLinks = [
-    { label: "Manage Users", path: "/admin/users", icon: Users },
-    { label: "Manage Videos", path: "/admin/videos", icon: Video },
-    { label: "KYC Review", path: "/admin/kyc", icon: Shield },
-    { label: "Subscriptions", path: "/admin/subscriptions", icon: IndianRupee },
-    { label: "Platform Settings", path: "/admin/settings", icon: BarChart3 },
-  ];
 
   return (
     <AdminLayout>
