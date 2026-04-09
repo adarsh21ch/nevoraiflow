@@ -157,7 +157,7 @@ export const TestimonialVideoUpload = ({
             .from("landing-page-assets")
             .upload(thumbnailPath, thumbnailBlob, {
               cacheControl: "3600",
-              upsert: false,
+              upsert: true,
               contentType: "image/jpeg",
             });
 
