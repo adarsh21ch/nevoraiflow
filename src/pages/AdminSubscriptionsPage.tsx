@@ -3,13 +3,91 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Search, Crown, Ban, CheckCircle2, XCircle, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import type { PlanConfig } from "@/hooks/usePlanLimits";
+
+// Extracted PlanField to prevent focus loss on parent re-render
+const PlanField = ({ planName, field, label, type = "number", disabled = false, hint, value: initialValue, onSave }: {
+  planName: string; field: string; label: string; type?: string; disabled?: boolean; hint?: string;
+  value: any; onSave: (planName: string, field: string, value: any) => Promise<void>;
+}) => {
+  const [localValue, setLocalValue] = useState<string>(String(initialValue ?? ""));
+  const [isDirty, setIsDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync from parent only when not editing
+  useEffect(() => {
+    if (!isDirty) {
+      setLocalValue(String(initialValue ?? ""));
+    }
+  }, [initialValue, isDirty]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const parsed = localValue === "" ? null : parseInt(localValue);
+    await onSave(planName, field, parsed);
+    setIsDirty(false);
+    setSaving(false);
+  };
+
+  if (type === "boolean") {
+    return (
+      <div className="flex items-center gap-3 py-2">
+        <div className="flex-1">
+          <Label className="text-xs font-medium">{label}</Label>
+          {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
+        </div>
+        <Switch
+          checked={!!initialValue}
+          disabled={disabled}
+          onCheckedChange={(v) => onSave(planName, field, v)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <div className="flex-1">
+        <Label className="text-xs font-medium">{label}</Label>
+        {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
+      </div>
+      <div className="flex items-center gap-1.5">
+        <Input
+          ref={inputRef}
+          type="number"
+          value={localValue}
+          disabled={disabled}
+          className="w-24 h-8 text-sm"
+          placeholder={field.includes("team") && planName === "basic" ? "N/A" : "-1 = ∞"}
+          onChange={(e) => {
+            setLocalValue(e.target.value);
+            setIsDirty(true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSave();
+          }}
+        />
+        {isDirty && (
+          <Button
+            size="sm"
+            className="h-8 gap-1 text-xs"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            <Save size={12} /> Save
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const AdminSubscriptionsPage = () => {
   const [search, setSearch] = useState("");
@@ -43,7 +121,7 @@ const AdminSubscriptionsPage = () => {
     queryKey: ["admin-plan-configs"],
     queryFn: async () => {
       const { data } = await supabase.from("plan_config").select("*");
-      return (data || []) as (PlanConfig & { id: string })[];
+      return (data || []) as (PlanConfig & { id: string; is_enabled: boolean })[];
     },
   });
 
@@ -91,11 +169,7 @@ const AdminSubscriptionsPage = () => {
     else { toast.success("Access revoked"); queryClient.invalidateQueries({ queryKey: ["admin-all-subscriptions"] }); }
   };
 
-  // Plan config editing (per-field save)
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [fieldValue, setFieldValue] = useState<any>(null);
-
-  const saveField = async (planName: string, field: string, value: any) => {
+  const saveField = useCallback(async (planName: string, field: string, value: any) => {
     const updateObj: Record<string, any> = { [field]: value, updated_at: new Date().toISOString() };
     const { error } = await supabase
       .from("plan_config")
@@ -105,59 +179,26 @@ const AdminSubscriptionsPage = () => {
       toast.error("Failed to save");
     } else {
       toast.success("Updated!");
-      setEditingField(null);
       queryClient.invalidateQueries({ queryKey: ["admin-plan-configs"] });
+      queryClient.invalidateQueries({ queryKey: ["plan-configs"] });
+    }
+  }, [queryClient]);
+
+  const handleTogglePlan = async (planName: string, enabled: boolean) => {
+    const { error } = await supabase
+      .from("plan_config")
+      .update({ is_enabled: enabled, updated_at: new Date().toISOString() } as any)
+      .eq("plan_name", planName);
+    if (error) toast.error("Failed to update");
+    else {
+      toast.success(`${planName.charAt(0).toUpperCase() + planName.slice(1)} plan ${enabled ? "enabled" : "disabled"}`);
+      queryClient.invalidateQueries({ queryKey: ["admin-plan-configs"] });
+      queryClient.invalidateQueries({ queryKey: ["plan-configs"] });
     }
   };
 
-  const PlanField = ({ planName, field, label, type = "number", disabled = false, hint }: {
-    planName: string; field: string; label: string; type?: string; disabled?: boolean; hint?: string;
-  }) => {
-    const config = planConfigs.find(c => c.plan_name === planName) as any;
-    if (!config) return null;
-    const key = `${planName}-${field}`;
-    const isEditing = editingField === key;
-    const currentVal = isEditing ? fieldValue : config[field];
-
-    return (
-      <div className="flex items-center gap-3 py-2">
-        <div className="flex-1">
-          <Label className="text-xs font-medium">{label}</Label>
-          {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
-        </div>
-        {type === "boolean" ? (
-          <Switch
-            checked={currentVal}
-            disabled={disabled}
-            onCheckedChange={(v) => saveField(planName, field, v)}
-          />
-        ) : (
-          <div className="flex items-center gap-1.5">
-            <Input
-              type="number"
-              value={currentVal ?? ""}
-              disabled={disabled}
-              className="w-24 h-8 text-sm"
-              placeholder={field.includes("team") && planName === "basic" ? "N/A" : "-1 = ∞"}
-              onChange={(e) => {
-                setEditingField(key);
-                setFieldValue(e.target.value === "" ? null : parseInt(e.target.value));
-              }}
-            />
-            {isEditing && (
-              <Button
-                size="sm"
-                className="h-8 gap-1 text-xs"
-                onClick={() => saveField(planName, field, fieldValue)}
-              >
-                <Save size={12} /> Save
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
+  const basicConfig = planConfigs.find(c => c.plan_name === "basic") as any;
+  const proConfig = planConfigs.find(c => c.plan_name === "pro") as any;
 
   const [editingSettings, setEditingSettings] = useState<Record<string, string>>({});
 
@@ -284,64 +325,98 @@ const AdminSubscriptionsPage = () => {
             </div>
           </TabsContent>
 
-          {/* Plans & Limits Tab — Two side-by-side cards */}
+          {/* Plans & Limits Tab */}
           <TabsContent value="plans" className="space-y-4">
             <p className="text-sm text-muted-foreground">Edit pricing, limits, and features for each plan. Changes apply immediately. Enter -1 for unlimited.</p>
             <div className="grid md:grid-cols-2 gap-6">
               {/* Basic Card */}
-              <div className="glass-card p-6 space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-semibold">Basic</span>
-                  <span className="text-xs text-muted-foreground">For Individuals</span>
+              <div className={`glass-card p-6 space-y-4 transition-opacity ${basicConfig?.is_enabled === false ? "opacity-50" : ""}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-semibold">Basic</span>
+                    <span className="text-xs text-muted-foreground">For Individuals</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-muted-foreground">
+                      {basicConfig?.is_enabled !== false ? "Enabled" : "Disabled"}
+                    </Label>
+                    <Switch
+                      checked={basicConfig?.is_enabled !== false}
+                      onCheckedChange={(v) => handleTogglePlan("basic", v)}
+                    />
+                  </div>
                 </div>
 
                 <div className="border-b border-border pb-2">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pricing</p>
-                  <PlanField planName="basic" field="monthly_price" label="Monthly Price (₹)" />
-                  <PlanField planName="basic" field="yearly_price" label="Yearly Price (₹)" />
-                  <PlanField planName="basic" field="yearly_validity_days" label="Yearly Validity (days)" />
+                  <PlanField planName="basic" field="monthly_price" label="Monthly Price (₹)" value={basicConfig?.monthly_price} onSave={saveField} disabled={basicConfig?.is_enabled === false} />
+                  <PlanField planName="basic" field="yearly_price" label="Yearly Price (₹)" value={basicConfig?.yearly_price} onSave={saveField} disabled={basicConfig?.is_enabled === false} />
+                  <PlanField planName="basic" field="yearly_validity_days" label="Yearly Validity (days)" value={basicConfig?.yearly_validity_days} onSave={saveField} disabled={basicConfig?.is_enabled === false} />
                 </div>
 
                 <div className="border-b border-border pb-2">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Limits</p>
-                  <PlanField planName="basic" field="max_funnels" label="Max Funnels" hint="-1 = unlimited" />
-                  <PlanField planName="basic" field="max_landing_pages" label="Max Landing Pages" hint="-1 = unlimited" />
-                  <PlanField planName="basic" field="max_live_sessions" label="Max Live Sessions" hint="-1 = unlimited" />
-                  <PlanField planName="basic" field="max_team_members" label="Max Team Members" disabled hint="N/A — Basic plan has no team" />
+                  <PlanField planName="basic" field="max_funnels" label="Max Funnels" hint="-1 = unlimited" value={basicConfig?.max_funnels} onSave={saveField} disabled={basicConfig?.is_enabled === false} />
+                  <PlanField planName="basic" field="max_landing_pages" label="Max Landing Pages" hint="-1 = unlimited" value={basicConfig?.max_landing_pages} onSave={saveField} disabled={basicConfig?.is_enabled === false} />
+                  <PlanField planName="basic" field="max_live_sessions" label="Max Live Sessions" hint="-1 = unlimited" value={basicConfig?.max_live_sessions} onSave={saveField} disabled={basicConfig?.is_enabled === false} />
+                  <PlanField planName="basic" field="max_team_members" label="Max Team Members" disabled hint="N/A — Basic plan has no team" value={0} onSave={saveField} />
                 </div>
 
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Features</p>
-                  <PlanField planName="basic" field="multilevel_funnel_enabled" label="Multi-level Funnel Access" type="boolean" />
+                  <PlanField planName="basic" field="multilevel_funnel_enabled" label="Multi-level Funnel Access" type="boolean" value={basicConfig?.multilevel_funnel_enabled} onSave={saveField} disabled={basicConfig?.is_enabled === false} />
                 </div>
+
+                {basicConfig?.is_enabled === false && (
+                  <p className="text-xs text-amber-500 bg-amber-500/10 rounded-lg p-3">
+                    ⚠️ Basic plan is disabled. Users will only see Free and Pro options on the pricing page.
+                  </p>
+                )}
               </div>
 
               {/* Pro Card */}
-              <div className="glass-card p-6 space-y-4 border-primary/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-semibold">Pro</span>
-                  <span className="text-xs text-muted-foreground">For Teams</span>
+              <div className={`glass-card p-6 space-y-4 border-primary/30 transition-opacity ${proConfig?.is_enabled === false ? "opacity-50" : ""}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-semibold">Pro</span>
+                    <span className="text-xs text-muted-foreground">For Teams</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-muted-foreground">
+                      {proConfig?.is_enabled !== false ? "Enabled" : "Disabled"}
+                    </Label>
+                    <Switch
+                      checked={proConfig?.is_enabled !== false}
+                      onCheckedChange={(v) => handleTogglePlan("pro", v)}
+                    />
+                  </div>
                 </div>
 
                 <div className="border-b border-border pb-2">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pricing</p>
-                  <PlanField planName="pro" field="monthly_price" label="Monthly Price (₹)" />
-                  <PlanField planName="pro" field="yearly_price" label="Yearly Price (₹)" />
-                  <PlanField planName="pro" field="yearly_validity_days" label="Yearly Validity (days)" />
+                  <PlanField planName="pro" field="monthly_price" label="Monthly Price (₹)" value={proConfig?.monthly_price} onSave={saveField} disabled={proConfig?.is_enabled === false} />
+                  <PlanField planName="pro" field="yearly_price" label="Yearly Price (₹)" value={proConfig?.yearly_price} onSave={saveField} disabled={proConfig?.is_enabled === false} />
+                  <PlanField planName="pro" field="yearly_validity_days" label="Yearly Validity (days)" value={proConfig?.yearly_validity_days} onSave={saveField} disabled={proConfig?.is_enabled === false} />
                 </div>
 
                 <div className="border-b border-border pb-2">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Limits</p>
-                  <PlanField planName="pro" field="max_funnels" label="Max Funnels" hint="-1 = unlimited" />
-                  <PlanField planName="pro" field="max_landing_pages" label="Max Landing Pages" hint="-1 = unlimited" />
-                  <PlanField planName="pro" field="max_live_sessions" label="Max Live Sessions" hint="-1 = unlimited" />
-                  <PlanField planName="pro" field="max_team_members" label="Max Team Members" hint="-1 = unlimited" />
+                  <PlanField planName="pro" field="max_funnels" label="Max Funnels" hint="-1 = unlimited" value={proConfig?.max_funnels} onSave={saveField} disabled={proConfig?.is_enabled === false} />
+                  <PlanField planName="pro" field="max_landing_pages" label="Max Landing Pages" hint="-1 = unlimited" value={proConfig?.max_landing_pages} onSave={saveField} disabled={proConfig?.is_enabled === false} />
+                  <PlanField planName="pro" field="max_live_sessions" label="Max Live Sessions" hint="-1 = unlimited" value={proConfig?.max_live_sessions} onSave={saveField} disabled={proConfig?.is_enabled === false} />
+                  <PlanField planName="pro" field="max_team_members" label="Max Team Members" hint="-1 = unlimited" value={proConfig?.max_team_members} onSave={saveField} disabled={proConfig?.is_enabled === false} />
                 </div>
 
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Features</p>
-                  <PlanField planName="pro" field="multilevel_funnel_enabled" label="Multi-level Funnel Access" type="boolean" />
+                  <PlanField planName="pro" field="multilevel_funnel_enabled" label="Multi-level Funnel Access" type="boolean" value={proConfig?.multilevel_funnel_enabled} onSave={saveField} disabled={proConfig?.is_enabled === false} />
                 </div>
+
+                {proConfig?.is_enabled === false && (
+                  <p className="text-xs text-amber-500 bg-amber-500/10 rounded-lg p-3">
+                    ⚠️ Pro plan is disabled. Users will only see Free and Basic options on the pricing page.
+                  </p>
+                )}
               </div>
             </div>
           </TabsContent>
@@ -352,31 +427,26 @@ const AdminSubscriptionsPage = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-left">
-                      <th className="p-4 text-xs text-muted-foreground font-medium">Time</th>
+                      <th className="p-4 text-xs text-muted-foreground font-medium">User</th>
                       <th className="p-4 text-xs text-muted-foreground font-medium">Event</th>
                       <th className="p-4 text-xs text-muted-foreground font-medium">Source</th>
-                      <th className="p-4 text-xs text-muted-foreground font-medium">Payment ID</th>
-                      <th className="p-4 text-xs text-muted-foreground font-medium">User</th>
+                      <th className="p-4 text-xs text-muted-foreground font-medium">Razorpay ID</th>
+                      <th className="p-4 text-xs text-muted-foreground font-medium">Date</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {auditLogs.map((log) => (
-                      <tr key={log.id} className="border-b border-border/50">
-                        <td className="p-4 text-xs text-muted-foreground">{new Date(log.created_at).toLocaleString("en-IN")}</td>
-                        <td className="p-4">
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            log.event_type.includes("fail") ? "bg-destructive/10 text-destructive" :
-                            log.event_type.includes("verif") ? "bg-green-500/10 text-green-600" :
-                            "bg-muted text-muted-foreground"
-                          }`}>{log.event_type}</span>
-                        </td>
-                        <td className="p-4 text-xs">{log.source}</td>
-                        <td className="p-4 text-xs font-mono text-muted-foreground">{log.razorpay_payment_id || "—"}</td>
-                        <td className="p-4 text-xs text-muted-foreground">
-                          {log.user_id ? profileMap[log.user_id]?.email || log.user_id.slice(0, 8) : "—"}
-                        </td>
-                      </tr>
-                    ))}
+                    {auditLogs.map((log) => {
+                      const profile = profileMap[log.user_id || ""];
+                      return (
+                        <tr key={log.id} className="border-b border-border/50">
+                          <td className="p-4 text-xs">{profile?.full_name || log.user_id || "—"}</td>
+                          <td className="p-4 text-xs">{log.event_type}</td>
+                          <td className="p-4 text-xs">{log.source}</td>
+                          <td className="p-4 text-xs font-mono">{log.razorpay_payment_id || log.razorpay_order_id || "—"}</td>
+                          <td className="p-4 text-xs text-muted-foreground">{new Date(log.created_at).toLocaleString("en-IN")}</td>
+                        </tr>
+                      );
+                    })}
                     {auditLogs.length === 0 && (
                       <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No audit logs yet</td></tr>
                     )}
@@ -387,20 +457,21 @@ const AdminSubscriptionsPage = () => {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4">
-            <div className="glass-card p-6 space-y-6">
+            <div className="glass-card p-6 space-y-4 max-w-lg">
               <h3 className="font-heading font-semibold">Platform Settings</h3>
-              {[
-                { key: "support_whatsapp", label: "Support WhatsApp Number" },
-                { key: "support_message_template", label: "Support Message Template" },
-              ].map(({ key, label }) => (
-                <div key={key} className="flex items-center gap-4">
-                  <label className="text-sm font-medium w-48 shrink-0">{label}</label>
-                  <Input
-                    className="max-w-xs"
-                    defaultValue={getSettingValue(key)}
-                    onChange={(e) => setEditingSettings(prev => ({ ...prev, [key]: e.target.value }))}
-                  />
-                  <Button size="sm" variant="outline" onClick={() => handleSettingSave(key)}>Save</Button>
+              {["razorpay_key_id", "maintenance_mode", "whatsapp_support_number"].map(key => (
+                <div key={key} className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <Label className="text-xs font-medium capitalize">{key.replace(/_/g, " ")}</Label>
+                    <Input
+                      className="mt-1 h-8 text-sm"
+                      value={editingSettings[key] ?? getSettingValue(key)}
+                      onChange={e => setEditingSettings(prev => ({ ...prev, [key]: e.target.value }))}
+                    />
+                  </div>
+                  <Button size="sm" className="h-8 mt-5" onClick={() => handleSettingSave(key)}>
+                    <Save size={12} />
+                  </Button>
                 </div>
               ))}
             </div>
