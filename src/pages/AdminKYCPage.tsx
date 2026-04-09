@@ -69,7 +69,7 @@ const AdminKYCPage = () => {
   const DocIcon = (type: string) => type === "pan" ? CreditCard : FileText;
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-heading font-bold">Creator Verification Queue</h1>
@@ -211,7 +211,7 @@ const AdminKYCPage = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 };
 
