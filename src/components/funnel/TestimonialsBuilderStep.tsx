@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { ImageUploadField } from "@/components/ui/image-upload-field";
 import {
   MessageSquare, Video, Plus, Trash2, GripVertical, Star, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { TestimonialPhotoUpload } from "@/components/funnel/TestimonialPhotoUpload";
+import { TestimonialVideoUpload } from "@/components/funnel/TestimonialVideoUpload";
 
 
 interface TestimonialsBuilderStepProps {
@@ -387,13 +388,6 @@ const TestimonialCard = memo(({
   landingPageId: string;
   maxVideoSeconds: number;
 }) => {
-  const initials = (t.student_name || "?")
-    .split(" ")
-    .map((w: string) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
   return (
     <div className="p-4 bg-muted/50 rounded-xl space-y-3 border border-border">
       <div className="flex items-start gap-3">
@@ -402,43 +396,31 @@ const TestimonialCard = memo(({
         </div>
         <div className="flex-1 space-y-3">
           {/* Photo + name row */}
-          <div className="flex items-center gap-3">
-            {t.student_photo_url ? (
-              <img
-                src={t.student_photo_url}
-                alt={t.student_name}
-                className="w-9 h-9 rounded-full object-cover border-2 border-border"
-              />
-            ) : (
-              <div className="w-9 h-9 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
-                {initials || "?"}
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
+          <div className="flex items-start gap-4">
+            <TestimonialPhotoUpload
+              value={t.student_photo_url || ""}
+              onChange={(url) => onUpdateAndRefresh(t.id, { student_photo_url: url })}
+              landingPageId={landingPageId}
+              testimonialId={t.id}
+              studentName={t.student_name || "Student"}
+            />
+
+            <div className="min-w-0 flex-1 space-y-3">
               <DebouncedInput
                 value={t.student_name || ""}
                 onSave={(val) => onUpdateField(t.id, { student_name: val })}
                 placeholder="Student name *"
                 className="bg-muted border-border h-8 text-sm"
               />
+
+              <DebouncedInput
+                value={t.student_location || ""}
+                onSave={(val) => onUpdateField(t.id, { student_location: val })}
+                placeholder="Location (optional, e.g. Mumbai, India)"
+                className="bg-muted border-border h-8 text-sm"
+              />
             </div>
           </div>
-
-          <DebouncedInput
-            value={t.student_location || ""}
-            onSave={(val) => onUpdateField(t.id, { student_location: val })}
-            placeholder="Location (optional, e.g. Mumbai, India)"
-            className="bg-muted border-border h-8 text-sm"
-          />
-
-          <ImageUploadField
-            label="Student Photo"
-            value={t.student_photo_url || ""}
-            onChange={(url) => onUpdateAndRefresh(t.id, { student_photo_url: url })}
-            bucket="landing-page-assets"
-            folder="testimonial-photos"
-            maxSizeMB={5}
-          />
 
           {t.type === "text" && (
             <DebouncedTextarea
@@ -452,38 +434,24 @@ const TestimonialCard = memo(({
           )}
 
           {t.type === "video" && (
-            <div className="space-y-2">
-              {t.video_url ? (
-                <div className="space-y-2">
-                  <div className="relative rounded-lg overflow-hidden bg-black" style={{ width: 240, height: 135 }}>
-                    {t.thumbnail_url ? (
-                      <img src={t.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <video src={t.video_url} className="w-full h-full object-cover" />
-                    )}
-                    {t.video_duration_seconds && (
-                      <span className="absolute bottom-1 right-1 text-[10px] bg-black/60 text-white px-1.5 py-0.5 rounded-full">
-                        {Math.floor(t.video_duration_seconds / 60)}:{String(t.video_duration_seconds % 60).padStart(2, "0")}
-                      </span>
-                    )}
-                  </div>
-                  <Button variant="outline" size="sm" className="text-xs" onClick={() => {
-                    onUpdateAndRefresh(t.id, { video_url: null, thumbnail_url: null, video_duration_seconds: null });
-                  }}>
-                    Replace video
-                  </Button>
-                </div>
-              ) : (
-                <VideoUploadBox
-                  testimonialId={t.id}
-                  landingPageId={landingPageId}
-                  maxSeconds={maxVideoSeconds}
-                  onUploaded={(url, duration) => {
-                    onUpdateAndRefresh(t.id, { video_url: url, video_duration_seconds: duration });
-                  }}
-                />
-              )}
-            </div>
+            <TestimonialVideoUpload
+              testimonialId={t.id}
+              landingPageId={landingPageId}
+              value={t.video_url || ""}
+              thumbnailUrl={t.thumbnail_url || null}
+              durationSeconds={t.video_duration_seconds}
+              maxSeconds={maxVideoSeconds}
+              onUploaded={({ videoUrl, thumbnailUrl, durationSeconds }) => {
+                onUpdateAndRefresh(t.id, {
+                  video_url: videoUrl,
+                  thumbnail_url: thumbnailUrl,
+                  video_duration_seconds: durationSeconds,
+                });
+              }}
+              onClear={() => {
+                onUpdateAndRefresh(t.id, { video_url: null, thumbnail_url: null, video_duration_seconds: null });
+              }}
+            />
           )}
 
           {/* Bottom row: active toggle + delete */}
@@ -512,167 +480,3 @@ const TestimonialCard = memo(({
   );
 });
 TestimonialCard.displayName = "TestimonialCard";
-
-// ── Video Upload Box ──
-interface VideoUploadBoxProps {
-  testimonialId: string;
-  landingPageId: string;
-  maxSeconds: number;
-  onUploaded: (url: string, duration: number) => void;
-}
-
-const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }: VideoUploadBoxProps) => {
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState("");
-  const [fileName, setFileName] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const ALLOWED_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
-  const MAX_SIZE_MB = 250;
-  const MAX_SIZE = MAX_SIZE_MB * 1024 * 1024;
-
-  const getVideoDuration = (file: File): Promise<number> => {
-    return new Promise((resolve, reject) => {
-      const video = document.createElement("video");
-      const objectUrl = URL.createObjectURL(file);
-      video.preload = "metadata";
-      video.onloadedmetadata = () => {
-        resolve(Math.round(video.duration));
-        URL.revokeObjectURL(objectUrl);
-      };
-      video.onerror = () => {
-        URL.revokeObjectURL(objectUrl);
-        reject(new Error("Could not read video metadata"));
-      };
-      video.src = objectUrl;
-    });
-  };
-
-  const readFileAsBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        // Remove data URL prefix: "data:video/mp4;base64,..."
-        const base64 = result.split(",")[1];
-        resolve(base64);
-      };
-      reader.onerror = () => reject(new Error("Could not read file"));
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const handleFile = async (file: File) => {
-    setError("");
-
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      setError("Only MP4, MOV, and WEBM files are supported.");
-      return;
-    }
-    if (file.size > MAX_SIZE) {
-      setError(`File too large. Maximum size is ${MAX_SIZE_MB}MB.`);
-      return;
-    }
-
-    setUploading(true);
-    setFileName(file.name);
-    setProgress(0);
-
-    try {
-      const duration = await getVideoDuration(file);
-      if (duration > maxSeconds) {
-        setError(`Your video is ${duration} seconds. Max allowed is ${maxSeconds} seconds.`);
-        setUploading(false);
-        if (inputRef.current) inputRef.current.value = "";
-        return;
-      }
-
-      setProgress(10);
-
-      // Read file as base64 and upload via edge function (avoids R2 CORS issues)
-      const base64Data = await readFileAsBase64(file);
-      setProgress(30);
-
-      const { data, error } = await supabase.functions.invoke("upload-testimonial-video", {
-        body: {
-          filename: file.name,
-          contentType: file.type,
-          title: `Testimonial ${testimonialId}`,
-          base64Data,
-        },
-      });
-
-      if (error || !data?.publicUrl) {
-        throw new Error(data?.error || error?.message || "Upload failed");
-      }
-
-      setProgress(100);
-      onUploaded(data.publicUrl, duration);
-      toast.success("Video uploaded!");
-    } catch (err: any) {
-      setProgress(0);
-      setError(err.message || "Upload failed. Try again.");
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  };
-
-  return (
-    <div
-      className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${error ? "border-destructive bg-destructive/5" : "border-border hover:border-primary/50"}`}
-      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-      onDrop={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const file = e.dataTransfer.files[0];
-        if (file) handleFile(file);
-      }}
-    >
-      {uploading ? (
-        <div className="space-y-2">
-          <Loader2 size={24} className="animate-spin mx-auto text-primary" />
-          <p className="text-xs text-muted-foreground">{fileName}</p>
-          <div className="w-full bg-muted rounded-full h-2">
-            <div
-              className="bg-primary h-2 rounded-full transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">{progress}%</p>
-        </div>
-      ) : (
-        <>
-          <Video size={24} className="mx-auto text-muted-foreground mb-2" />
-          <p className="text-xs text-muted-foreground">
-            Upload video (MP4, MOV, WEBM)
-          </p>
-          <p className="text-[10px] text-muted-foreground">
-            Max {maxSeconds} seconds · Max {MAX_SIZE_MB}MB
-          </p>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="video/mp4,video/quicktime,video/webm"
-            className="hidden"
-            id={`video-upload-${testimonialId}`}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleFile(file);
-            }}
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-2 text-xs"
-            onClick={() => inputRef.current?.click()}
-          >
-            Choose file
-          </Button>
-        </>
-      )}
-      {error && <p className="text-xs text-destructive mt-2">{error}</p>}
-    </div>
-  );
-};

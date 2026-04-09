@@ -8,6 +8,8 @@ interface Testimonial {
   student_photo_url?: string | null;
   review_text?: string | null;
   video_url?: string | null;
+  thumbnail_url?: string | null;
+  video_duration_seconds?: number | null;
   is_active: boolean;
 }
 
@@ -79,6 +81,11 @@ export const LandingPagePreview = ({
     ...(form.field_custom_1_enabled ? [{ key: "custom_1", label: form.field_custom_1_label || "Custom 1", enabled: true }] : []),
     ...(form.field_custom_2_enabled ? [{ key: "custom_2", label: form.field_custom_2_label || "Custom 2", enabled: true }] : []),
   ].filter(f => f.enabled);
+
+  const formatDuration = (seconds?: number | null) => {
+    if (!seconds && seconds !== 0) return null;
+    return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+  };
 
   const renderSection = (section: any, i: number) => {
     switch (section.type) {
@@ -213,31 +220,84 @@ export const LandingPagePreview = ({
                 <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
                   {activeTestimonials.map((t) => {
                     const initials = (t.student_name || "?").split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
+                    const durationLabel = formatDuration(t.video_duration_seconds);
+
                     return (
-                      <div key={t.id} className={`shrink-0 rounded-xl p-3 border ${cardBg}`} style={{ width: 180 }}>
-                        <div className="flex items-center gap-2 mb-2">
-                          {t.student_photo_url ? (
-                            <img src={t.student_photo_url} alt="" className="w-7 h-7 rounded-full object-cover" />
-                          ) : (
-                            <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[9px] font-bold">
-                              {initials}
+                      <div
+                        key={t.id}
+                        className={`shrink-0 border ${cardBg} ${t.type === "video" ? "w-[144px] rounded-[1.4rem] p-2" : "w-[190px] rounded-xl p-3"}`}
+                      >
+                        {t.type === "video" ? (
+                          <div className="space-y-2">
+                            <div className="relative overflow-hidden rounded-[1rem] bg-foreground/10 aspect-[9/16]">
+                              {t.thumbnail_url ? (
+                                <img
+                                  src={t.thumbnail_url}
+                                  alt={`${t.student_name || "Student"} video testimonial`}
+                                  className="absolute inset-0 h-full w-full object-cover"
+                                  loading="lazy"
+                                />
+                              ) : t.video_url ? (
+                                <video
+                                  src={t.video_url}
+                                  className="absolute inset-0 h-full w-full object-cover"
+                                  muted
+                                  playsInline
+                                  preload="metadata"
+                                />
+                              ) : null}
+
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
+
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm">
+                                  <Play size={14} className="text-foreground" />
+                                </div>
+                              </div>
+
+                              {durationLabel && (
+                                <span className="absolute right-2 top-2 rounded-full bg-background/80 px-1.5 py-0.5 text-[8px] font-medium text-foreground">
+                                  {durationLabel}
+                                </span>
+                              )}
                             </div>
-                          )}
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-bold truncate">{t.student_name || "Student"}</p>
-                            {t.student_location && <p className="text-[8px] opacity-50 truncate">{t.student_location}</p>}
+
+                            <div className="flex items-center gap-2 px-1">
+                              {t.student_photo_url ? (
+                                <img src={t.student_photo_url} alt={t.student_name || "Student"} className="h-7 w-7 rounded-full object-cover" loading="lazy" />
+                              ) : (
+                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20 text-[9px] font-bold text-primary">
+                                  {initials}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="truncate text-[10px] font-bold">{t.student_name || "Student"}</p>
+                                {t.student_location && <p className="truncate text-[8px] opacity-50">{t.student_location}</p>}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex gap-0.5 mb-1">
-                          {[1, 2, 3, 4, 5].map((s) => <Star key={s} size={8} className="text-amber-400 fill-amber-400" />)}
-                        </div>
-                        {t.type === "text" && t.review_text && (
-                          <p className="text-[9px] opacity-70 line-clamp-3">{t.review_text}</p>
-                        )}
-                        {t.type === "video" && (
-                          <div className="mt-1 rounded-lg bg-black/30 h-16 flex items-center justify-center">
-                            <Play size={14} className="text-white/70" />
-                          </div>
+                        ) : (
+                          <>
+                            <div className="mb-2 flex items-center gap-2">
+                              {t.student_photo_url ? (
+                                <img src={t.student_photo_url} alt={t.student_name || "Student"} className="h-7 w-7 rounded-full object-cover" loading="lazy" />
+                              ) : (
+                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20 text-[9px] font-bold text-primary">
+                                  {initials}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="truncate text-[10px] font-bold">{t.student_name || "Student"}</p>
+                                {t.student_location && <p className="truncate text-[8px] opacity-50">{t.student_location}</p>}
+                              </div>
+                            </div>
+                            <div className="mb-1 flex gap-0.5">
+                              {[1, 2, 3, 4, 5].map((s) => <Star key={s} size={8} className="text-amber-400 fill-amber-400" />)}
+                            </div>
+                            {t.review_text && (
+                              <p className="line-clamp-3 text-[9px] opacity-70">{t.review_text}</p>
+                            )}
+                          </>
                         )}
                       </div>
                     );
