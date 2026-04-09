@@ -111,6 +111,7 @@ const FunnelEditor = () => {
   const isEdit = !!id;
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { canUseMultiStep } = usePlan();
   const queryClient = useQueryClient();
 
   // Wizard state — modeChosen gates entry into the real wizard
