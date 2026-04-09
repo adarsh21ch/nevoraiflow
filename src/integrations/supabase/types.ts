@@ -1431,6 +1431,15 @@ export type Database = {
       }
       plan_config: {
         Row: {
+          feature_advanced_analytics: boolean
+          feature_analytics: boolean
+          feature_go_live: boolean
+          feature_landing_pages: boolean
+          feature_lead_capture: boolean
+          feature_priority_support: boolean
+          feature_team_analytics: boolean
+          feature_video_sharing: boolean
+          feature_whatsapp_automation: boolean
           id: string
           is_enabled: boolean
           max_funnels: number
@@ -1439,12 +1448,22 @@ export type Database = {
           max_team_members: number
           monthly_price: number
           multilevel_funnel_enabled: boolean
+          plan_badge_text: string | null
           plan_name: string
           updated_at: string | null
           yearly_price: number
           yearly_validity_days: number
         }
         Insert: {
+          feature_advanced_analytics?: boolean
+          feature_analytics?: boolean
+          feature_go_live?: boolean
+          feature_landing_pages?: boolean
+          feature_lead_capture?: boolean
+          feature_priority_support?: boolean
+          feature_team_analytics?: boolean
+          feature_video_sharing?: boolean
+          feature_whatsapp_automation?: boolean
           id?: string
           is_enabled?: boolean
           max_funnels?: number
@@ -1453,12 +1472,22 @@ export type Database = {
           max_team_members?: number
           monthly_price?: number
           multilevel_funnel_enabled?: boolean
+          plan_badge_text?: string | null
           plan_name: string
           updated_at?: string | null
           yearly_price?: number
           yearly_validity_days?: number
         }
         Update: {
+          feature_advanced_analytics?: boolean
+          feature_analytics?: boolean
+          feature_go_live?: boolean
+          feature_landing_pages?: boolean
+          feature_lead_capture?: boolean
+          feature_priority_support?: boolean
+          feature_team_analytics?: boolean
+          feature_video_sharing?: boolean
+          feature_whatsapp_automation?: boolean
           id?: string
           is_enabled?: boolean
           max_funnels?: number
@@ -1467,6 +1496,7 @@ export type Database = {
           max_team_members?: number
           monthly_price?: number
           multilevel_funnel_enabled?: boolean
+          plan_badge_text?: string | null
           plan_name?: string
           updated_at?: string | null
           yearly_price?: number
