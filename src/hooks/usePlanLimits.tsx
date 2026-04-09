@@ -14,6 +14,7 @@ export interface PlanConfig {
   max_live_sessions: number;
   max_team_members: number;
   multilevel_funnel_enabled: boolean;
+  is_enabled?: boolean;
 }
 
 const FREE_CONFIG: PlanConfig = {

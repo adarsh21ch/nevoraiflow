@@ -1432,6 +1432,7 @@ export type Database = {
       plan_config: {
         Row: {
           id: string
+          is_enabled: boolean
           max_funnels: number
           max_landing_pages: number
           max_live_sessions: number
@@ -1445,6 +1446,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          is_enabled?: boolean
           max_funnels?: number
           max_landing_pages?: number
           max_live_sessions?: number
@@ -1458,6 +1460,7 @@ export type Database = {
         }
         Update: {
           id?: string
+          is_enabled?: boolean
           max_funnels?: number
           max_landing_pages?: number
           max_live_sessions?: number

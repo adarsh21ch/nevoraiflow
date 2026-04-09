@@ -36,18 +36,19 @@ const PricingFullPage = () => {
   const [loading, setLoading] = useState<string | null>(null);
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
 
-  // Fetch plan configs from plan_config table
   const { data: planConfigs = [] } = useQuery({
     queryKey: ["plan-configs"],
     queryFn: async () => {
       const { data } = await supabase.from("plan_config").select("*");
-      return (data || []) as PlanConfig[];
+      return (data || []) as (PlanConfig & { is_enabled: boolean })[];
     },
     staleTime: 60000,
   });
 
   const basicConfig = planConfigs.find(c => c.plan_name === "basic");
   const proConfig = planConfigs.find(c => c.plan_name === "pro");
+  const basicEnabled = basicConfig?.is_enabled !== false;
+  const proEnabled = proConfig?.is_enabled !== false;
 
   const getPrice = (config: PlanConfig | undefined) => {
     if (!config) return 0;
@@ -133,19 +134,9 @@ const PricingFullPage = () => {
 
   const limitDisplay = (val: number) => val === -1 ? "Unlimited" : String(val);
 
-  const comparisonFeatures = [
-    { name: "Funnels", free: "0 (view only)", basic: limitDisplay(basicConfig?.max_funnels || 3), pro: limitDisplay(proConfig?.max_funnels || 10) },
-    { name: "Landing Pages", free: "0", basic: limitDisplay(basicConfig?.max_landing_pages || 2), pro: limitDisplay(proConfig?.max_landing_pages || 5) },
-    { name: "Live Sessions", free: "0", basic: limitDisplay(basicConfig?.max_live_sessions || 1), pro: limitDisplay(proConfig?.max_live_sessions || 5) },
-    { name: "Multi-level Funnels", free: false, basic: basicConfig?.multilevel_funnel_enabled || false, pro: proConfig?.multilevel_funnel_enabled || true },
-    { name: "Team Members", free: false, basic: false, pro: proConfig?.max_team_members === -1 ? true : `Up to ${proConfig?.max_team_members || 10}` },
-    { name: "Lead Capture", free: false, basic: true, pro: true },
-    { name: "Analytics", free: false, basic: "Basic", pro: "Advanced" },
-    { name: "WhatsApp Automation", free: false, basic: true, pro: true },
-    { name: "Video Sharing", free: false, basic: false, pro: true },
-    { name: "Priority Support", free: false, basic: false, pro: true },
-    { name: "Team Analytics", free: false, basic: false, pro: true },
-  ];
+  // Determine how many plan cards to show
+  const enabledPlans = [basicEnabled, proEnabled].filter(Boolean).length;
+  const gridCols = enabledPlans === 0 ? "max-w-md mx-auto" : enabledPlans === 1 ? "md:grid-cols-2 max-w-3xl mx-auto" : "md:grid-cols-3 max-w-5xl mx-auto";
 
   return (
     <div className="min-h-screen">
@@ -156,34 +147,38 @@ const PricingFullPage = () => {
             <h1 className="text-3xl md:text-5xl font-heading font-bold mb-4">
               Choose Your <span className="gradient-text">Growth Plan</span>
             </h1>
-            <p className="text-muted-foreground max-w-lg mx-auto mb-6">Start free, scale as you grow. Basic for individuals, Pro for teams.</p>
+            <p className="text-muted-foreground max-w-lg mx-auto mb-6">
+              Start free, scale as you grow.{basicEnabled && " Basic for individuals."}{proEnabled && " Pro for your whole team."}
+            </p>
             {plan.isExpired && (
               <p className="text-sm text-destructive font-medium">Your plan has expired. Renew to restore access.</p>
             )}
           </motion.div>
 
           {/* Billing toggle */}
-          <div className="flex items-center justify-center gap-3 mb-10">
-            <button
-              onClick={() => setBilling("monthly")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${billing === "monthly" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setBilling("yearly")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all relative ${billing === "yearly" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
-            >
-              Yearly
-              {basicConfig && getSavings(basicConfig) > 0 && (
-                <span className="absolute -top-2 -right-2 text-[10px] bg-green-500 text-white px-1.5 py-0.5 rounded-full font-bold">
-                  Save {Math.round((1 - basicConfig.yearly_price / (basicConfig.monthly_price * 12)) * 100)}%
-                </span>
-              )}
-            </button>
-          </div>
+          {(basicEnabled || proEnabled) && (
+            <div className="flex items-center justify-center gap-3 mb-10">
+              <button
+                onClick={() => setBilling("monthly")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${billing === "monthly" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBilling("yearly")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all relative ${billing === "yearly" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+              >
+                Yearly
+                {basicConfig && getSavings(basicConfig) > 0 && (
+                  <span className="absolute -top-2 -right-2 text-[10px] bg-green-500 text-white px-1.5 py-0.5 rounded-full font-bold">
+                    Save {Math.round((1 - (basicEnabled ? basicConfig : proConfig!)?.yearly_price / ((basicEnabled ? basicConfig : proConfig!)?.monthly_price * 12)) * 100)}%
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-16">
+          <div className={`grid gap-6 mb-16 ${gridCols}`}>
             {/* Free */}
             <motion.div className="glass-card p-6 flex flex-col" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <div className="mb-6">
@@ -211,95 +206,99 @@ const PricingFullPage = () => {
             </motion.div>
 
             {/* Basic */}
-            <motion.div className="glass-card p-6 flex flex-col relative" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-card border border-border text-xs font-semibold flex items-center gap-1">
-                <User size={12} /> For Individuals
-              </div>
-              <div className="mb-6">
-                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium">Basic</span>
-                <div className="flex items-baseline gap-1 mt-3">
-                  <span className="text-3xl font-heading font-bold">₹{getPrice(basicConfig).toLocaleString("en-IN")}</span>
-                  <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
+            {basicEnabled && (
+              <motion.div className="glass-card p-6 flex flex-col relative" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-card border border-border text-xs font-semibold flex items-center gap-1">
+                  <User size={12} /> For Individuals · 1 Person
                 </div>
-                {billing === "monthly" && basicConfig && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    or ₹{basicConfig.yearly_price.toLocaleString("en-IN")}/year — save ₹{getSavings(basicConfig).toLocaleString("en-IN")}
-                  </p>
+                <div className="mb-6">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium">Basic</span>
+                  <div className="flex items-baseline gap-1 mt-3">
+                    <span className="text-3xl font-heading font-bold">₹{getPrice(basicConfig).toLocaleString("en-IN")}</span>
+                    <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
+                  </div>
+                  {billing === "monthly" && basicConfig && getSavings(basicConfig) > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      or ₹{basicConfig.yearly_price.toLocaleString("en-IN")}/year — save ₹{getSavings(basicConfig).toLocaleString("en-IN")}
+                    </p>
+                  )}
+                </div>
+                <ul className="space-y-2.5 flex-1 mb-6">
+                  {[
+                    basicConfig?.max_funnels === -1 ? "Unlimited Funnels" : `Up to ${basicConfig?.max_funnels || 3} Funnels`,
+                    basicConfig?.max_landing_pages === -1 ? "Unlimited Landing Pages" : `Up to ${basicConfig?.max_landing_pages || 2} Landing Pages`,
+                    basicConfig?.max_live_sessions === -1 ? "Unlimited Live Sessions" : `Up to ${basicConfig?.max_live_sessions || 1} Live Sessions`,
+                    "Lead Capture",
+                    "Analytics",
+                    "WhatsApp Automation",
+                    basicConfig?.multilevel_funnel_enabled ? "Multi-level Funnels" : null,
+                  ].filter(Boolean).map(f => (
+                    <li key={f} className="flex items-center gap-2 text-sm"><Check size={14} className="text-primary shrink-0" /> {f}</li>
+                  ))}
+                  {[
+                    !basicConfig?.multilevel_funnel_enabled ? "Multi-level Funnels" : null,
+                    "Team Members",
+                    "Team Analytics",
+                  ].filter(Boolean).map(f => (
+                    <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground/60"><Lock size={14} className="shrink-0" /> {f}</li>
+                  ))}
+                </ul>
+                {isCurrentTier("basic") ? (
+                  <Button disabled className="w-full">Current Plan</Button>
+                ) : (
+                  <Button className="w-full gap-2" onClick={() => handlePayment("basic")} disabled={loading === `basic_${billing}`}>
+                    {loading === `basic_${billing}` ? <Loader2 size={16} className="animate-spin" /> : null}
+                    Subscribe — ₹{getPrice(basicConfig).toLocaleString("en-IN")}/{billing === "monthly" ? "mo" : "yr"}
+                  </Button>
                 )}
-              </div>
-              <ul className="space-y-2.5 flex-1 mb-6">
-                {[
-                  `Up to ${basicConfig?.max_funnels || 3} Funnels`,
-                  `Up to ${basicConfig?.max_landing_pages || 2} Landing Pages`,
-                  `Up to ${basicConfig?.max_live_sessions || 1} Live Sessions`,
-                  "Lead Capture",
-                  "Analytics",
-                  "WhatsApp Automation",
-                  basicConfig?.multilevel_funnel_enabled ? "Multi-level Funnels" : null,
-                ].filter(Boolean).map(f => (
-                  <li key={f} className="flex items-center gap-2 text-sm"><Check size={14} className="text-primary shrink-0" /> {f}</li>
-                ))}
-                {[
-                  !basicConfig?.multilevel_funnel_enabled ? "Multi-level Funnels" : null,
-                  "Team Members",
-                  "Team Analytics",
-                ].filter(Boolean).map(f => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground/60"><Lock size={14} className="shrink-0" /> {f}</li>
-                ))}
-              </ul>
-              {isCurrentTier("basic") ? (
-                <Button disabled className="w-full">Current Plan</Button>
-              ) : (
-                <Button className="w-full gap-2" onClick={() => handlePayment("basic")} disabled={loading === `basic_${billing}`}>
-                  {loading === `basic_${billing}` ? <Loader2 size={16} className="animate-spin" /> : null}
-                  Subscribe — ₹{getPrice(basicConfig).toLocaleString("en-IN")}/{billing === "monthly" ? "mo" : "yr"}
-                </Button>
-              )}
-            </motion.div>
+              </motion.div>
+            )}
 
             {/* Pro */}
-            <motion.div className="glass-card p-6 flex flex-col relative border-primary/40 glow-primary" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-primary text-xs font-semibold text-primary-foreground flex items-center gap-1">
-                <Users size={12} /> Most Popular
-              </div>
-              <div className="mb-6">
-                <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-medium">Pro</span>
-                <div className="flex items-baseline gap-1 mt-3">
-                  <span className="text-3xl font-heading font-bold">₹{getPrice(proConfig).toLocaleString("en-IN")}</span>
-                  <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
+            {proEnabled && (
+              <motion.div className="glass-card p-6 flex flex-col relative border-primary/40 glow-primary" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-primary text-xs font-semibold text-primary-foreground flex items-center gap-1">
+                  <Users size={12} /> For Your Whole Team
                 </div>
-                {billing === "monthly" && proConfig && (
-                  <p className="text-xs text-primary mt-1">
-                    or ₹{proConfig.yearly_price.toLocaleString("en-IN")}/year — save ₹{getSavings(proConfig).toLocaleString("en-IN")}
-                  </p>
+                <div className="mb-6">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-medium">Pro</span>
+                  <div className="flex items-baseline gap-1 mt-3">
+                    <span className="text-3xl font-heading font-bold">₹{getPrice(proConfig).toLocaleString("en-IN")}</span>
+                    <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
+                  </div>
+                  {billing === "monthly" && proConfig && getSavings(proConfig) > 0 && (
+                    <p className="text-xs text-primary mt-1">
+                      or ₹{proConfig.yearly_price.toLocaleString("en-IN")}/year — save ₹{getSavings(proConfig).toLocaleString("en-IN")}
+                    </p>
+                  )}
+                </div>
+                <ul className="space-y-2.5 flex-1 mb-6">
+                  {[
+                    proConfig?.max_funnels === -1 ? "Unlimited Funnels" : `Up to ${proConfig?.max_funnels || 10} Funnels`,
+                    proConfig?.max_landing_pages === -1 ? "Unlimited Landing Pages" : `Up to ${proConfig?.max_landing_pages || 5} Landing Pages`,
+                    proConfig?.max_live_sessions === -1 ? "Unlimited Live Sessions" : `Up to ${proConfig?.max_live_sessions || 5} Live Sessions`,
+                    proConfig?.multilevel_funnel_enabled ? "Multi-level Funnels ✓" : null,
+                    `Team Members (up to ${proConfig?.max_team_members === -1 ? "∞" : proConfig?.max_team_members || 10})`,
+                    "Team Analytics Dashboard",
+                    "Lead Capture",
+                    "Advanced Analytics",
+                    "WhatsApp Automation",
+                    "Video Sharing",
+                    "Priority Support",
+                  ].filter(Boolean).map(f => (
+                    <li key={f} className="flex items-center gap-2 text-sm"><Check size={14} className="text-primary shrink-0" /> {f}</li>
+                  ))}
+                </ul>
+                {isCurrentTier("pro") ? (
+                  <Button disabled className="w-full">Current Plan</Button>
+                ) : (
+                  <Button className="w-full gap-2" onClick={() => handlePayment("pro")} disabled={loading === `pro_${billing}`}>
+                    {loading === `pro_${billing}` ? <Loader2 size={16} className="animate-spin" /> : <Crown size={16} />}
+                    Subscribe — ₹{getPrice(proConfig).toLocaleString("en-IN")}/{billing === "monthly" ? "mo" : "yr"}
+                  </Button>
                 )}
-              </div>
-              <ul className="space-y-2.5 flex-1 mb-6">
-                {[
-                  proConfig?.max_funnels === -1 ? "Unlimited Funnels" : `Up to ${proConfig?.max_funnels || 10} Funnels`,
-                  proConfig?.max_landing_pages === -1 ? "Unlimited Landing Pages" : `Up to ${proConfig?.max_landing_pages || 5} Landing Pages`,
-                  proConfig?.max_live_sessions === -1 ? "Unlimited Live Sessions" : `Up to ${proConfig?.max_live_sessions || 5} Live Sessions`,
-                  proConfig?.multilevel_funnel_enabled ? "Multi-level Funnels ✓" : null,
-                  `Team Members (up to ${proConfig?.max_team_members === -1 ? "∞" : proConfig?.max_team_members || 10})`,
-                  "Team Analytics Dashboard",
-                  "Lead Capture",
-                  "Advanced Analytics",
-                  "WhatsApp Automation",
-                  "Video Sharing",
-                  "Priority Support",
-                ].filter(Boolean).map(f => (
-                  <li key={f} className="flex items-center gap-2 text-sm"><Check size={14} className="text-primary shrink-0" /> {f}</li>
-                ))}
-              </ul>
-              {isCurrentTier("pro") ? (
-                <Button disabled className="w-full">Current Plan</Button>
-              ) : (
-                <Button className="w-full gap-2" onClick={() => handlePayment("pro")} disabled={loading === `pro_${billing}`}>
-                  {loading === `pro_${billing}` ? <Loader2 size={16} className="animate-spin" /> : <Crown size={16} />}
-                  Subscribe — ₹{getPrice(proConfig).toLocaleString("en-IN")}/{billing === "monthly" ? "mo" : "yr"}
-                </Button>
-              )}
-            </motion.div>
+              </motion.div>
+            )}
           </div>
 
           {/* Comparison table */}
@@ -310,24 +309,45 @@ const PricingFullPage = () => {
                   <tr className="border-b border-border">
                     <th className="text-left p-4 font-medium">Feature</th>
                     <th className="text-center p-4 font-medium">Free</th>
-                    <th className="text-center p-4 font-medium">Basic</th>
-                    <th className="text-center p-4 font-medium text-primary">Pro</th>
+                    {basicEnabled && <th className="text-center p-4 font-medium">Basic</th>}
+                    {proEnabled && <th className="text-center p-4 font-medium text-primary">Pro</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {comparisonFeatures.map((f) => (
+                  {[
+                    { name: "Funnels", free: "0 (view only)", basic: limitDisplay(basicConfig?.max_funnels || 3), pro: limitDisplay(proConfig?.max_funnels || 10) },
+                    { name: "Landing Pages", free: "0", basic: limitDisplay(basicConfig?.max_landing_pages || 2), pro: limitDisplay(proConfig?.max_landing_pages || 5) },
+                    { name: "Live Sessions", free: "0", basic: limitDisplay(basicConfig?.max_live_sessions || 1), pro: limitDisplay(proConfig?.max_live_sessions || 5) },
+                    { name: "Multi-level Funnels", free: false, basic: basicConfig?.multilevel_funnel_enabled || false, pro: proConfig?.multilevel_funnel_enabled || true },
+                    { name: "Team Members", free: false, basic: false, pro: proConfig?.max_team_members === -1 ? true : `Up to ${proConfig?.max_team_members || 10}` },
+                    { name: "Lead Capture", free: false, basic: true, pro: true },
+                    { name: "Analytics", free: false, basic: "Basic", pro: "Advanced" },
+                    { name: "WhatsApp Automation", free: false, basic: true, pro: true },
+                    { name: "Video Sharing", free: false, basic: false, pro: true },
+                    { name: "Priority Support", free: false, basic: false, pro: true },
+                    { name: "Team Analytics", free: false, basic: false, pro: true },
+                  ].map((f) => (
                     <tr key={f.name} className="border-b border-border/50">
                       <td className="p-4">{f.name}</td>
-                      {(["free", "basic", "pro"] as const).map((t) => {
-                        const val = f[t];
-                        return (
-                          <td key={t} className="p-4 text-center">
-                            {typeof val === "boolean" ? (
-                              val ? <Check size={16} className="text-primary mx-auto" /> : <X size={16} className="text-muted-foreground/40 mx-auto" />
-                            ) : <span className="text-muted-foreground">{val}</span>}
-                          </td>
-                        );
-                      })}
+                      <td className="p-4 text-center">
+                        {typeof f.free === "boolean" ? (
+                          f.free ? <Check size={16} className="text-primary mx-auto" /> : <X size={16} className="text-muted-foreground/40 mx-auto" />
+                        ) : <span className="text-muted-foreground">{f.free}</span>}
+                      </td>
+                      {basicEnabled && (
+                        <td className="p-4 text-center">
+                          {typeof f.basic === "boolean" ? (
+                            f.basic ? <Check size={16} className="text-primary mx-auto" /> : <X size={16} className="text-muted-foreground/40 mx-auto" />
+                          ) : <span className="text-muted-foreground">{f.basic}</span>}
+                        </td>
+                      )}
+                      {proEnabled && (
+                        <td className="p-4 text-center">
+                          {typeof f.pro === "boolean" ? (
+                            f.pro ? <Check size={16} className="text-primary mx-auto" /> : <X size={16} className="text-muted-foreground/40 mx-auto" />
+                          ) : <span className="text-muted-foreground">{f.pro}</span>}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
