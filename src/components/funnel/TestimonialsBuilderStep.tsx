@@ -550,6 +550,20 @@ const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }
     });
   };
 
+  const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove data URL prefix: "data:video/mp4;base64,..."
+        const base64 = result.split(",")[1];
+        resolve(base64);
+      };
+      reader.onerror = () => reject(new Error("Could not read file"));
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleFile = async (file: File) => {
     setError("");
 
@@ -570,18 +584,32 @@ const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }
       const duration = await getVideoDuration(file);
       if (duration > maxSeconds) {
         setError(`Your video is ${duration} seconds. Max allowed is ${maxSeconds} seconds.`);
+        setUploading(false);
+        if (inputRef.current) inputRef.current.value = "";
         return;
       }
 
-      const { publicUrl } = await uploadVideoToR2({
-        file,
-        title: `Testimonial ${testimonialId}`,
-        timeoutMs: UPLOAD_TIMEOUT_MS,
-        onProgress: setProgress,
+      setProgress(10);
+
+      // Read file as base64 and upload via edge function (avoids R2 CORS issues)
+      const base64Data = await readFileAsBase64(file);
+      setProgress(30);
+
+      const { data, error } = await supabase.functions.invoke("upload-testimonial-video", {
+        body: {
+          filename: file.name,
+          contentType: file.type,
+          title: `Testimonial ${testimonialId}`,
+          base64Data,
+        },
       });
 
+      if (error || !data?.publicUrl) {
+        throw new Error(data?.error || error?.message || "Upload failed");
+      }
+
       setProgress(100);
-      onUploaded(publicUrl, duration);
+      onUploaded(data.publicUrl, duration);
       toast.success("Video uploaded!");
     } catch (err: any) {
       setProgress(0);
