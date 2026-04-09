@@ -65,19 +65,6 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {adminLinks.map((link) => (
-            <Link key={link.path} to={link.path} className="glass-card-hover p-5 flex items-center justify-between group">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <link.icon size={18} className="text-primary" />
-                </div>
-                <span className="font-medium text-sm">{link.label}</span>
-              </div>
-              <ArrowRight size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
-            </Link>
-          ))}
-        </div>
       </div>
     </AdminLayout>
   );
