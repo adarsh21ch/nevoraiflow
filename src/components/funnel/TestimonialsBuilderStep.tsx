@@ -167,7 +167,6 @@ export const TestimonialsBuilderStep = ({
   });
 
   const textTestimonials = testimonials.filter((t: any) => t.type === "text");
-  const videoTestimonials = testimonials.filter((t: any) => t.type === "video");
   const totalCount = testimonials.length;
   const limitReached = totalCount >= maxPerPage;
 
@@ -285,10 +284,10 @@ export const TestimonialsBuilderStep = ({
             />
           </div>
 
-          {/* Text Testimonials */}
+          {/* All Testimonials */}
           <div className="mt-4 space-y-3">
             <h3 className="font-semibold text-sm flex items-center gap-2">
-              <MessageSquare size={14} className="text-primary" /> Text Testimonials
+              <Star size={14} className="text-primary" /> All Testimonials ({totalCount}/{maxPerPage})
             </h3>
 
             {isLoading ? (
@@ -297,8 +296,8 @@ export const TestimonialsBuilderStep = ({
               </div>
             ) : (
               <>
-                {textTestimonials.map((t: any) => (
-                  <TestimonialCard
+                {testimonials.map((t: any) => (
+                  <UnifiedTestimonialCard
                     key={t.id}
                     testimonial={t}
                     onUpdateField={updateField}
@@ -313,57 +312,20 @@ export const TestimonialsBuilderStep = ({
                   variant="outline"
                   className="w-full"
                   disabled={limitReached || addMutation.isPending}
-                  onClick={() => addMutation.mutate("text")}
+                  onClick={() => addMutation.mutate("text" as "text" | "video")}
                   title={limitReached ? `Maximum ${maxPerPage} testimonials reached` : ""}
                 >
                   <Plus size={14} className="mr-1.5" />
-                  {addMutation.isPending ? "Adding..." : "Add Text Testimonial"}
+                  {addMutation.isPending ? "Adding..." : "Add Testimonial"}
                 </Button>
                 {limitReached && (
-                  <p className="text-xs text-amber-500">
+                  <p className="text-xs text-destructive">
                     Maximum {maxPerPage} testimonials reached. Remove one to add another.
                   </p>
                 )}
               </>
             )}
           </div>
-
-          {/* Video Testimonials */}
-          {videoFeatureEnabled && (
-            <div className="mt-6 space-y-3">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                <Video size={14} className="text-primary" /> Video Testimonials
-              </h3>
-
-              {videoTestimonials.map((t: any) => (
-                <TestimonialCard
-                  key={t.id}
-                  testimonial={t}
-                  onUpdateField={updateField}
-                  onUpdateAndRefresh={updateAndRefresh}
-                  onDelete={handleDelete}
-                  landingPageId={landingPageId}
-                  maxVideoSeconds={maxVideoSeconds}
-                />
-              ))}
-
-              <Button
-                variant="outline"
-                className="w-full"
-                disabled={limitReached || addMutation.isPending}
-                onClick={() => addMutation.mutate("video")}
-                title={limitReached ? `Maximum ${maxPerPage} testimonials reached` : ""}
-              >
-                <Plus size={14} className="mr-1.5" />
-                {addMutation.isPending ? "Adding..." : "Add Video Testimonial"}
-              </Button>
-              {limitReached && (
-                <p className="text-xs text-amber-500">
-                  Maximum {maxPerPage} testimonials reached. Remove one to add another.
-                </p>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </>
