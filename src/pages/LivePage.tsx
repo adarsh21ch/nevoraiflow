@@ -160,7 +160,7 @@ const LivePage = () => {
             <LimitBadge resource="live_session" />
           </div>
           <Button variant="hero" onClick={() => {
-            const counts = sessionsData?.length || 0;
+            const counts = sessions?.length || 0;
             if (!canCreate("live_session", counts)) {
               toast.error("Live session limit reached. Upgrade your plan for more.");
               return;
