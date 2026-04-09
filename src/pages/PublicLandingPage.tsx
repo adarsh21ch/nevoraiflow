@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/accordion";
 import { Loader2, Check, Lock, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { TestimonialsViewer } from "@/components/funnel/TestimonialsViewer";
 
 const PublicLandingPage = () => {
   const { slug } = useParams();
