@@ -66,9 +66,10 @@ export const LandingPagePreview = ({
 
   const sections = form.sections || [];
   const hasSpeaker = !!(form.speaker_name || form.speaker_photo_url);
-  const activeTestimonials = testimonials.filter((t) =>
-    t.is_active && (t.type === "text" ? Boolean(t.review_text?.trim()) : Boolean(t.video_url))
-  );
+  const activeTestimonials = testimonials.filter((t) => {
+    if (t.type === "both") return Boolean(t.review_text?.trim()) || Boolean(t.video_url);
+    return t.is_active && (t.type === "text" ? Boolean(t.review_text?.trim()) : Boolean(t.video_url));
+  }).filter((t) => t.is_active);
 
   const formFields = [
     { key: "name", label: "Full Name", enabled: form.field_name_enabled },
@@ -239,15 +240,27 @@ export const LandingPagePreview = ({
                           </div>
                         </div>
 
-                        {/* Content */}
-                        {t.type === "video" ? (
+                        {/* Stars */}
+                        <div className="px-2.5 pb-1 flex gap-0.5">
+                          {[1, 2, 3, 4, 5].map((s) => <Star key={s} size={8} className="text-amber-400 fill-amber-400" />)}
+                        </div>
+
+                        {/* Text content */}
+                        {(t.type === "text" || t.type === "both") && t.review_text && (
+                          <div className="px-2.5 pb-2">
+                            <p className="line-clamp-3 text-[9px] opacity-70">{t.review_text}</p>
+                          </div>
+                        )}
+
+                        {/* Video content */}
+                        {(t.type === "video" || t.type === "both") && t.video_url && (
                           <div className="px-2 pb-2">
                             <div className="relative overflow-hidden rounded-lg bg-foreground/10 aspect-[9/16]">
                               {t.thumbnail_url ? (
                                 <img src={t.thumbnail_url} alt="Video testimonial" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
-                              ) : t.video_url ? (
+                              ) : (
                                 <video src={t.video_url} className="absolute inset-0 h-full w-full object-cover" muted playsInline preload="metadata" />
-                              ) : null}
+                              )}
                               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                               <div className="absolute inset-0 flex items-center justify-center">
                                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm">
@@ -260,13 +273,6 @@ export const LandingPagePreview = ({
                                 </span>
                               )}
                             </div>
-                          </div>
-                        ) : (
-                          <div className="px-2.5 pb-2.5 space-y-1">
-                            <div className="flex gap-0.5">
-                              {[1, 2, 3, 4, 5].map((s) => <Star key={s} size={8} className="text-amber-400 fill-amber-400" />)}
-                            </div>
-                            {t.review_text && <p className="line-clamp-3 text-[9px] opacity-70">{t.review_text}</p>}
                           </div>
                         )}
                       </div>
