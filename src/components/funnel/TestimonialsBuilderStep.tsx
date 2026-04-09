@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,101 @@ interface TestimonialsBuilderStepProps {
   onToggleEnabled: (v: boolean) => void;
   onTitleChange: (v: string) => void;
 }
+
+// Debounced input that keeps local state and only saves after user stops typing
+const DebouncedInput = memo(({
+  value: externalValue,
+  onSave,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onSave: (val: string) => void;
+  placeholder?: string;
+  className?: string;
+}) => {
+  const [localValue, setLocalValue] = useState(externalValue);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+
+  // Sync from external only if not currently editing
+  useEffect(() => {
+    setLocalValue(externalValue);
+  }, [externalValue]);
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setLocalValue(val);
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => onSaveRef.current(val), 600);
+  }, []);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  return (
+    <Input
+      placeholder={placeholder}
+      value={localValue}
+      onChange={handleChange}
+      className={className}
+    />
+  );
+});
+DebouncedInput.displayName = "DebouncedInput";
+
+const DebouncedTextarea = memo(({
+  value: externalValue,
+  onSave,
+  placeholder,
+  className,
+  maxLength,
+  rows,
+}: {
+  value: string;
+  onSave: (val: string) => void;
+  placeholder?: string;
+  className?: string;
+  maxLength?: number;
+  rows?: number;
+}) => {
+  const [localValue, setLocalValue] = useState(externalValue);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+
+  useEffect(() => {
+    setLocalValue(externalValue);
+  }, [externalValue]);
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setLocalValue(val);
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => onSaveRef.current(val), 600);
+  }, []);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  return (
+    <div>
+      <Textarea
+        placeholder={placeholder}
+        value={localValue}
+        maxLength={maxLength}
+        onChange={handleChange}
+        rows={rows}
+        className={className}
+      />
+      {maxLength && (
+        <p className="text-[10px] text-muted-foreground text-right mt-1">
+          {localValue.length}/{maxLength}
+        </p>
+      )}
+    </div>
+  );
+});
+DebouncedTextarea.displayName = "DebouncedTextarea";
 
 export const TestimonialsBuilderStep = ({
   landingPageId,
@@ -45,6 +140,7 @@ export const TestimonialsBuilderStep = ({
         ]);
       return data || [];
     },
+    staleTime: 60000,
   });
 
   const getSetting = (key: string, fallback: string) =>
@@ -67,6 +163,7 @@ export const TestimonialsBuilderStep = ({
       return data || [];
     },
     enabled: !!landingPageId,
+    staleTime: 10000,
   });
 
   const textTestimonials = testimonials.filter((t: any) => t.type === "text");
@@ -95,20 +192,27 @@ export const TestimonialsBuilderStep = ({
     onError: (e: any) => toast.error(e.message),
   });
 
-  // Update testimonial
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
-      const { error } = await supabase
-        .from("landing_page_testimonials")
-        .update(updates as any)
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
+  // Update testimonial — no query invalidation, optimistic local
+  const updateField = useCallback(async (id: string, updates: Record<string, any>) => {
+    const { error } = await supabase
+      .from("landing_page_testimonials")
+      .update(updates as any)
+      .eq("id", id);
+    if (error) toast.error(error.message);
+  }, []);
+
+  // For changes that need UI refresh (photo, toggle, video)
+  const updateAndRefresh = useCallback(async (id: string, updates: Record<string, any>) => {
+    const { error } = await supabase
+      .from("landing_page_testimonials")
+      .update(updates as any)
+      .eq("id", id);
+    if (error) {
+      toast.error(error.message);
+    } else {
       queryClient.invalidateQueries({ queryKey: ["landing-page-testimonials", landingPageId] });
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
+    }
+  }, [landingPageId, queryClient]);
 
   // Delete testimonial
   const deleteMutation = useMutation({
@@ -126,164 +230,14 @@ export const TestimonialsBuilderStep = ({
     onError: (e: any) => toast.error(e.message),
   });
 
-  const handleDelete = (id: string, type: string) => {
+  const handleDelete = useCallback((id: string, type: string) => {
     const msg = type === "video"
       ? "Delete this testimonial? The video will be permanently removed."
       : "Delete this testimonial?";
     if (confirm(msg)) {
       deleteMutation.mutate(id);
     }
-  };
-
-  const renderTestimonialCard = (t: any) => {
-    const initials = (t.student_name || "?")
-      .split(" ")
-      .map((w: string) => w[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-
-    return (
-      <div key={t.id} className="p-4 bg-muted/50 rounded-xl space-y-3 border border-border">
-        <div className="flex items-start gap-3">
-          <div className="mt-1 cursor-grab text-muted-foreground">
-            <GripVertical size={16} />
-          </div>
-          <div className="flex-1 space-y-3">
-            {/* Photo + name row */}
-            <div className="flex items-center gap-3">
-              {t.student_photo_url ? (
-                <img
-                  src={t.student_photo_url}
-                  alt={t.student_name}
-                  className="w-9 h-9 rounded-full object-cover border-2 border-border"
-                />
-              ) : (
-                <div className="w-9 h-9 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
-                  {initials || "?"}
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <Input
-                  placeholder="Student name *"
-                  value={t.student_name || ""}
-                  onChange={(e) =>
-                    updateMutation.mutate({ id: t.id, updates: { student_name: e.target.value } })
-                  }
-                  className="bg-muted border-border h-8 text-sm"
-                />
-              </div>
-            </div>
-
-            <Input
-              placeholder="Location (optional, e.g. Mumbai, India)"
-              value={t.student_location || ""}
-              onChange={(e) =>
-                updateMutation.mutate({ id: t.id, updates: { student_location: e.target.value } })
-              }
-              className="bg-muted border-border h-8 text-sm"
-            />
-
-            <ImageUploadField
-              label="Student Photo"
-              value={t.student_photo_url || ""}
-              onChange={(url) =>
-                updateMutation.mutate({ id: t.id, updates: { student_photo_url: url } })
-              }
-              bucket="landing-page-assets"
-              folder="testimonial-photos"
-              maxSizeMB={5}
-            />
-
-            {t.type === "text" && (
-              <div>
-                <Textarea
-                  placeholder="Write the review text... (max 300 chars)"
-                  value={t.review_text || ""}
-                  maxLength={300}
-                  onChange={(e) =>
-                    updateMutation.mutate({ id: t.id, updates: { review_text: e.target.value } })
-                  }
-                  rows={3}
-                  className="bg-muted border-border text-sm"
-                />
-                <p className="text-[10px] text-muted-foreground text-right mt-1">
-                  {(t.review_text || "").length}/300
-                </p>
-              </div>
-            )}
-
-            {t.type === "video" && (
-              <div className="space-y-2">
-                {t.video_url ? (
-                  <div className="space-y-2">
-                    <div className="relative rounded-lg overflow-hidden bg-black" style={{ width: 240, height: 135 }}>
-                      {t.thumbnail_url ? (
-                        <img src={t.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <video src={t.video_url} className="w-full h-full object-cover" />
-                      )}
-                      {t.video_duration_seconds && (
-                        <span className="absolute bottom-1 right-1 text-[10px] bg-black/60 text-white px-1.5 py-0.5 rounded-full">
-                          {Math.floor(t.video_duration_seconds / 60)}:{String(t.video_duration_seconds % 60).padStart(2, "0")}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="text-xs" onClick={() => {
-                        // Clear video to allow re-upload
-                        updateMutation.mutate({
-                          id: t.id,
-                          updates: { video_url: null, thumbnail_url: null, video_duration_seconds: null },
-                        });
-                      }}>
-                        Replace video
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <VideoUploadBox
-                    testimonialId={t.id}
-                    landingPageId={landingPageId!}
-                    maxSeconds={maxVideoSeconds}
-                    onUploaded={(url, duration) => {
-                      updateMutation.mutate({
-                        id: t.id,
-                        updates: { video_url: url, video_duration_seconds: duration },
-                      });
-                    }}
-                  />
-                )}
-              </div>
-            )}
-
-            {/* Bottom row: active toggle + delete */}
-            <div className="flex items-center justify-between pt-1">
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={t.is_active}
-                  onCheckedChange={(v) =>
-                    updateMutation.mutate({ id: t.id, updates: { is_active: v } })
-                  }
-                />
-                <span className="text-xs text-muted-foreground">
-                  {t.is_active ? "Visible" : "Hidden"}
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive h-7"
-                onClick={() => handleDelete(t.id, t.type)}
-              >
-                <Trash2 size={14} />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  }, [deleteMutation]);
 
   if (!landingPageId) {
     return (
@@ -343,7 +297,17 @@ export const TestimonialsBuilderStep = ({
               </div>
             ) : (
               <>
-                {textTestimonials.map(renderTestimonialCard)}
+                {textTestimonials.map((t: any) => (
+                  <TestimonialCard
+                    key={t.id}
+                    testimonial={t}
+                    onUpdateField={updateField}
+                    onUpdateAndRefresh={updateAndRefresh}
+                    onDelete={handleDelete}
+                    landingPageId={landingPageId}
+                    maxVideoSeconds={maxVideoSeconds}
+                  />
+                ))}
 
                 <Button
                   variant="outline"
@@ -371,7 +335,17 @@ export const TestimonialsBuilderStep = ({
                 <Video size={14} className="text-primary" /> Video Testimonials
               </h3>
 
-              {videoTestimonials.map(renderTestimonialCard)}
+              {videoTestimonials.map((t: any) => (
+                <TestimonialCard
+                  key={t.id}
+                  testimonial={t}
+                  onUpdateField={updateField}
+                  onUpdateAndRefresh={updateAndRefresh}
+                  onDelete={handleDelete}
+                  landingPageId={landingPageId}
+                  maxVideoSeconds={maxVideoSeconds}
+                />
+              ))}
 
               <Button
                 variant="outline"
@@ -396,6 +370,148 @@ export const TestimonialsBuilderStep = ({
   );
 };
 
+// ── Testimonial Card (memoized) ──
+const TestimonialCard = memo(({
+  testimonial: t,
+  onUpdateField,
+  onUpdateAndRefresh,
+  onDelete,
+  landingPageId,
+  maxVideoSeconds,
+}: {
+  testimonial: any;
+  onUpdateField: (id: string, updates: Record<string, any>) => void;
+  onUpdateAndRefresh: (id: string, updates: Record<string, any>) => void;
+  onDelete: (id: string, type: string) => void;
+  landingPageId: string;
+  maxVideoSeconds: number;
+}) => {
+  const initials = (t.student_name || "?")
+    .split(" ")
+    .map((w: string) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  return (
+    <div className="p-4 bg-muted/50 rounded-xl space-y-3 border border-border">
+      <div className="flex items-start gap-3">
+        <div className="mt-1 cursor-grab text-muted-foreground">
+          <GripVertical size={16} />
+        </div>
+        <div className="flex-1 space-y-3">
+          {/* Photo + name row */}
+          <div className="flex items-center gap-3">
+            {t.student_photo_url ? (
+              <img
+                src={t.student_photo_url}
+                alt={t.student_name}
+                className="w-9 h-9 rounded-full object-cover border-2 border-border"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
+                {initials || "?"}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <DebouncedInput
+                value={t.student_name || ""}
+                onSave={(val) => onUpdateField(t.id, { student_name: val })}
+                placeholder="Student name *"
+                className="bg-muted border-border h-8 text-sm"
+              />
+            </div>
+          </div>
+
+          <DebouncedInput
+            value={t.student_location || ""}
+            onSave={(val) => onUpdateField(t.id, { student_location: val })}
+            placeholder="Location (optional, e.g. Mumbai, India)"
+            className="bg-muted border-border h-8 text-sm"
+          />
+
+          <ImageUploadField
+            label="Student Photo"
+            value={t.student_photo_url || ""}
+            onChange={(url) => onUpdateAndRefresh(t.id, { student_photo_url: url })}
+            bucket="landing-page-assets"
+            folder="testimonial-photos"
+            maxSizeMB={5}
+          />
+
+          {t.type === "text" && (
+            <DebouncedTextarea
+              value={t.review_text || ""}
+              onSave={(val) => onUpdateField(t.id, { review_text: val })}
+              placeholder="Write the review text... (max 300 chars)"
+              maxLength={300}
+              rows={3}
+              className="bg-muted border-border text-sm"
+            />
+          )}
+
+          {t.type === "video" && (
+            <div className="space-y-2">
+              {t.video_url ? (
+                <div className="space-y-2">
+                  <div className="relative rounded-lg overflow-hidden bg-black" style={{ width: 240, height: 135 }}>
+                    {t.thumbnail_url ? (
+                      <img src={t.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <video src={t.video_url} className="w-full h-full object-cover" />
+                    )}
+                    {t.video_duration_seconds && (
+                      <span className="absolute bottom-1 right-1 text-[10px] bg-black/60 text-white px-1.5 py-0.5 rounded-full">
+                        {Math.floor(t.video_duration_seconds / 60)}:{String(t.video_duration_seconds % 60).padStart(2, "0")}
+                      </span>
+                    )}
+                  </div>
+                  <Button variant="outline" size="sm" className="text-xs" onClick={() => {
+                    onUpdateAndRefresh(t.id, { video_url: null, thumbnail_url: null, video_duration_seconds: null });
+                  }}>
+                    Replace video
+                  </Button>
+                </div>
+              ) : (
+                <VideoUploadBox
+                  testimonialId={t.id}
+                  landingPageId={landingPageId}
+                  maxSeconds={maxVideoSeconds}
+                  onUploaded={(url, duration) => {
+                    onUpdateAndRefresh(t.id, { video_url: url, video_duration_seconds: duration });
+                  }}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Bottom row: active toggle + delete */}
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={t.is_active}
+                onCheckedChange={(v) => onUpdateAndRefresh(t.id, { is_active: v })}
+              />
+              <span className="text-xs text-muted-foreground">
+                {t.is_active ? "Visible" : "Hidden"}
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive h-7"
+              onClick={() => onDelete(t.id, t.type)}
+            >
+              <Trash2 size={14} />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+TestimonialCard.displayName = "TestimonialCard";
+
 // ── Video Upload Box ──
 interface VideoUploadBoxProps {
   testimonialId: string;
@@ -411,7 +527,7 @@ const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }
   const [fileName, setFileName] = useState("");
 
   const ALLOWED_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
-  const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+  const MAX_SIZE = 100 * 1024 * 1024;
 
   const getVideoDuration = (file: File): Promise<number> => {
     return new Promise((resolve, reject) => {
@@ -443,7 +559,6 @@ const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }
     setProgress(0);
 
     try {
-      // Check duration client-side
       const duration = await getVideoDuration(file);
       if (duration > maxSeconds) {
         setError(`Your video is ${duration} seconds. Max allowed is ${maxSeconds} seconds.`);
@@ -451,11 +566,9 @@ const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }
         return;
       }
 
-      // Upload to Supabase storage (landing-page-assets bucket)
       const ext = file.name.split(".").pop()?.toLowerCase() || "mp4";
       const path = `testimonial-videos/${landingPageId}/${testimonialId}.${ext}`;
 
-      // Simulate progress
       const progressInterval = setInterval(() => {
         setProgress((p) => Math.min(p + 10, 90));
       }, 300);
@@ -483,39 +596,58 @@ const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }
   };
 
   return (
-    <div className={`rounded-xl border-2 border-dashed p-4 ${error ? "border-destructive" : "border-border"}`}>
+    <div
+      className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${error ? "border-destructive bg-destructive/5" : "border-border hover:border-primary/50"}`}
+      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const file = e.dataTransfer.files[0];
+        if (file) handleFile(file);
+      }}
+    >
       {uploading ? (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm">
-            <Loader2 size={14} className="animate-spin text-primary" />
-            <span className="truncate">{fileName}</span>
-          </div>
-          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+          <Loader2 size={24} className="animate-spin mx-auto text-primary" />
+          <p className="text-xs text-muted-foreground">{fileName}</p>
+          <div className="w-full bg-muted rounded-full h-2">
             <div
-              className="h-full bg-primary transition-all rounded-full"
+              className="bg-primary h-2 rounded-full transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
           <p className="text-xs text-muted-foreground">{progress}%</p>
         </div>
       ) : (
-        <label className="flex flex-col items-center gap-2 cursor-pointer py-2">
-          <Video size={24} className="text-muted-foreground" />
-          <span className="text-xs text-muted-foreground font-medium">Upload video (MP4, MOV, WEBM)</span>
-          <span className="text-[10px] text-muted-foreground/70">
+        <>
+          <Video size={24} className="mx-auto text-muted-foreground mb-2" />
+          <p className="text-xs text-muted-foreground">
+            Upload video (MP4, MOV, WEBM)
+          </p>
+          <p className="text-[10px] text-muted-foreground">
             Max {maxSeconds} seconds · Max 100MB
-          </span>
+          </p>
           <input
             type="file"
             accept="video/mp4,video/quicktime,video/webm"
             className="hidden"
+            id={`video-upload-${testimonialId}`}
             onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleFile(f);
-              e.target.value = "";
+              const file = e.target.files?.[0];
+              if (file) handleFile(file);
             }}
           />
-        </label>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-2 text-xs"
+            onClick={() =>
+              document.getElementById(`video-upload-${testimonialId}`)?.click()
+            }
+          >
+            Choose file
+          </Button>
+        </>
       )}
       {error && <p className="text-xs text-destructive mt-2">{error}</p>}
     </div>
