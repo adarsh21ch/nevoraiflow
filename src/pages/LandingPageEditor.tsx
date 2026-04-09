@@ -16,8 +16,9 @@ import { LandingPagePreview } from "@/components/funnel/LandingPagePreview";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   FileText, Palette, ClipboardList, Mail, Video, Link2, Rocket, Mic,
-  Save, ArrowLeft, Check, X, Plus, Trash2, GripVertical, Eye, Edit3, Search,
+  Save, ArrowLeft, Check, X, Plus, Trash2, GripVertical, Eye, Edit3, Search, Star,
 } from "lucide-react";
+import { TestimonialsBuilderStep } from "@/components/funnel/TestimonialsBuilderStep";
 import { toast } from "sonner";
 
 const generateSlug = (title: string) =>
@@ -100,8 +101,9 @@ const WIZARD_STEPS = [
   { icon: Mail, label: "Email", num: "4" },
   { icon: Mic, label: "Speaker", num: "5" },
   { icon: Video, label: "Video", num: "6" },
-  { icon: Search, label: "SEO", num: "7" },
-  { icon: Rocket, label: "Publish", num: "8" },
+  { icon: Star, label: "Testimonials", num: "7" },
+  { icon: Search, label: "SEO", num: "8" },
+  { icon: Rocket, label: "Publish", num: "9" },
 ];
 
 const LandingPageEditor = () => {
@@ -769,6 +771,17 @@ const LandingPageEditor = () => {
     </>
   );
 
+  const renderTestimonialsStep = () => (
+    <TestimonialsBuilderStep
+      landingPageId={id}
+      userId={user!.id}
+      testimonialsEnabled={form.testimonials_enabled ?? false}
+      testimonialsSectionTitle={form.testimonials_section_title ?? "What our members say"}
+      onToggleEnabled={(v) => updateField("testimonials_enabled", v)}
+      onTitleChange={(v) => updateField("testimonials_section_title", v)}
+    />
+  );
+
   const renderWizardContent = () => {
     switch (wizardStep) {
       case 0: return renderPageInfo();
@@ -777,8 +790,9 @@ const LandingPageEditor = () => {
       case 3: return renderEmailStep();
       case 4: return renderSpeakerStep();
       case 5: return renderVideoStep();
-      case 6: return renderSeoStep();
-      case 7: return renderPublishStep();
+      case 6: return renderTestimonialsStep();
+      case 7: return renderSeoStep();
+      case 8: return renderPublishStep();
       default: return null;
     }
   };
