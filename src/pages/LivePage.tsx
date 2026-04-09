@@ -48,6 +48,7 @@ const accessIcon = (type: string) => {
 
 const LivePage = () => {
   const { user } = useAuth();
+  const { canCreate } = usePlan();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [creating, setCreating] = useState(false);
