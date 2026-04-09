@@ -217,87 +217,57 @@ export const LandingPagePreview = ({
                 <h3 className="text-sm font-bold text-center opacity-80">
                   {form.testimonials_section_title || "What our members say"}
                 </h3>
-                <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+                <div className="grid grid-cols-2 gap-2">
                   {activeTestimonials.map((t) => {
-                    const initials = (t.student_name || "?").split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
+                    const tInitials = (t.student_name || "?").split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
                     const durationLabel = formatDuration(t.video_duration_seconds);
 
                     return (
-                      <div
-                        key={t.id}
-                        className={`shrink-0 border ${cardBg} ${t.type === "video" ? "w-[144px] rounded-[1.4rem] p-2" : "w-[190px] rounded-xl p-3"}`}
-                      >
+                      <div key={t.id} className={`border ${cardBg} rounded-xl overflow-hidden`}>
+                        {/* Header: DP + Name */}
+                        <div className="flex items-center gap-2 p-2.5 pb-1.5">
+                          {t.student_photo_url ? (
+                            <img src={t.student_photo_url} alt={t.student_name || "Student"} className="h-7 w-7 rounded-full object-cover shrink-0" loading="lazy" />
+                          ) : (
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20 text-[9px] font-bold text-primary shrink-0">
+                              {tInitials}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="truncate text-[10px] font-bold">{t.student_name || "Student"}</p>
+                            {t.student_location && <p className="truncate text-[8px] opacity-50">{t.student_location}</p>}
+                          </div>
+                        </div>
+
+                        {/* Content */}
                         {t.type === "video" ? (
-                          <div className="space-y-2">
-                            <div className="relative overflow-hidden rounded-[1rem] bg-foreground/10 aspect-[9/16]">
+                          <div className="px-2 pb-2">
+                            <div className="relative overflow-hidden rounded-lg bg-foreground/10 aspect-[9/16]">
                               {t.thumbnail_url ? (
-                                <img
-                                  src={t.thumbnail_url}
-                                  alt={`${t.student_name || "Student"} video testimonial`}
-                                  className="absolute inset-0 h-full w-full object-cover"
-                                  loading="lazy"
-                                />
+                                <img src={t.thumbnail_url} alt="Video testimonial" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
                               ) : t.video_url ? (
-                                <video
-                                  src={t.video_url}
-                                  className="absolute inset-0 h-full w-full object-cover"
-                                  muted
-                                  playsInline
-                                  preload="metadata"
-                                />
+                                <video src={t.video_url} className="absolute inset-0 h-full w-full object-cover" muted playsInline preload="metadata" />
                               ) : null}
-
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
-
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                               <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm">
-                                  <Play size={14} className="text-foreground" />
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm">
+                                  <Play size={12} className="text-foreground" />
                                 </div>
                               </div>
-
                               {durationLabel && (
-                                <span className="absolute right-2 top-2 rounded-full bg-background/80 px-1.5 py-0.5 text-[8px] font-medium text-foreground">
+                                <span className="absolute right-1.5 top-1.5 rounded-full bg-background/80 px-1.5 py-0.5 text-[8px] font-medium text-foreground">
                                   {durationLabel}
                                 </span>
                               )}
                             </div>
-
-                            <div className="flex items-center gap-2 px-1">
-                              {t.student_photo_url ? (
-                                <img src={t.student_photo_url} alt={t.student_name || "Student"} className="h-7 w-7 rounded-full object-cover" loading="lazy" />
-                              ) : (
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20 text-[9px] font-bold text-primary">
-                                  {initials}
-                                </div>
-                              )}
-                              <div className="min-w-0">
-                                <p className="truncate text-[10px] font-bold">{t.student_name || "Student"}</p>
-                                {t.student_location && <p className="truncate text-[8px] opacity-50">{t.student_location}</p>}
-                              </div>
-                            </div>
                           </div>
                         ) : (
-                          <>
-                            <div className="mb-2 flex items-center gap-2">
-                              {t.student_photo_url ? (
-                                <img src={t.student_photo_url} alt={t.student_name || "Student"} className="h-7 w-7 rounded-full object-cover" loading="lazy" />
-                              ) : (
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20 text-[9px] font-bold text-primary">
-                                  {initials}
-                                </div>
-                              )}
-                              <div className="min-w-0">
-                                <p className="truncate text-[10px] font-bold">{t.student_name || "Student"}</p>
-                                {t.student_location && <p className="truncate text-[8px] opacity-50">{t.student_location}</p>}
-                              </div>
-                            </div>
-                            <div className="mb-1 flex gap-0.5">
+                          <div className="px-2.5 pb-2.5 space-y-1">
+                            <div className="flex gap-0.5">
                               {[1, 2, 3, 4, 5].map((s) => <Star key={s} size={8} className="text-amber-400 fill-amber-400" />)}
                             </div>
-                            {t.review_text && (
-                              <p className="line-clamp-3 text-[9px] opacity-70">{t.review_text}</p>
-                            )}
-                          </>
+                            {t.review_text && <p className="line-clamp-3 text-[9px] opacity-70">{t.review_text}</p>}
+                          </div>
                         )}
                       </div>
                     );
