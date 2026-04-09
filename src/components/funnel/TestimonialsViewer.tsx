@@ -27,16 +27,17 @@ const formatDuration = (sec?: number) => {
 };
 
 export const TestimonialsViewer = ({ testimonials, sectionTitle }: TestimonialsViewerProps) => {
-  const activeItems = testimonials.filter(
-    (t) => (t.type === "text" ? Boolean(t.review_text?.trim()) : Boolean(t.video_url))
-  );
+  const activeItems = testimonials.filter((t) => {
+    if (t.type === "both") return Boolean(t.review_text?.trim()) || Boolean(t.video_url);
+    if (t.type === "video") return Boolean(t.video_url);
+    return Boolean(t.review_text?.trim());
+  });
 
   if (activeItems.length === 0) return null;
 
   return (
     <div className="space-y-6">
       <h2 className="text-[22px] font-semibold text-center">{sectionTitle}</h2>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
         {activeItems.map((t) => (
           <TestimonialCard key={t.id} testimonial={t} />
@@ -48,6 +49,8 @@ export const TestimonialsViewer = ({ testimonials, sectionTitle }: TestimonialsV
 
 const TestimonialCard = ({ testimonial: t }: { testimonial: Testimonial }) => {
   const [expandedText, setExpandedText] = useState(false);
+  const showText = t.type === "text" || t.type === "both";
+  const showVideo = t.type === "video" || t.type === "both";
 
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
@@ -72,24 +75,29 @@ const TestimonialCard = ({ testimonial: t }: { testimonial: Testimonial }) => {
         </div>
       </div>
 
-      {/* Content: Text or Video */}
-      {t.type === "text" ? (
-        <div className="px-4 pb-4 space-y-2">
-          <div className="flex gap-0.5">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <Star key={n} size={14} className="fill-amber-400 text-amber-400" />
-            ))}
-          </div>
+      {/* 5-star rating */}
+      <div className="px-4 pb-2 flex gap-0.5">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <Star key={n} size={14} className="fill-amber-400 text-amber-400" />
+        ))}
+      </div>
+
+      {/* Text content */}
+      {showText && t.review_text?.trim() && (
+        <div className="px-4 pb-3">
           <TextContent
-            text={t.review_text || ""}
+            text={t.review_text}
             expanded={expandedText}
             onToggle={() => setExpandedText(!expandedText)}
           />
         </div>
-      ) : (
+      )}
+
+      {/* Video content */}
+      {showVideo && t.video_url && (
         <div className="px-3 pb-3">
           <VideoPlayer
-            videoUrl={t.video_url!}
+            videoUrl={t.video_url}
             thumbnailUrl={t.thumbnail_url}
             durationSeconds={t.video_duration_seconds}
           />
@@ -99,24 +107,13 @@ const TestimonialCard = ({ testimonial: t }: { testimonial: Testimonial }) => {
   );
 };
 
-const TextContent = ({
-  text,
-  expanded,
-  onToggle,
-}: {
-  text: string;
-  expanded: boolean;
-  onToggle: () => void;
-}) => {
+const TextContent = ({ text, expanded, onToggle }: { text: string; expanded: boolean; onToggle: () => void }) => {
   const isLong = text.length > 140;
   return (
     <p className="text-sm leading-relaxed text-muted-foreground">
       {isLong && !expanded ? text.slice(0, 140) + "..." : text}
       {isLong && (
-        <button
-          className="text-primary text-xs ml-1 hover:underline"
-          onClick={onToggle}
-        >
+        <button className="text-primary text-xs ml-1 hover:underline" onClick={onToggle}>
           {expanded ? "show less" : "read more"}
         </button>
       )}
@@ -124,14 +121,8 @@ const TextContent = ({
   );
 };
 
-const VideoPlayer = ({
-  videoUrl,
-  thumbnailUrl,
-  durationSeconds,
-}: {
-  videoUrl: string;
-  thumbnailUrl?: string;
-  durationSeconds?: number;
+const VideoPlayer = ({ videoUrl, thumbnailUrl, durationSeconds }: {
+  videoUrl: string; thumbnailUrl?: string; durationSeconds?: number;
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -139,7 +130,6 @@ const VideoPlayer = ({
   const [progress, setProgress] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
 
-  // Progress tracking
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -153,14 +143,12 @@ const VideoPlayer = ({
   const handlePlayPause = () => {
     const v = videoRef.current;
     if (!v) return;
-
     if (playing) {
       v.pause();
       setPlaying(false);
     } else {
       if (!hasStarted) setHasStarted(true);
       v.play().then(() => setPlaying(true)).catch(() => {
-        // Autoplay blocked — try muted
         v.muted = true;
         setMuted(true);
         v.play().then(() => setPlaying(true)).catch(() => {});
@@ -168,10 +156,7 @@ const VideoPlayer = ({
     }
   };
 
-  const handleEnded = () => {
-    setPlaying(false);
-    setProgress(0);
-  };
+  const handleEnded = () => { setPlaying(false); setProgress(0); };
 
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -197,7 +182,6 @@ const VideoPlayer = ({
         onEnded={handleEnded}
       />
 
-      {/* Play overlay when not started or paused */}
       {!playing && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/30">
           <div className="w-14 h-14 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg">
@@ -206,17 +190,14 @@ const VideoPlayer = ({
         </div>
       )}
 
-      {/* Duration badge top-right (only when not started) */}
       {!hasStarted && durationSeconds && durationSeconds > 0 && (
         <span className="absolute top-2 right-2 text-[11px] text-white bg-black/60 px-2 py-0.5 rounded-full">
           {formatDuration(durationSeconds)}
         </span>
       )}
 
-      {/* Controls when playing or started */}
       {hasStarted && (
         <>
-          {/* Mute toggle */}
           <button
             className="absolute top-2 left-2 z-10 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white"
             onClick={toggleMute}
@@ -224,7 +205,6 @@ const VideoPlayer = ({
             {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
           </button>
 
-          {/* Pause indicator */}
           {!playing && (
             <button
               className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white"
@@ -234,12 +214,8 @@ const VideoPlayer = ({
             </button>
           )}
 
-          {/* Progress bar */}
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-10">
-            <div
-              className="h-full bg-white transition-[width] duration-200"
-              style={{ width: `${progress}%` }}
-            />
+            <div className="h-full bg-white transition-[width] duration-200" style={{ width: `${progress}%` }} />
           </div>
         </>
       )}
