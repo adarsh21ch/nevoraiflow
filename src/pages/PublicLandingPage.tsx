@@ -265,6 +265,15 @@ const PublicLandingPage = () => {
                 <p className="text-muted-foreground">Thank you for registering. We'll see you at the session!</p>
               </Card>
             )}
+            {/* Testimonials section */}
+            {page.testimonials_enabled && testimonials.length > 0 && (
+              <div className="mt-10">
+                <TestimonialsViewer
+                  testimonials={testimonials}
+                  sectionTitle={page.testimonials_section_title || "What our members say"}
+                />
+              </div>
+            )}
             {page.linked_funnel_id && (
               <Button
                 className="w-full"
