@@ -11,7 +11,7 @@ import {
   MessageSquare, Video, Plus, Trash2, GripVertical, Star, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { uploadVideoToR2 } from "@/lib/r2VideoUpload";
+
 
 interface TestimonialsBuilderStepProps {
   landingPageId: string | undefined;
@@ -531,7 +531,6 @@ const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }
   const ALLOWED_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
   const MAX_SIZE_MB = 250;
   const MAX_SIZE = MAX_SIZE_MB * 1024 * 1024;
-  const UPLOAD_TIMEOUT_MS = 30 * 60 * 1000;
 
   const getVideoDuration = (file: File): Promise<number> => {
     return new Promise((resolve, reject) => {
@@ -547,6 +546,20 @@ const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }
         reject(new Error("Could not read video metadata"));
       };
       video.src = objectUrl;
+    });
+  };
+
+  const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove data URL prefix: "data:video/mp4;base64,..."
+        const base64 = result.split(",")[1];
+        resolve(base64);
+      };
+      reader.onerror = () => reject(new Error("Could not read file"));
+      reader.readAsDataURL(file);
     });
   };
 
@@ -570,18 +583,32 @@ const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }
       const duration = await getVideoDuration(file);
       if (duration > maxSeconds) {
         setError(`Your video is ${duration} seconds. Max allowed is ${maxSeconds} seconds.`);
+        setUploading(false);
+        if (inputRef.current) inputRef.current.value = "";
         return;
       }
 
-      const { publicUrl } = await uploadVideoToR2({
-        file,
-        title: `Testimonial ${testimonialId}`,
-        timeoutMs: UPLOAD_TIMEOUT_MS,
-        onProgress: setProgress,
+      setProgress(10);
+
+      // Read file as base64 and upload via edge function (avoids R2 CORS issues)
+      const base64Data = await readFileAsBase64(file);
+      setProgress(30);
+
+      const { data, error } = await supabase.functions.invoke("upload-testimonial-video", {
+        body: {
+          filename: file.name,
+          contentType: file.type,
+          title: `Testimonial ${testimonialId}`,
+          base64Data,
+        },
       });
 
+      if (error || !data?.publicUrl) {
+        throw new Error(data?.error || error?.message || "Upload failed");
+      }
+
       setProgress(100);
-      onUploaded(publicUrl, duration);
+      onUploaded(data.publicUrl, duration);
       toast.success("Video uploaded!");
     } catch (err: any) {
       setProgress(0);
