@@ -16,6 +16,9 @@ import {
   Pencil, Trash2, Video, Lock, Globe, IndianRupee, X
 } from "lucide-react";
 import { format, formatDistanceToNow, isPast, isFuture } from "date-fns";
+import { usePlan } from "@/hooks/usePlan";
+import { useResourceCount } from "@/hooks/useResourceCount";
+import { LimitBadge } from "@/components/LimitGate";
 
 const generateSlug = (title: string) =>
   title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 60) || "my-session";
@@ -45,6 +48,7 @@ const accessIcon = (type: string) => {
 
 const LivePage = () => {
   const { user } = useAuth();
+  const { canCreate } = usePlan();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [creating, setCreating] = useState(false);
@@ -146,13 +150,23 @@ const LivePage = () => {
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-heading font-bold">Live</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Create live sessions, collect registrations, and share meeting links with your audience.
-            </p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-2xl font-heading font-bold">Live</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Create live sessions, collect registrations, and share meeting links with your audience.
+              </p>
+            </div>
+            <LimitBadge resource="live_session" />
           </div>
-          <Button variant="hero" onClick={() => setCreating(true)}>
+          <Button variant="hero" onClick={() => {
+            const counts = sessions?.length || 0;
+            if (!canCreate("live_session", counts)) {
+              toast.error("Live session limit reached. Upgrade your plan for more.");
+              return;
+            }
+            setCreating(true);
+          }}>
             <Plus size={16} /> New Session
           </Button>
         </div>

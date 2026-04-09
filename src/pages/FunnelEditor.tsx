@@ -25,6 +25,8 @@ import { PrivacySettings } from "@/components/funnel/PrivacySettings";
 import { FunnelLivePreview } from "@/components/funnel/FunnelLivePreview";
 import { SpeakerPhotoUpload } from "@/components/funnel/SpeakerPhotoUpload";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { usePlan } from "@/hooks/usePlan";
+import { Crown } from "lucide-react";
 
 interface FlowStep {
   id?: string;
@@ -109,6 +111,7 @@ const FunnelEditor = () => {
   const isEdit = !!id;
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { canUseMultiStep } = usePlan();
   const queryClient = useQueryClient();
 
   // Wizard state — modeChosen gates entry into the real wizard

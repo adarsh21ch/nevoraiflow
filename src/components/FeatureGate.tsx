@@ -43,7 +43,10 @@ export const FeatureGate = ({ feature, children, fallback, title, description }:
         <p className="text-sm text-muted-foreground max-w-sm mx-auto">{msg.desc}</p>
         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <Crown size={14} className="text-amber-500" />
-          <span>Available on {feature.includes("live") || feature.includes("sharing") ? "Pro" : "Basic & Pro"} plans</span>
+          <span>Available on {
+            feature.includes("sharing") || feature.includes("live") ? "Pro" :
+            "Basic & Pro"
+          } plans</span>
         </div>
         <Link to="/upgrade">
           <Button variant="default" className="gap-2">
