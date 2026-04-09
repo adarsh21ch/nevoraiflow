@@ -9,29 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Plus, Search, Eye, Users, IndianRupee, MoreVertical, Copy, Share2, Layers, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { usePlan } from "@/hooks/usePlan";
-import { useResourceCount } from "@/hooks/useResourceCount";
-import { LimitBadge } from "@/components/LimitGate";
-
-const CreateFunnelButton = () => {
-  const { canCreate } = usePlan();
-  const counts = useResourceCount();
-  const navigate = useNavigate();
-
-  const handleClick = () => {
-    if (!canCreate("funnel", counts.funnels)) {
-      toast.error("Funnel limit reached. Upgrade your plan for more.");
-      return;
-    }
-    navigate("/funnels/create");
-  };
-
-  return (
-    <Button variant="hero" onClick={handleClick}>
-      <Plus size={16} /> Create Funnel
-    </Button>
-  );
-};
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 const FunnelsPage = () => {
   const { user } = useAuth();
@@ -39,6 +18,10 @@ const FunnelsPage = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<"upgrade" | "limit">("upgrade");
+
+  const { isFree, canCreateFunnel, isFunnelLimitReached, config, counts, tier } = usePlanLimits();
 
   const { data: funnels = [], isLoading } = useQuery({
     queryKey: ["my-funnels", user?.id],
@@ -55,9 +38,24 @@ const FunnelsPage = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-funnels"] });
+      queryClient.invalidateQueries({ queryKey: ["resource-counts"] });
       toast.success("Funnel deleted");
     },
   });
+
+  const handleCreate = () => {
+    if (isFree) {
+      setModalType("upgrade");
+      setModalOpen(true);
+      return;
+    }
+    if (!canCreateFunnel) {
+      setModalType("limit");
+      setModalOpen(true);
+      return;
+    }
+    navigate("/funnels/create");
+  };
 
   const filtered = funnels.filter((f) => {
     if (filter === "published" && !f.is_published) return false;
@@ -72,15 +70,23 @@ const FunnelsPage = () => {
     { key: "draft", label: "Draft" },
   ] as const;
 
+  const limitBadge = !isFree && config.max_funnels !== -1 ? (
+    <span className={`text-xs px-2 py-0.5 rounded-full ${counts.funnels >= config.max_funnels ? "bg-destructive/10 text-destructive" : counts.funnels >= config.max_funnels - 1 ? "bg-amber-500/10 text-amber-600" : "bg-muted text-muted-foreground"}`}>
+      {counts.funnels}/{config.max_funnels}
+    </span>
+  ) : null;
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-heading font-bold">My Funnels</h1>
-            <LimitBadge resource="funnel" />
+            {limitBadge}
           </div>
-          <CreateFunnelButton />
+          <Button variant="hero" onClick={handleCreate}>
+            <Plus size={16} /> Create Funnel
+          </Button>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
@@ -113,9 +119,13 @@ const FunnelsPage = () => {
             <Layers size={40} className="text-muted-foreground mx-auto mb-4" />
             <h3 className="font-heading font-semibold mb-2">{search ? "No funnels found" : "No funnels yet"}</h3>
             <p className="text-sm text-muted-foreground mb-6">
-              {search ? "Try a different search term." : "Create your first funnel to start capturing leads."}
+              {search ? "Try a different search term." : isFree ? "Subscribe to a plan to start creating funnels." : "Create your first funnel to start capturing leads."}
             </p>
-            {!search && <Link to="/funnels/create"><Button variant="hero">Create Your First Funnel</Button></Link>}
+            {!search && (
+              <Button variant="hero" onClick={handleCreate}>
+                {isFree ? "See Plans" : "Create Your First Funnel"}
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -161,6 +171,16 @@ const FunnelsPage = () => {
           </div>
         )}
       </div>
+
+      <UpgradeModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        type={modalType}
+        resource="funnels"
+        currentCount={counts.funnels}
+        limit={config.max_funnels}
+        tier={tier}
+      />
     </DashboardLayout>
   );
 };
