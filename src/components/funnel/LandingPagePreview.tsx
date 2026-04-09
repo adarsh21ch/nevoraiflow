@@ -1,4 +1,4 @@
-import { Lock, Star, Play } from "lucide-react";
+import { Lock, Star, Play, Check, ChevronRight } from "lucide-react";
 
 interface Testimonial {
   id: string;
@@ -39,9 +39,21 @@ interface LandingPagePreviewProps {
     [key: string]: any;
   };
   testimonials?: Testimonial[];
+  previewStage?: "form" | "after-submit";
+  postSubmitVideo?: {
+    id?: string;
+    title?: string | null;
+    public_url?: string | null;
+    thumbnail_url?: string | null;
+  } | null;
 }
 
-export const LandingPagePreview = ({ form, testimonials = [] }: LandingPagePreviewProps) => {
+export const LandingPagePreview = ({
+  form,
+  testimonials = [],
+  previewStage = "form",
+  postSubmitVideo = null,
+}: LandingPagePreviewProps) => {
   const bgClass = form.background_style === "light"
     ? "bg-white text-gray-900"
     : form.background_style === "gradient"
@@ -52,6 +64,9 @@ export const LandingPagePreview = ({ form, testimonials = [] }: LandingPagePrevi
 
   const sections = form.sections || [];
   const hasSpeaker = !!(form.speaker_name || form.speaker_photo_url);
+  const activeTestimonials = testimonials.filter((t) =>
+    t.is_active && (t.type === "text" ? Boolean(t.review_text?.trim()) : Boolean(t.video_url))
+  );
 
   const formFields = [
     { key: "name", label: "Full Name", enabled: form.field_name_enabled },
@@ -150,93 +165,146 @@ export const LandingPagePreview = ({ form, testimonials = [] }: LandingPagePrevi
 
       {/* Content */}
       <div className="p-4 space-y-5">
-        {/* Page sections */}
-        <div className="space-y-5">
-          {sections.length > 0 ? (
-            sections.map(renderSection)
-          ) : (
-            <div className="space-y-2">
-              <h1 className="text-2xl font-bold">{form.title || "Your Landing Page"}</h1>
-              {form.description && <p className="text-sm opacity-70">{form.description}</p>}
-            </div>
-          )}
-        </div>
-
-        {/* Speaker section */}
-        {hasSpeaker && (
-          <div className={`rounded-lg p-4 flex items-center gap-3 ${cardBg} border`}>
-            {form.speaker_photo_url && (
-              <img src={form.speaker_photo_url} alt={form.speaker_name} className="w-16 h-16 rounded-full object-cover shrink-0" />
-            )}
-            <div>
-              <h3 className="font-bold text-sm">{form.speaker_name}</h3>
-              {form.speaker_role && <p className="text-[10px] opacity-50">{form.speaker_role}</p>}
-              {form.speaker_bio && <p className="text-xs opacity-70 mt-1 line-clamp-2">{form.speaker_bio}</p>}
-            </div>
-          </div>
-        )}
-
-        {/* Registration form */}
-        <div className={`rounded-xl p-4 ${cardBg} border`}>
-          <h3 className="font-bold text-sm">{form.form_title}</h3>
-          <p className="text-[10px] opacity-60 mb-3">{form.form_subtitle}</p>
-          <div className="space-y-2">
-            {formFields.map(f => (
-              <div key={f.key} className="h-8 rounded-md bg-current/5 border border-current/10 px-2 flex items-center text-[10px] opacity-40">
-                {f.label}
-              </div>
-            ))}
-            <div
-              className="h-9 rounded-lg flex items-center justify-center text-xs font-bold text-white"
-              style={{ backgroundColor: form.theme_color }}
-            >
-              {form.form_button_text} →
-            </div>
-          </div>
-          <p className="text-[9px] opacity-30 text-center mt-2 flex items-center justify-center gap-1">
-            <Lock size={8} /> Your information is safe
-          </p>
-        </div>
-        {/* Testimonials preview */}
-        {form.testimonials_enabled && testimonials.filter(t => t.is_active).length > 0 && (
-          <div className="space-y-3 mt-4">
-            <h3 className="text-sm font-bold text-center opacity-80">
-              {form.testimonials_section_title || "What our members say"}
-            </h3>
-            <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
-              {testimonials.filter(t => t.is_active).map((t) => {
-                const initials = (t.student_name || "?").split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
-                return (
-                  <div key={t.id} className={`shrink-0 rounded-xl p-3 border ${cardBg}`} style={{ width: 180 }}>
-                    <div className="flex items-center gap-2 mb-2">
-                      {t.student_photo_url ? (
-                        <img src={t.student_photo_url} alt="" className="w-7 h-7 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[9px] font-bold">
-                          {initials}
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold truncate">{t.student_name || "Student"}</p>
-                        {t.student_location && <p className="text-[8px] opacity-50 truncate">{t.student_location}</p>}
-                      </div>
-                    </div>
-                    <div className="flex gap-0.5 mb-1">
-                      {[1,2,3,4,5].map(s => <Star key={s} size={8} className="text-amber-400 fill-amber-400" />)}
-                    </div>
-                    {t.type === "text" && t.review_text && (
-                      <p className="text-[9px] opacity-70 line-clamp-3">{t.review_text}</p>
+        {previewStage === "after-submit" ? (
+          <>
+            {(postSubmitVideo?.public_url || form.post_submit_video_asset_id) ? (
+              <div className="space-y-3">
+                {(form.post_submit_video_title || form.post_submit_video_description) && (
+                  <div className="text-center space-y-1">
+                    {form.post_submit_video_title && (
+                      <h2 className="text-lg font-bold">{form.post_submit_video_title}</h2>
                     )}
-                    {t.type === "video" && (
-                      <div className="mt-1 rounded-lg bg-black/30 h-16 flex items-center justify-center">
-                        <Play size={14} className="text-white/70" />
-                      </div>
+                    {form.post_submit_video_description && (
+                      <p className="text-xs opacity-70">{form.post_submit_video_description}</p>
                     )}
                   </div>
-                );
-              })}
+                )}
+                <div className={`rounded-xl overflow-hidden border ${cardBg}`}>
+                  <div className="relative aspect-video bg-black flex items-center justify-center">
+                    {postSubmitVideo?.thumbnail_url && (
+                      <img
+                        src={postSubmitVideo.thumbnail_url}
+                        alt={postSubmitVideo.title || "Post registration video"}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-black/35" />
+                    <div className="relative z-10 w-12 h-12 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                      <Play size={18} className="text-white" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className={`rounded-xl p-5 text-center space-y-2 ${cardBg} border`}>
+                <div className="w-12 h-12 rounded-full bg-primary/15 text-primary flex items-center justify-center mx-auto">
+                  <Check size={20} />
+                </div>
+                <h2 className="text-lg font-bold">You're Registered!</h2>
+                <p className="text-xs opacity-70">This is the success screen visitors will see right after they register.</p>
+              </div>
+            )}
+
+            {form.testimonials_enabled && activeTestimonials.length > 0 && (
+              <div className="space-y-3 mt-4">
+                <h3 className="text-sm font-bold text-center opacity-80">
+                  {form.testimonials_section_title || "What our members say"}
+                </h3>
+                <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+                  {activeTestimonials.map((t) => {
+                    const initials = (t.student_name || "?").split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
+                    return (
+                      <div key={t.id} className={`shrink-0 rounded-xl p-3 border ${cardBg}`} style={{ width: 180 }}>
+                        <div className="flex items-center gap-2 mb-2">
+                          {t.student_photo_url ? (
+                            <img src={t.student_photo_url} alt="" className="w-7 h-7 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[9px] font-bold">
+                              {initials}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold truncate">{t.student_name || "Student"}</p>
+                            {t.student_location && <p className="text-[8px] opacity-50 truncate">{t.student_location}</p>}
+                          </div>
+                        </div>
+                        <div className="flex gap-0.5 mb-1">
+                          {[1, 2, 3, 4, 5].map((s) => <Star key={s} size={8} className="text-amber-400 fill-amber-400" />)}
+                        </div>
+                        {t.type === "text" && t.review_text && (
+                          <p className="text-[9px] opacity-70 line-clamp-3">{t.review_text}</p>
+                        )}
+                        {t.type === "video" && (
+                          <div className="mt-1 rounded-lg bg-black/30 h-16 flex items-center justify-center">
+                            <Play size={14} className="text-white/70" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {form.linked_funnel_id && (
+              <div
+                className="h-9 rounded-lg flex items-center justify-center gap-1 text-xs font-bold text-white"
+                style={{ backgroundColor: form.theme_color }}
+              >
+                Continue to full session journey <ChevronRight size={12} />
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Page sections */}
+            <div className="space-y-5">
+              {sections.length > 0 ? (
+                sections.map(renderSection)
+              ) : (
+                <div className="space-y-2">
+                  <h1 className="text-2xl font-bold">{form.title || "Your Landing Page"}</h1>
+                  {form.description && <p className="text-sm opacity-70">{form.description}</p>}
+                </div>
+              )}
             </div>
-          </div>
+
+            {/* Speaker section */}
+            {hasSpeaker && (
+              <div className={`rounded-lg p-4 flex items-center gap-3 ${cardBg} border`}>
+                {form.speaker_photo_url && (
+                  <img src={form.speaker_photo_url} alt={form.speaker_name} className="w-16 h-16 rounded-full object-cover shrink-0" />
+                )}
+                <div>
+                  <h3 className="font-bold text-sm">{form.speaker_name}</h3>
+                  {form.speaker_role && <p className="text-[10px] opacity-50">{form.speaker_role}</p>}
+                  {form.speaker_bio && <p className="text-xs opacity-70 mt-1 line-clamp-2">{form.speaker_bio}</p>}
+                </div>
+              </div>
+            )}
+
+            {/* Registration form */}
+            <div className={`rounded-xl p-4 ${cardBg} border`}>
+              <h3 className="font-bold text-sm">{form.form_title}</h3>
+              <p className="text-[10px] opacity-60 mb-3">{form.form_subtitle}</p>
+              <div className="space-y-2">
+                {formFields.map(f => (
+                  <div key={f.key} className="h-8 rounded-md bg-current/5 border border-current/10 px-2 flex items-center text-[10px] opacity-40">
+                    {f.label}
+                  </div>
+                ))}
+                <div
+                  className="h-9 rounded-lg flex items-center justify-center text-xs font-bold text-white"
+                  style={{ backgroundColor: form.theme_color }}
+                >
+                  {form.form_button_text} →
+                </div>
+              </div>
+              <p className="text-[9px] opacity-30 text-center mt-2 flex items-center justify-center gap-1">
+                <Lock size={8} /> Your information is safe
+              </p>
+            </div>
+          </>
         )}
       </div>
 
