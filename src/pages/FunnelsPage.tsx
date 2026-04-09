@@ -9,6 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Plus, Search, Eye, Users, IndianRupee, MoreVertical, Copy, Share2, Layers, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { usePlan } from "@/hooks/usePlan";
+import { useResourceCount } from "@/hooks/useResourceCount";
+import { LimitBadge } from "@/components/LimitGate";
 
 const FunnelsPage = () => {
   const { user } = useAuth();
@@ -53,8 +56,11 @@ const FunnelsPage = () => {
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h1 className="text-2xl font-heading font-bold">My Funnels</h1>
-          <Link to="/funnels/create"><Button variant="hero"><Plus size={16} /> Create Funnel</Button></Link>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-heading font-bold">My Funnels</h1>
+            <LimitBadge resource="funnel" />
+          </div>
+          <CreateFunnelButton />
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
