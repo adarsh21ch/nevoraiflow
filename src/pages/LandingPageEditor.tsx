@@ -825,7 +825,7 @@ const LandingPageEditor = () => {
             </Button>
           </div>
           <div className="rounded-xl border border-border overflow-hidden bg-card" style={{ minHeight: "60vh" }}>
-            <LandingPagePreview form={form} />
+           <LandingPagePreview form={form} testimonials={previewTestimonials} />
           </div>
         </div>
       </DashboardLayout>
@@ -929,7 +929,7 @@ const LandingPageEditor = () => {
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Live Preview</span>
               </div>
               <div className="rounded-xl border border-border overflow-hidden shadow-xl" style={{ maxHeight: "calc(100vh - 10rem)", overflowY: "auto" }}>
-                <LandingPagePreview form={form} />
+                <LandingPagePreview form={form} testimonials={previewTestimonials} />
               </div>
             </div>
           )}
