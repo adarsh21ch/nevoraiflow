@@ -18,6 +18,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { usePlan } from "@/hooks/usePlan";
+import { useResourceCount } from "@/hooks/useResourceCount";
+import { LimitBadge } from "@/components/LimitGate";
 
 const LandingPagesPage = () => {
   const navigate = useNavigate();
@@ -70,13 +73,14 @@ const LandingPagesPage = () => {
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Landing Pages</h1>
-            <p className="text-muted-foreground text-sm">Create registration pages for your sessions & events</p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-2xl font-bold">Landing Pages</h1>
+              <p className="text-muted-foreground text-sm">Create registration pages for your sessions & events</p>
+            </div>
+            <LimitBadge resource="landing_page" />
           </div>
-          <Button onClick={() => navigate("/landing-pages/create")} className="bg-primary">
-            <Plus size={16} className="mr-2" /> Create Landing Page
-          </Button>
+          <CreateLPButton />
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
