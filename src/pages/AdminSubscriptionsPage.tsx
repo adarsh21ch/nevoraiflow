@@ -96,9 +96,10 @@ const AdminSubscriptionsPage = () => {
   const [fieldValue, setFieldValue] = useState<any>(null);
 
   const saveField = async (planName: string, field: string, value: any) => {
+    const updateObj: Record<string, any> = { [field]: value, updated_at: new Date().toISOString() };
     const { error } = await supabase
       .from("plan_config")
-      .update({ [field]: value, updated_at: new Date().toISOString() })
+      .update(updateObj as any)
       .eq("plan_name", planName);
     if (error) {
       toast.error("Failed to save");
