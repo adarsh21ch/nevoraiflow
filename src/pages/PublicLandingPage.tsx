@@ -20,6 +20,7 @@ const PublicLandingPage = () => {
   const { slug } = useParams();
   const [page, setPage] = useState<any>(null);
   const [video, setVideo] = useState<any>(null);
+  const [testimonials, setTestimonials] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -48,6 +49,16 @@ const PublicLandingPage = () => {
           if (v) setVideo(v);
         }
         supabase.rpc("increment_landing_page_views", { _landing_page_id: data.id });
+        // Fetch testimonials if enabled
+        if (data.testimonials_enabled) {
+          const { data: tData } = await supabase
+            .from("landing_page_testimonials")
+            .select("*")
+            .eq("landing_page_id", data.id)
+            .eq("is_active", true)
+            .order("display_order", { ascending: true });
+          setTestimonials(tData || []);
+        }
       }
       setLoading(false);
     };
