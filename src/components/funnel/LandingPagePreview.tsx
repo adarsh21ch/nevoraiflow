@@ -197,6 +197,47 @@ export const LandingPagePreview = ({ form, testimonials = [] }: LandingPagePrevi
             <Lock size={8} /> Your information is safe
           </p>
         </div>
+        {/* Testimonials preview */}
+        {form.testimonials_enabled && testimonials.filter(t => t.is_active).length > 0 && (
+          <div className="space-y-3 mt-4">
+            <h3 className="text-sm font-bold text-center opacity-80">
+              {form.testimonials_section_title || "What our members say"}
+            </h3>
+            <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+              {testimonials.filter(t => t.is_active).map((t) => {
+                const initials = (t.student_name || "?").split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
+                return (
+                  <div key={t.id} className={`shrink-0 rounded-xl p-3 border ${cardBg}`} style={{ width: 180 }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      {t.student_photo_url ? (
+                        <img src={t.student_photo_url} alt="" className="w-7 h-7 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[9px] font-bold">
+                          {initials}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold truncate">{t.student_name || "Student"}</p>
+                        {t.student_location && <p className="text-[8px] opacity-50 truncate">{t.student_location}</p>}
+                      </div>
+                    </div>
+                    <div className="flex gap-0.5 mb-1">
+                      {[1,2,3,4,5].map(s => <Star key={s} size={8} className="text-amber-400 fill-amber-400" />)}
+                    </div>
+                    {t.type === "text" && t.review_text && (
+                      <p className="text-[9px] opacity-70 line-clamp-3">{t.review_text}</p>
+                    )}
+                    {t.type === "video" && (
+                      <div className="mt-1 rounded-lg bg-black/30 h-16 flex items-center justify-center">
+                        <Play size={14} className="text-white/70" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer */}
