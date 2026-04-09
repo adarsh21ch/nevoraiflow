@@ -16,9 +16,8 @@ import {
   Pencil, Trash2, Video, Lock, Globe, IndianRupee, X
 } from "lucide-react";
 import { format, formatDistanceToNow, isPast, isFuture } from "date-fns";
-import { usePlan } from "@/hooks/usePlan";
-import { useResourceCount } from "@/hooks/useResourceCount";
-import { LimitBadge } from "@/components/LimitGate";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 const generateSlug = (title: string) =>
   title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 60) || "my-session";
@@ -48,10 +47,12 @@ const accessIcon = (type: string) => {
 
 const LivePage = () => {
   const { user } = useAuth();
-  const { canCreate } = usePlan();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [creating, setCreating] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<"upgrade" | "limit">("upgrade");
+  const { isFree, canCreateLive, config, counts, tier } = usePlanLimits();
 
   // New session form
   const [form, setForm] = useState({
