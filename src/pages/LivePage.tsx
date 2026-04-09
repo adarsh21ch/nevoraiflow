@@ -149,13 +149,23 @@ const LivePage = () => {
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-heading font-bold">Live</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Create live sessions, collect registrations, and share meeting links with your audience.
-            </p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-2xl font-heading font-bold">Live</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Create live sessions, collect registrations, and share meeting links with your audience.
+              </p>
+            </div>
+            <LimitBadge resource="live_session" />
           </div>
-          <Button variant="hero" onClick={() => setCreating(true)}>
+          <Button variant="hero" onClick={() => {
+            const counts = sessionsData?.length || 0;
+            if (!canCreate("live_session", counts)) {
+              toast.error("Live session limit reached. Upgrade your plan for more.");
+              return;
+            }
+            setCreating(true);
+          }}>
             <Plus size={16} /> New Session
           </Button>
         </div>
