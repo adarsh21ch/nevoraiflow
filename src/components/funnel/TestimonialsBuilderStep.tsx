@@ -148,7 +148,7 @@ export const TestimonialsBuilderStep = ({
   const getSetting = (key: string, fallback: string) =>
     platformSettings.find((s) => s.key === key)?.value || fallback;
 
-  const maxPerPage = parseInt(getSetting("testimonial_max_per_page", "8"), 10);
+  const maxPerPage = parseInt(getSetting("testimonial_max_per_page", "4"), 10);
   const maxVideoSeconds = parseInt(getSetting("testimonial_max_video_seconds", "60"), 10);
   const videoFeatureEnabled = getSetting("testimonial_video_feature_enabled", "true") === "true";
 

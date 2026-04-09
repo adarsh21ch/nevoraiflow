@@ -20,7 +20,7 @@ interface TestimonialVideoUploadProps {
 }
 
 const ALLOWED_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
-const MAX_SIZE_MB = 250;
+const MAX_SIZE_MB = 100;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
 const formatDuration = (seconds?: number | null) => {
@@ -157,7 +157,7 @@ export const TestimonialVideoUpload = ({
             .from("landing-page-assets")
             .upload(thumbnailPath, thumbnailBlob, {
               cacheControl: "3600",
-              upsert: false,
+              upsert: true,
               contentType: "image/jpeg",
             });
 
@@ -182,7 +182,7 @@ export const TestimonialVideoUpload = ({
         .from("landing-page-assets")
         .upload(videoPath, file, {
           cacheControl: "3600",
-          upsert: false,
+          upsert: true,
           contentType: file.type,
         });
 
