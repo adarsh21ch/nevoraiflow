@@ -4,8 +4,8 @@ import { Logo } from "@/components/landing/Logo";
 import {
   LayoutDashboard, Layers, Video, Users, IndianRupee, BarChart3,
   User, Bell, Settings, LogOut, ChevronLeft, ChevronRight,
-  Shield, Cog, UserCheck, CreditCard, Sun, Moon, Radio, FileCheck,
-  FileText, Menu, X, Download,
+  Shield, CreditCard, Sun, Moon, Radio, FileCheck,
+  FileText, Menu, Download,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -38,14 +38,6 @@ const bottomItems = [
   { icon: Download, label: "Install App", path: "/install" },
 ];
 
-const adminItems = [
-  { icon: Shield, label: "Admin", path: "/admin" },
-  { icon: Video, label: "Videos", path: "/admin/videos" },
-  { icon: Users, label: "Users", path: "/admin/users" },
-  { icon: UserCheck, label: "KYC", path: "/admin/kyc" },
-  { icon: CreditCard, label: "Subs", path: "/admin/subscriptions" },
-  { icon: Cog, label: "Settings", path: "/admin/settings" },
-];
 
 export const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
@@ -131,13 +123,15 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
           {navItems.map((item) => renderNavItem(item))}
 
           {isAdmin && (
-            <>
-              <div className="pt-4 pb-2 px-3">
-                {!collapsed && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Admin</span>}
-                {collapsed && <div className="border-t border-border" />}
-              </div>
-              {adminItems.map((item) => renderNavItem(item, true))}
-            </>
+            <div className="pt-4 pb-2 px-3">
+              <Link to="/admin" className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                location.pathname.startsWith("/admin") ? "bg-primary/10 text-primary" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )}>
+                <Shield size={18} />
+                {!collapsed && <span>Admin Panel</span>}
+              </Link>
+            </div>
           )}
         </nav>
 
@@ -185,8 +179,13 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
                   {isAdmin && (
                     <>
                       <div className="border-t border-border my-2" />
-                      <p className="px-4 py-2 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Admin</p>
-                      {adminItems.map(renderMobileNavItem)}
+                      <Link to="/admin" onClick={() => setMobileMenuOpen(false)}
+                        className={cn("flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all",
+                          location.pathname.startsWith("/admin") ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                        )}>
+                        <Shield size={18} />
+                        <span>Admin Panel</span>
+                      </Link>
                     </>
                   )}
                 </nav>

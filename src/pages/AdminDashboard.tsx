@@ -1,4 +1,4 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Users, Layers, Video, BarChart3, IndianRupee, Shield, ArrowRight } from "lucide-react";
@@ -53,7 +53,7 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-heading font-bold">Admin Dashboard</h1>
@@ -86,7 +86,7 @@ const AdminDashboard = () => {
           ))}
         </div>
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 };
 

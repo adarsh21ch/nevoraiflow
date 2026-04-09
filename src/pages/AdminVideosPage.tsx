@@ -1,4 +1,4 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -118,7 +118,7 @@ const AdminVideosPage = () => {
   };
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <div className="space-y-6">
         <h1 className="text-2xl font-heading font-bold">Video Management</h1>
 
@@ -242,7 +242,7 @@ const AdminVideosPage = () => {
           onSuccess={() => queryClient.invalidateQueries({ queryKey: ["admin-all-videos"] })}
         />
       )}
-    </DashboardLayout>
+    </AdminLayout>
   );
 };
 

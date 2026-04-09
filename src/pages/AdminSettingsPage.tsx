@@ -1,4 +1,4 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,7 @@ const AdminSettingsPage = () => {
   });
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <div className="max-w-2xl space-y-6">
         <h1 className="text-2xl font-heading font-bold">Platform Settings</h1>
 
@@ -88,7 +88,7 @@ const AdminSettingsPage = () => {
           <Save size={16} /> {saveMutation.isPending ? "Saving..." : "Save Settings"}
         </Button>
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 };
 
