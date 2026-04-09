@@ -407,6 +407,15 @@ const LivePage = () => {
           </div>
         )}
       </div>
+      <UpgradeModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        type={modalType}
+        resource="live sessions"
+        currentCount={counts.live_sessions}
+        limit={config.max_live_sessions}
+        tier={tier}
+      />
     </DashboardLayout>
   );
 };
