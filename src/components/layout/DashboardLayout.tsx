@@ -38,14 +38,6 @@ const bottomItems = [
   { icon: Download, label: "Install App", path: "/install" },
 ];
 
-const adminItems = [
-  { icon: Shield, label: "Admin", path: "/admin" },
-  { icon: Video, label: "Videos", path: "/admin/videos" },
-  { icon: Users, label: "Users", path: "/admin/users" },
-  { icon: UserCheck, label: "KYC", path: "/admin/kyc" },
-  { icon: CreditCard, label: "Subs", path: "/admin/subscriptions" },
-  { icon: Cog, label: "Settings", path: "/admin/settings" },
-];
 
 export const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
