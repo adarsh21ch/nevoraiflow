@@ -14,11 +14,13 @@ import {
 } from "@/components/ui/accordion";
 import { Loader2, Check, Lock, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { TestimonialsViewer } from "@/components/funnel/TestimonialsViewer";
 
 const PublicLandingPage = () => {
   const { slug } = useParams();
   const [page, setPage] = useState<any>(null);
   const [video, setVideo] = useState<any>(null);
+  const [testimonials, setTestimonials] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -47,6 +49,16 @@ const PublicLandingPage = () => {
           if (v) setVideo(v);
         }
         supabase.rpc("increment_landing_page_views", { _landing_page_id: data.id });
+        // Fetch testimonials if enabled
+        if (data.testimonials_enabled) {
+          const { data: tData } = await supabase
+            .from("landing_page_testimonials")
+            .select("*")
+            .eq("landing_page_id", data.id)
+            .eq("is_active", true)
+            .order("display_order", { ascending: true });
+          setTestimonials(tData || []);
+        }
       }
       setLoading(false);
     };
@@ -252,6 +264,15 @@ const PublicLandingPage = () => {
                 <h2 className="text-2xl font-bold">You're Registered!</h2>
                 <p className="text-muted-foreground">Thank you for registering. We'll see you at the session!</p>
               </Card>
+            )}
+            {/* Testimonials section */}
+            {page.testimonials_enabled && testimonials.length > 0 && (
+              <div className="mt-10">
+                <TestimonialsViewer
+                  testimonials={testimonials}
+                  sectionTitle={page.testimonials_section_title || "What our members say"}
+                />
+              </div>
             )}
             {page.linked_funnel_id && (
               <Button

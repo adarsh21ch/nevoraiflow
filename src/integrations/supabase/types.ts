@@ -944,6 +944,75 @@ export type Database = {
           },
         ]
       }
+      landing_page_testimonials: {
+        Row: {
+          created_at: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          landing_page_id: string
+          owner_id: string
+          review_text: string | null
+          student_location: string | null
+          student_name: string
+          student_photo_url: string | null
+          thumbnail_url: string | null
+          type: string
+          updated_at: string | null
+          video_duration_seconds: number | null
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          landing_page_id: string
+          owner_id: string
+          review_text?: string | null
+          student_location?: string | null
+          student_name: string
+          student_photo_url?: string | null
+          thumbnail_url?: string | null
+          type?: string
+          updated_at?: string | null
+          video_duration_seconds?: number | null
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          landing_page_id?: string
+          owner_id?: string
+          review_text?: string | null
+          student_location?: string | null
+          student_name?: string
+          student_photo_url?: string | null
+          thumbnail_url?: string | null
+          type?: string
+          updated_at?: string | null
+          video_duration_seconds?: number | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_testimonials_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_testimonials_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       landing_page_view_logs: {
         Row: {
           id: string
@@ -1027,6 +1096,8 @@ export type Database = {
           speaker_photo_url: string | null
           speaker_role: string | null
           status: string
+          testimonials_enabled: boolean | null
+          testimonials_section_title: string | null
           theme_color: string | null
           title: string
           total_registrations: number | null
@@ -1086,6 +1157,8 @@ export type Database = {
           speaker_photo_url?: string | null
           speaker_role?: string | null
           status?: string
+          testimonials_enabled?: boolean | null
+          testimonials_section_title?: string | null
           theme_color?: string | null
           title: string
           total_registrations?: number | null
@@ -1145,6 +1218,8 @@ export type Database = {
           speaker_photo_url?: string | null
           speaker_role?: string | null
           status?: string
+          testimonials_enabled?: boolean | null
+          testimonials_section_title?: string | null
           theme_color?: string | null
           title?: string
           total_registrations?: number | null
