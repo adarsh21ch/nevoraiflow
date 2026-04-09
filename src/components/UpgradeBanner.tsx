@@ -52,8 +52,8 @@ export const UpgradeBanner = () => {
       <div className="flex items-center gap-3">
         <Crown size={18} className="text-primary shrink-0" />
         <div>
-          <p className="text-sm font-medium">Upgrade to unlock all features</p>
-          <p className="text-xs text-muted-foreground">Upload videos, go live, automate workflows, and more.</p>
+          <p className="text-sm font-medium">Upgrade to unlock more features</p>
+          <p className="text-xs text-muted-foreground">Get more funnels, landing pages, live sessions, and premium tools.</p>
         </div>
       </div>
       <Link to="/upgrade">
