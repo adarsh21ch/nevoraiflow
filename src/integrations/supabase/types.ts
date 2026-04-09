@@ -24,6 +24,9 @@ export type Database = {
           id: string
           is_active: boolean | null
           label: string
+          landing_page_limit: number | null
+          live_session_limit: number | null
+          multi_step_funnel_enabled: boolean
           plan_key: string
           price_inr: number
           tier: string
@@ -39,6 +42,9 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           label: string
+          landing_page_limit?: number | null
+          live_session_limit?: number | null
+          multi_step_funnel_enabled?: boolean
           plan_key: string
           price_inr: number
           tier: string
@@ -54,6 +60,9 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           label?: string
+          landing_page_limit?: number | null
+          live_session_limit?: number | null
+          multi_step_funnel_enabled?: boolean
           plan_key?: string
           price_inr?: number
           tier?: string
