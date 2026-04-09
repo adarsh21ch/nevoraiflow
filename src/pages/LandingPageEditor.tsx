@@ -141,6 +141,20 @@ const LandingPageEditor = () => {
     enabled: !!user,
   });
 
+  // Fetch testimonials for live preview
+  const { data: previewTestimonials = [] } = useQuery({
+    queryKey: ["landing-page-testimonials", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("landing_page_testimonials")
+        .select("*")
+        .eq("landing_page_id", id!)
+        .order("display_order", { ascending: true });
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
   const { data: funnels = [] } = useQuery({
     queryKey: ["my-funnels", user?.id],
     queryFn: async () => {
