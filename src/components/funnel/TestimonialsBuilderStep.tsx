@@ -575,7 +575,7 @@ const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }
 
       const { error: uploadError } = await supabase.storage
         .from("landing-page-assets")
-        .upload(path, file, { cacheControl: "3600", upsert: true });
+        .upload(path, file, { cacheControl: "3600", upsert: true, contentType: file.type });
 
       clearInterval(progressInterval);
 
