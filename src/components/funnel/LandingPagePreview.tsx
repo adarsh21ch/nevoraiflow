@@ -38,9 +38,10 @@ interface LandingPagePreviewProps {
     speaker_photo_url?: string;
     [key: string]: any;
   };
+  testimonials?: Testimonial[];
 }
 
-export const LandingPagePreview = ({ form }: LandingPagePreviewProps) => {
+export const LandingPagePreview = ({ form, testimonials = [] }: LandingPagePreviewProps) => {
   const bgClass = form.background_style === "light"
     ? "bg-white text-gray-900"
     : form.background_style === "gradient"
