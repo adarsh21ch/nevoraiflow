@@ -1,4 +1,15 @@
-import { Lock } from "lucide-react";
+import { Lock, Star, Play } from "lucide-react";
+
+interface Testimonial {
+  id: string;
+  type: string;
+  student_name: string;
+  student_location?: string | null;
+  student_photo_url?: string | null;
+  review_text?: string | null;
+  video_url?: string | null;
+  is_active: boolean;
+}
 
 interface LandingPagePreviewProps {
   form: {
