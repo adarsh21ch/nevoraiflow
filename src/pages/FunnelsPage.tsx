@@ -13,6 +13,26 @@ import { usePlan } from "@/hooks/usePlan";
 import { useResourceCount } from "@/hooks/useResourceCount";
 import { LimitBadge } from "@/components/LimitGate";
 
+const CreateFunnelButton = () => {
+  const { canCreate } = usePlan();
+  const counts = useResourceCount();
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (!canCreate("funnel", counts.funnels)) {
+      toast.error("Funnel limit reached. Upgrade your plan for more.");
+      return;
+    }
+    navigate("/funnels/create");
+  };
+
+  return (
+    <Button variant="hero" onClick={handleClick}>
+      <Plus size={16} /> Create Funnel
+    </Button>
+  );
+};
+
 const FunnelsPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
