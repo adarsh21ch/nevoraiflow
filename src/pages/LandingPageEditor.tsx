@@ -73,6 +73,8 @@ We look forward to having you there.`,
   speaker_role: "",
   speaker_bio: "",
   speaker_photo_url: "",
+  testimonials_enabled: false,
+  testimonials_section_title: "What our members say",
 };
 
 const sectionTypes = [
