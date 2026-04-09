@@ -531,7 +531,6 @@ const VideoUploadBox = ({ testimonialId, landingPageId, maxSeconds, onUploaded }
   const ALLOWED_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
   const MAX_SIZE_MB = 250;
   const MAX_SIZE = MAX_SIZE_MB * 1024 * 1024;
-  const UPLOAD_TIMEOUT_MS = 30 * 60 * 1000;
 
   const getVideoDuration = (file: File): Promise<number> => {
     return new Promise((resolve, reject) => {
