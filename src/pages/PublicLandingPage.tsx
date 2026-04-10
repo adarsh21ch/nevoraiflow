@@ -293,6 +293,20 @@ const PublicLandingPage = () => {
                   {page.description && <p className="text-lg text-muted-foreground">{page.description}</p>}
                 </div>
               )}
+
+              {/* Speaker section from top-level fields */}
+              {(page.speaker_name || page.speaker_photo_url) && (
+                <Card className="p-6 flex flex-col sm:flex-row gap-4 items-center">
+                  {page.speaker_photo_url && (
+                    <img src={page.speaker_photo_url} alt={page.speaker_name || "Speaker"} className="w-24 h-24 rounded-full object-cover shrink-0" />
+                  )}
+                  <div>
+                    <h3 className="text-xl font-bold">{page.speaker_name}</h3>
+                    {page.speaker_role && <p className="text-sm text-muted-foreground">{page.speaker_role}</p>}
+                    {page.speaker_bio && <p className="mt-2 text-sm">{page.speaker_bio}</p>}
+                  </div>
+                </Card>
+              )}
             </div>
 
             <div className="lg:col-span-2 lg:sticky lg:top-8">
