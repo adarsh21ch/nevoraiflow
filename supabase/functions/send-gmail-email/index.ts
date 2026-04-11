@@ -36,7 +36,15 @@ function jsonResponse(body: Record<string, unknown>, status = 200): Response {
   })
 }
 
-async function requireAdminAccess(authHeader: string, supabaseUrl: string, serviceRoleKey: string) {
+type AdminAccessResult =
+  | { kind: 'error'; response: Response }
+  | { kind: 'ok'; adminSupabase: ReturnType<typeof createClient> }
+
+async function requireAdminAccess(
+  authHeader: string,
+  supabaseUrl: string,
+  serviceRoleKey: string
+): Promise<AdminAccessResult> {
   const userSupabase = createClient(
     supabaseUrl,
     Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -45,7 +53,7 @@ async function requireAdminAccess(authHeader: string, supabaseUrl: string, servi
 
   const { data: { user }, error: userError } = await userSupabase.auth.getUser()
   if (userError || !user) {
-    return { error: jsonResponse({ error: 'Unauthorized' }, 401) }
+    return { kind: 'error', response: jsonResponse({ error: 'Unauthorized' }, 401) }
   }
 
   const adminSupabase = createClient(supabaseUrl, serviceRoleKey)
@@ -55,10 +63,10 @@ async function requireAdminAccess(authHeader: string, supabaseUrl: string, servi
   })
 
   if (roleError || !isAdmin) {
-    return { error: jsonResponse({ error: 'Admin access required' }, 403) }
+    return { kind: 'error', response: jsonResponse({ error: 'Admin access required' }, 403) }
   }
 
-  return { adminSupabase }
+  return { kind: 'ok', adminSupabase }
 }
 
 async function getLatestToken(supabase: any) {
@@ -106,7 +114,7 @@ async function refreshAccessToken(supabase: any, tokenRow: any): Promise<string>
   return data.access_token
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -127,8 +135,8 @@ Deno.serve(async (req) => {
       }
 
       const adminAccess = await requireAdminAccess(authHeader, supabaseUrl, serviceRoleKey)
-      if ('error' in adminAccess) {
-        return adminAccess.error
+      if (adminAccess.kind === 'error') {
+        return adminAccess.response
       }
 
       const tokenRow = await getLatestToken(adminAccess.adminSupabase)
@@ -156,8 +164,8 @@ Deno.serve(async (req) => {
       supabase = createClient(supabaseUrl, serviceRoleKey)
     } else {
       const adminAccess = await requireAdminAccess(authHeader, supabaseUrl, serviceRoleKey)
-      if ('error' in adminAccess) {
-        return adminAccess.error
+      if (adminAccess.kind === 'error') {
+        return adminAccess.response
       }
 
       supabase = adminAccess.adminSupabase

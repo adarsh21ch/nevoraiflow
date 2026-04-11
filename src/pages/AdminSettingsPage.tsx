@@ -120,7 +120,7 @@ const AdminSettingsPage = () => {
         clearInterval(interval);
         setConnectingGmail(false);
       }, 5 * 60 * 1000);
-    } catch (err: any) {
+    } catch {
       toast.error("Failed to connect Gmail");
       setConnectingGmail(false);
     }
