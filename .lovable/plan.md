@@ -1,43 +1,38 @@
 
-# Phase 1 — Nevorai Flow Production Upgrade
 
-## Batch A: Landing Page Cleanup & Auth Removal
-1. **Remove login/signup toggles** from landing page editor (`allow_login`, `allow_signup` fields)
-2. **Remove auth-related UI** from public landing pages
-3. **Fix labels** — replace "Hero image URL", "Photo URL", "Image URL" with upload buttons across the landing page editor
+# Switch Email Sending from Lovable Email to Resend
 
-## Batch B: Image Upload System
-4. **Create a reusable `ImageUploadField` component** that handles device upload → storage bucket → returns URL
-5. **Create `landing-page-assets` storage bucket** for landing page media
-6. **Replace all URL input fields** in the landing page editor with the upload component:
-   - Hero image
-   - Section images
-   - Speaker/Host photo
-   - OG image
-7. **Show image previews** with change/remove options
+## Overview
 
-## Batch C: Private Funnel Flow Polish
-8. **Improve CodeGateScreen** wording — use "Unlock Program", "Get Access" instead of generic text
-9. **Improve PrivateLeadForm** — premium wording, "Continue to Program" button
-10. **Add success popup/modal** after form submission with content visible behind
-11. **Add loading state** "Unlocking your access…" between form submit and content reveal
+Replace all `sendLovableEmail` calls with Resend API calls via the connector gateway. Two Edge Functions need updating, and a Resend connection needs to be linked to the project.
 
-## Batch D: Live Preview for Landing Page Editor
-12. **Add split-pane layout** — editor left, live preview right (desktop)
-13. **Add Edit/Preview tabs** on mobile
-14. **Build `LandingPagePreview` component** that renders sections in real-time
+## Step 1: Connect Resend
 
-## Batch E: Mobile & UX Polish
-15. **Mobile-optimize** the landing page editor (touch-friendly, collapsible sections)
-16. **Fix section labels** and helper text across editors for non-technical users
-17. **Add friendly error messages** for uploads, form validation, missing fields
+Link a Resend connector to the project so `RESEND_API_KEY` and `LOVABLE_API_KEY` are available as environment variables in Edge Functions.
 
----
+## Step 2: Update `send-landing-page-confirmation/index.ts`
 
-### Not in Phase 1 (Future phases):
-- Email confirmation system (needs email domain setup)
-- Multiple access codes per funnel
-- Advanced analytics
-- WhatsApp notifications
-- Paid funnels
-- Team access
+- Remove `import { sendLovableEmail } from 'npm:@lovable.dev/email-js'`
+- Replace the `sendLovableEmail(...)` call with a `fetch` to `https://connector-gateway.lovable.dev/resend/emails` using the Resend gateway pattern
+- Use `Authorization: Bearer $LOVABLE_API_KEY` and `X-Connection-Api-Key: $RESEND_API_KEY` headers
+- Send `from`, `to`, `subject`, `html`, `text` fields via Resend's API format
+- Keep all existing logic (template building, unsubscribe tokens, DB updates) unchanged
+
+## Step 3: Update `process-email-queue/index.ts`
+
+- Remove `import { sendLovableEmail } from 'npm:@lovable.dev/email-js'`
+- Replace the `sendLovableEmail(...)` call with a `fetch` to the Resend gateway
+- Map existing payload fields (`to`, `from`, `subject`, `html`, `text`) to Resend's API format
+- Keep all queue logic (retry, DLQ, rate-limit detection, TTL) intact
+- Update rate-limit detection to check HTTP 429 from fetch response instead of error object
+
+## Step 4: Deploy Updated Functions
+
+Deploy both `send-landing-page-confirmation` and `process-email-queue` Edge Functions.
+
+## Technical Notes
+
+- Resend requires a verified sender domain. The current "from" address is `noreply@flow.nevorai.com` — this domain must be verified in Resend's dashboard.
+- The Resend gateway pattern handles OAuth/token refresh automatically.
+- No database or frontend changes needed — only the two Edge Functions change.
+
