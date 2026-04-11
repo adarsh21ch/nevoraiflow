@@ -38,7 +38,7 @@ function jsonResponse(body: Record<string, unknown>, status = 200): Response {
 
 type AdminAccessResult =
   | { kind: 'error'; response: Response }
-  | { kind: 'ok'; adminSupabase: ReturnType<typeof createClient> }
+  | { kind: 'ok'; adminSupabase: any }
 
 async function requireAdminAccess(
   authHeader: string,
