@@ -64,44 +64,22 @@ const AdminSettingsPage = () => {
     },
   });
 
-  // === Gmail OAuth Section ===
-  const { data: gmailStatus, isLoading: gmailLoading } = useQuery({
-    queryKey: ["gmail-oauth-status"],
-    queryFn: async () => {
-      // Use an edge function or direct query to check gmail_oauth_tokens
-      // Since RLS only allows service_role, we check via a lightweight edge function approach
-      // For simplicity, we'll use supabase.functions.invoke to check
-      const { data, error } = await supabase.functions.invoke("gmail-oauth-init", {
-        method: "GET",
-      });
-      // The init function only responds to POST with auth_url, but we can check status differently
-      // Let's query the table — but RLS blocks it. We need a workaround.
-      // Actually, let's just try to call gmail-oauth-init POST to see if it works
-      return null;
-    },
-    enabled: false, // disabled — we'll use a different approach
-  });
-
-  // Check Gmail connection status by calling a simple check
   const { data: gmailConnected, refetch: refetchGmail } = useQuery({
     queryKey: ["gmail-connection-status"],
     queryFn: async () => {
       try {
-        // We'll check by invoking send-gmail-email with a dry-run (missing fields triggers 400 vs 503)
         const { data, error } = await supabase.functions.invoke("send-gmail-email", {
-          body: { to: "", subject: "", html: "" },
+          method: "GET",
         });
-        // If 503 → not connected, if 400 → connected (missing fields error)
+
         if (error) {
-          // Check if the error message indicates "not connected"
-          const msg = typeof error === "string" ? error : error?.message || "";
-          if (msg.includes("Gmail not connected")) return { connected: false, email: null };
-          // If it's a "Missing required fields" error, Gmail IS connected
-          if (msg.includes("Missing required fields")) return { connected: true, email: null };
+          throw error;
         }
-        if (data?.error?.includes("Gmail not connected")) return { connected: false, email: null };
-        if (data?.error?.includes("Missing required fields")) return { connected: true, email: null };
-        return { connected: false, email: null };
+
+        return {
+          connected: Boolean(data?.connected),
+          email: data?.email ?? null,
+        };
       } catch {
         return { connected: false, email: null };
       }
@@ -142,7 +120,7 @@ const AdminSettingsPage = () => {
         clearInterval(interval);
         setConnectingGmail(false);
       }, 5 * 60 * 1000);
-    } catch (err: any) {
+    } catch {
       toast.error("Failed to connect Gmail");
       setConnectingGmail(false);
     }
@@ -181,7 +159,9 @@ const AdminSettingsPage = () => {
             {gmailConnected?.connected ? (
               <>
                 <CheckCircle2 size={18} className="text-green-500" />
-                <span className="text-sm text-foreground">Gmail Connected</span>
+                <span className="text-sm text-foreground">
+                  Gmail Connected{gmailConnected?.email ? ` (${gmailConnected.email})` : ""}
+                </span>
               </>
             ) : (
               <>
