@@ -4,8 +4,6 @@ const corsHeaders = {
 };
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const RESEND_API_URL = 'https://api.resend.com/emails'
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -49,12 +47,6 @@ Deno.serve(async (req) => {
       })
     }
 
-    const { data: creator } = await supabase
-      .from('profiles')
-      .select('full_name, email')
-      .eq('id', page.owner_id)
-      .single()
-
     // Use sender_display_name from landing page settings; fall back to platform name
     const senderDisplayName = (page as any).sender_display_name || 'Nevorai Flow'
     const isPlatformSender = senderDisplayName === 'Nevorai Flow'
@@ -91,34 +83,29 @@ Deno.serve(async (req) => {
 </body>
 </html>`
 
-    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-    if (!RESEND_API_KEY) {
-      throw new Error('RESEND_API_KEY not configured')
-    }
+    // Send via Gmail edge function
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    const fromName = senderDisplayName
-    const fromEmail = `${fromName} <noreply@flow.nevorai.com>`
-
-    const resendResponse = await fetch(RESEND_API_URL, {
+    const gmailRes = await fetch(`${supabaseUrl}/functions/v1/send-gmail-email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Authorization': `Bearer ${serviceRoleKey}`,
       },
       body: JSON.stringify({
-        from: fromEmail,
-        to: [reg.email],
+        to: reg.email,
         subject,
         html,
-        text: `${page.email_heading || 'You are registered!'}\n\n${emailBody}\n\n${page.email_footer_text || ''}\n\n${trustBadgeText}`,
+        sender_name: senderDisplayName,
       }),
     })
 
-    const result = await resendResponse.json()
+    const result = await gmailRes.json()
 
-    if (!resendResponse.ok) {
-      console.error('Resend API error:', JSON.stringify(result))
-      throw new Error(`Resend API error [${resendResponse.status}]: ${JSON.stringify(result)}`)
+    if (!gmailRes.ok || !result.sent) {
+      console.error('Gmail send error:', JSON.stringify(result))
+      throw new Error(result.error || 'Failed to send email via Gmail')
     }
 
     console.log('Email sent result:', JSON.stringify(result))
