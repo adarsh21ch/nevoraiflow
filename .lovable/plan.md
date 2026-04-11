@@ -1,38 +1,54 @@
 
 
-# Switch Email Sending from Lovable Email to Resend
+# Switch from Resend to Gmail API for Email Sending
 
 ## Overview
 
-Replace all `sendLovableEmail` calls with Resend API calls via the connector gateway. Two Edge Functions need updating, and a Resend connection needs to be linked to the project.
+Replace direct Resend API calls with Gmail API (OAuth2) in the two Edge Functions. Gmail with Google Workspace gives you 2,000 emails/day — 20x more than Resend's free tier.
 
-## Step 1: Connect Resend
+## What You'll Need to Provide
 
-Link a Resend connector to the project so `RESEND_API_KEY` and `LOVABLE_API_KEY` are available as environment variables in Edge Functions.
+Before implementation, you'll need to set up a Google Cloud project:
 
-## Step 2: Update `send-landing-page-confirmation/index.ts`
+1. **Go to** [Google Cloud Console](https://console.cloud.google.com)
+2. **Enable the Gmail API** for your project
+3. **Create OAuth2 credentials** (Desktop app type):
+   - Get the **Client ID** and **Client Secret**
+4. **Generate a Refresh Token** using the OAuth2 Playground or a one-time script — this lets the Edge Function send emails on behalf of your Gmail/Workspace account without user interaction
+5. The sender email will be your actual Gmail/Workspace email address (e.g., `noreply@flow.nevorai.com` if it's a Workspace alias)
 
-- Remove `import { sendLovableEmail } from 'npm:@lovable.dev/email-js'`
-- Replace the `sendLovableEmail(...)` call with a `fetch` to `https://connector-gateway.lovable.dev/resend/emails` using the Resend gateway pattern
-- Use `Authorization: Bearer $LOVABLE_API_KEY` and `X-Connection-Api-Key: $RESEND_API_KEY` headers
-- Send `from`, `to`, `subject`, `html`, `text` fields via Resend's API format
-- Keep all existing logic (template building, unsubscribe tokens, DB updates) unchanged
+## Secrets Needed
 
-## Step 3: Update `process-email-queue/index.ts`
+Three new secrets to add:
+- `GMAIL_CLIENT_ID` — OAuth2 client ID
+- `GMAIL_CLIENT_SECRET` — OAuth2 client secret  
+- `GMAIL_REFRESH_TOKEN` — Long-lived refresh token for your sending account
 
-- Remove `import { sendLovableEmail } from 'npm:@lovable.dev/email-js'`
-- Replace the `sendLovableEmail(...)` call with a `fetch` to the Resend gateway
-- Map existing payload fields (`to`, `from`, `subject`, `html`, `text`) to Resend's API format
-- Keep all queue logic (retry, DLQ, rate-limit detection, TTL) intact
-- Update rate-limit detection to check HTTP 429 from fetch response instead of error object
+## Technical Changes
 
-## Step 4: Deploy Updated Functions
+### File: `supabase/functions/send-landing-page-confirmation/index.ts`
+- Remove Resend API call
+- Add Gmail OAuth2 token exchange (refresh token → access token)
+- Send email via Gmail API (`POST https://gmail.googleapis.com/gmail/v1/users/me/messages/send`)
+- Format email as base64url-encoded MIME message
+- Keep all existing template/HTML logic unchanged
 
-Deploy both `send-landing-page-confirmation` and `process-email-queue` Edge Functions.
+### File: `supabase/functions/process-email-queue/index.ts`
+- Replace `sendViaResend()` with `sendViaGmail()` 
+- Add OAuth2 token refresh logic
+- Update rate-limit detection for Gmail's error format (HTTP 429 or quota errors)
+- Keep all queue/retry/DLQ logic intact
 
-## Technical Notes
+### Helper: Gmail send function
+- Exchange refresh token for access token via `https://oauth2.googleapis.com/token`
+- Build RFC 2822 MIME message with proper headers (From, To, Subject, Content-Type)
+- Base64url encode and send via Gmail API
+- Cache access token in memory for the function's lifetime (~10 min)
 
-- Resend requires a verified sender domain. The current "from" address is `noreply@flow.nevorai.com` — this domain must be verified in Resend's dashboard.
-- The Resend gateway pattern handles OAuth/token refresh automatically.
-- No database or frontend changes needed — only the two Edge Functions change.
+## Important Notes
+
+- Gmail API access tokens expire after ~1 hour, but Edge Functions are short-lived so each invocation refreshes
+- The refresh token is long-lived and doesn't expire unless revoked
+- Gmail quota errors return HTTP 429 — existing retry logic will handle this
+- Your "from" address must be a verified alias in Gmail/Workspace settings
 
