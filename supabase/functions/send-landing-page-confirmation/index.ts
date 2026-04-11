@@ -3,7 +3,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
+
+const RESEND_API_URL = 'https://api.resend.com/emails'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -90,38 +91,35 @@ Deno.serve(async (req) => {
 </body>
 </html>`
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured')
+    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+    if (!RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY not configured')
     }
 
-    const senderDomain = 'notify.flow.nevorai.com'
     const fromName = senderDisplayName
+    const fromEmail = `${fromName} <noreply@flow.nevorai.com>`
 
-    const plainText = `${page.email_heading || 'You are registered!'}\n\n${emailBody}\n\n${page.email_footer_text || ''}\n\n${trustBadgeText}`
-
-    // Generate or fetch unsubscribe token for this email
-    const unsubscribeToken = crypto.randomUUID()
-    await supabase.from('email_unsubscribe_tokens').upsert(
-      { email: reg.email, token: unsubscribeToken },
-      { onConflict: 'email' }
-    )
-
-    const result = await sendLovableEmail(
-      {
-        to: reg.email,
+    const resendResponse = await fetch(RESEND_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: fromEmail,
+        to: [reg.email],
         subject,
         html,
-        text: plainText,
-        from: `${fromName} <noreply@flow.nevorai.com>`,
-        sender_domain: senderDomain,
-        purpose: 'transactional',
-        idempotency_key: `lp-confirm-${registration_id}`,
-        message_id: `lp-confirm-${registration_id}`,
-        unsubscribe_token: unsubscribeToken,
-      },
-      { apiKey: LOVABLE_API_KEY }
-    )
+        text: `${page.email_heading || 'You are registered!'}\n\n${emailBody}\n\n${page.email_footer_text || ''}\n\n${trustBadgeText}`,
+      }),
+    })
+
+    const result = await resendResponse.json()
+
+    if (!resendResponse.ok) {
+      console.error('Resend API error:', JSON.stringify(result))
+      throw new Error(`Resend API error [${resendResponse.status}]: ${JSON.stringify(result)}`)
+    }
 
     console.log('Email sent result:', JSON.stringify(result))
 
