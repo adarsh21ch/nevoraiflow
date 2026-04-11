@@ -13,6 +13,68 @@ function base64url(str: string): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
+function parseJwtClaims(token: string): Record<string, unknown> | null {
+  const parts = token.split('.')
+  if (parts.length < 2) return null
+
+  try {
+    const payload = parts[1]
+      .replaceAll('-', '+')
+      .replaceAll('_', '/')
+      .padEnd(Math.ceil(parts[1].length / 4) * 4, '=')
+
+    return JSON.parse(atob(payload)) as Record<string, unknown>
+  } catch {
+    return null
+  }
+}
+
+function jsonResponse(body: Record<string, unknown>, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
+}
+
+async function requireAdminAccess(authHeader: string, supabaseUrl: string, serviceRoleKey: string) {
+  const userSupabase = createClient(
+    supabaseUrl,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } }
+  )
+
+  const { data: { user }, error: userError } = await userSupabase.auth.getUser()
+  if (userError || !user) {
+    return { error: jsonResponse({ error: 'Unauthorized' }, 401) }
+  }
+
+  const adminSupabase = createClient(supabaseUrl, serviceRoleKey)
+  const { data: isAdmin, error: roleError } = await adminSupabase.rpc('has_role', {
+    _user_id: user.id,
+    _role: 'admin',
+  })
+
+  if (roleError || !isAdmin) {
+    return { error: jsonResponse({ error: 'Admin access required' }, 403) }
+  }
+
+  return { adminSupabase }
+}
+
+async function getLatestToken(supabase: any) {
+  const { data: tokens, error: tokenErr } = await supabase
+    .from('gmail_oauth_tokens')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  if (tokenErr) {
+    throw new Error(tokenErr.message)
+  }
+
+  return tokens?.[0] ?? null
+}
+
 async function refreshAccessToken(supabase: any, tokenRow: any): Promise<string> {
   const GOOGLE_CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID')!
   const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET')!
@@ -49,40 +111,81 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-    const { to, subject, html, sender_name } = await req.json()
+  if (!supabaseUrl || !serviceRoleKey) {
+    return jsonResponse({ error: 'Server configuration error' }, 500)
+  }
+
+  try {
+    const authHeader = req.headers.get('Authorization')
+
+    if (req.method === 'GET') {
+      if (!authHeader) {
+        return jsonResponse({ error: 'Unauthorized' }, 401)
+      }
+
+      const adminAccess = await requireAdminAccess(authHeader, supabaseUrl, serviceRoleKey)
+      if ('error' in adminAccess) {
+        return adminAccess.error
+      }
+
+      const tokenRow = await getLatestToken(adminAccess.adminSupabase)
+
+      return jsonResponse({
+        connected: Boolean(tokenRow),
+        email: tokenRow?.gmail_email ?? null,
+        token_expiry: tokenRow?.token_expiry ?? null,
+      })
+    }
+
+    if (req.method !== 'POST') {
+      return jsonResponse({ error: `Method ${req.method} not allowed` }, 405)
+    }
+
+    if (!authHeader) {
+      return jsonResponse({ error: 'Unauthorized' }, 401)
+    }
+
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length).trim() : ''
+    const claims = token ? parseJwtClaims(token) : null
+
+    let supabase: any
+    if (claims?.role === 'service_role') {
+      supabase = createClient(supabaseUrl, serviceRoleKey)
+    } else {
+      const adminAccess = await requireAdminAccess(authHeader, supabaseUrl, serviceRoleKey)
+      if ('error' in adminAccess) {
+        return adminAccess.error
+      }
+
+      supabase = adminAccess.adminSupabase
+    }
+
+    const payload = await req.json().catch(() => null)
+    const to = typeof payload?.to === 'string' ? payload.to.trim() : ''
+    const subject = typeof payload?.subject === 'string' ? payload.subject.trim() : ''
+    const html = typeof payload?.html === 'string' ? payload.html.trim() : ''
+    const sender_name = typeof payload?.sender_name === 'string' ? payload.sender_name.trim() : undefined
 
     if (!to || !subject || !html) {
-      return new Response(JSON.stringify({ error: 'Missing required fields: to, subject, html' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return jsonResponse({ error: 'Missing required fields: to, subject, html' }, 400)
     }
 
     // Get the admin's Gmail tokens (pick the most recent)
-    const { data: tokens, error: tokenErr } = await supabase
-      .from('gmail_oauth_tokens')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(1)
+    const tokenRow = await getLatestToken(supabase)
 
-    if (tokenErr || !tokens || tokens.length === 0) {
-      console.error('No Gmail tokens found:', tokenErr)
-      return new Response(JSON.stringify({ error: 'Gmail not connected. Please connect Gmail in admin settings.' }), {
-        status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+    if (!tokenRow) {
+      console.error('No Gmail tokens found')
+      return jsonResponse({ error: 'Gmail not connected. Please connect Gmail in admin settings.' }, 503)
     }
 
-    const tokenRow = tokens[0]
     let accessToken = tokenRow.access_token
 
     // Check if token is expired (with 5 min buffer)
     const expiresAt = new Date(tokenRow.token_expiry).getTime()
-    if (Date.now() > expiresAt - 5 * 60 * 1000) {
+    if (Number.isFinite(expiresAt) && Date.now() > expiresAt - 5 * 60 * 1000) {
       console.log('Access token expired, refreshing...')
       accessToken = await refreshAccessToken(supabase, tokenRow)
     }
@@ -135,9 +238,7 @@ Deno.serve(async (req) => {
 
         const retryResult = await retryRes.json()
         console.log('Email sent via Gmail (after retry):', retryResult.id)
-        return new Response(JSON.stringify({ sent: true, message_id: retryResult.id }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        return jsonResponse({ sent: true, message_id: retryResult.id })
       }
 
       throw new Error(`Gmail API error [${gmailRes.status}]: ${errBody}`)
@@ -146,13 +247,9 @@ Deno.serve(async (req) => {
     const result = await gmailRes.json()
     console.log('Email sent via Gmail:', result.id)
 
-    return new Response(JSON.stringify({ sent: true, message_id: result.id }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return jsonResponse({ sent: true, message_id: result.id })
   } catch (err: any) {
     console.error('Gmail email error:', err)
-    return new Response(JSON.stringify({ error: err.message, sent: false }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return jsonResponse({ error: err.message, sent: false }, 500)
   }
 })

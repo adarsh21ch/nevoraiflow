@@ -70,7 +70,6 @@ const AdminSettingsPage = () => {
       try {
         const { data, error } = await supabase.functions.invoke("send-gmail-email", {
           method: "GET",
-          path: undefined,
         });
 
         if (error) {
