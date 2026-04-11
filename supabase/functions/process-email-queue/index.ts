@@ -1,6 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
-const RESEND_API_URL = 'https://api.resend.com/emails'
 const MAX_RETRIES = 5
 const DEFAULT_BATCH_SIZE = 10
 const DEFAULT_SEND_DELAY_MS = 200
@@ -51,33 +50,35 @@ async function moveToDlq(
   }
 }
 
-// Send email via Resend API. Returns the response object for status checking.
-async function sendViaResend(
+// Send email via Gmail API edge function
+async function sendViaGmail(
   payload: Record<string, unknown>,
-  resendApiKey: string
-): Promise<Response> {
-  return fetch(RESEND_API_URL, {
+  supabaseUrl: string,
+  serviceRoleKey: string
+): Promise<{ ok: boolean; status: number; body: any }> {
+  const res = await fetch(`${supabaseUrl}/functions/v1/send-gmail-email`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${resendApiKey}`,
+      'Authorization': `Bearer ${serviceRoleKey}`,
     },
     body: JSON.stringify({
-      from: payload.from,
-      to: [payload.to],
+      to: payload.to,
       subject: payload.subject,
       html: payload.html,
-      text: payload.text,
+      sender_name: payload.from ? String(payload.from).replace(/<.*>/, '').trim() : undefined,
     }),
   })
+
+  const body = await res.json()
+  return { ok: res.ok, status: res.status, body }
 }
 
 Deno.serve(async (req) => {
-  const resendApiKey = Deno.env.get('RESEND_API_KEY')
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-  if (!resendApiKey || !supabaseUrl || !supabaseServiceKey) {
+  if (!supabaseUrl || !supabaseServiceKey) {
     console.error('Missing required environment variables')
     return new Response(
       JSON.stringify({ error: 'Server configuration error' }),
@@ -235,12 +236,11 @@ Deno.serve(async (req) => {
       }
 
       try {
-        const response = await sendViaResend(payload, resendApiKey)
-        const responseBody = await response.json()
+        const response = await sendViaGmail(payload, supabaseUrl, supabaseServiceKey)
 
         if (response.status === 429) {
-          // Rate limited by Resend
-          const errorMsg = `Rate limited [429]: ${JSON.stringify(responseBody)}`
+          // Rate limited by Gmail
+          const errorMsg = `Rate limited [429]: ${JSON.stringify(response.body)}`
           console.error('Email send rate limited', { queue, msg_id: msg.msg_id, error: errorMsg })
 
           await supabase.from('email_send_log').insert({
@@ -251,15 +251,10 @@ Deno.serve(async (req) => {
             error_message: errorMsg.slice(0, 1000),
           })
 
-          const retryAfterHeader = response.headers.get('Retry-After')
-          const retryAfterSecs = retryAfterHeader ? parseInt(retryAfterHeader, 10) || 60 : 60
-
           await supabase
             .from('email_send_state')
             .update({
-              retry_after_until: new Date(
-                Date.now() + retryAfterSecs * 1000
-              ).toISOString(),
+              retry_after_until: new Date(Date.now() + 60 * 1000).toISOString(),
               updated_at: new Date().toISOString(),
             })
             .eq('id', 1)
@@ -270,16 +265,8 @@ Deno.serve(async (req) => {
           )
         }
 
-        if (response.status === 403) {
-          await moveToDlq(supabase, queue, msg, 'Emails disabled / forbidden by Resend')
-          return new Response(
-            JSON.stringify({ processed: totalProcessed, stopped: 'emails_disabled' }),
-            { headers: { 'Content-Type': 'application/json' } }
-          )
-        }
-
         if (!response.ok) {
-          throw new Error(`Resend API error [${response.status}]: ${JSON.stringify(responseBody)}`)
+          throw new Error(`Gmail API error [${response.status}]: ${JSON.stringify(response.body)}`)
         }
 
         // Log success
@@ -309,7 +296,7 @@ Deno.serve(async (req) => {
           error: errorMsg,
         })
 
-        // Log non-429 failures
+        // Log failures
         await supabase.from('email_send_log').insert({
           message_id: payload.message_id,
           template_name: payload.label || queue,
