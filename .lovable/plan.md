@@ -1,54 +1,70 @@
 
 
-# Switch from Resend to Gmail API for Email Sending
+# Replicate Gmail OAuth2 Email System from Smart Income Funnel
 
 ## Overview
 
-Replace direct Resend API calls with Gmail API (OAuth2) in the two Edge Functions. Gmail with Google Workspace gives you 2,000 emails/day — 20x more than Resend's free tier.
+Copy the exact Gmail OAuth2 email architecture from the [Smart Income Funnel](/projects/cb4e093e-0bcb-428f-b101-0f9ed06766a5) project into this project. This replaces the current Resend-based email sending with a fully automated Gmail API flow where an admin connects their Gmail account once, and all emails are sent through it automatically.
 
-## What You'll Need to Provide
+## What Gets Created
 
-Before implementation, you'll need to set up a Google Cloud project:
+### 1. Database Table: `gmail_oauth_tokens`
+New table to store OAuth tokens securely:
+- `id`, `user_id`, `access_token`, `refresh_token`, `token_expiry`, `gmail_email`, `created_at`
+- RLS: only service_role can read/write (edge functions use service role client)
 
-1. **Go to** [Google Cloud Console](https://console.cloud.google.com)
-2. **Enable the Gmail API** for your project
-3. **Create OAuth2 credentials** (Desktop app type):
-   - Get the **Client ID** and **Client Secret**
-4. **Generate a Refresh Token** using the OAuth2 Playground or a one-time script — this lets the Edge Function send emails on behalf of your Gmail/Workspace account without user interaction
-5. The sender email will be your actual Gmail/Workspace email address (e.g., `noreply@flow.nevorai.com` if it's a Workspace alias)
+### 2. Three New Edge Functions
 
-## Secrets Needed
+**`gmail-oauth-init`** — Admin-only endpoint that builds and returns the Google OAuth consent URL. Verifies admin role before generating the URL with `gmail.send` and `userinfo.email` scopes, `access_type=offline`, `prompt=consent`.
 
-Three new secrets to add:
-- `GMAIL_CLIENT_ID` — OAuth2 client ID
-- `GMAIL_CLIENT_SECRET` — OAuth2 client secret  
-- `GMAIL_REFRESH_TOKEN` — Long-lived refresh token for your sending account
+**`gmail-oauth-callback`** — Receives Google's redirect (no JWT verification). Exchanges the authorization code for tokens, fetches the gmail email via userinfo API, stores everything in `gmail_oauth_tokens`, and renders a success/error HTML page.
 
-## Technical Changes
+**`send-gmail-email`** — Accepts `{to, subject, html, sender_name}`. Fetches the latest token row, auto-refreshes if expired (5-min buffer), builds a base64url-encoded MIME message, sends via Gmail API. Retries once on 401.
 
-### File: `supabase/functions/send-landing-page-confirmation/index.ts`
-- Remove Resend API call
-- Add Gmail OAuth2 token exchange (refresh token → access token)
-- Send email via Gmail API (`POST https://gmail.googleapis.com/gmail/v1/users/me/messages/send`)
-- Format email as base64url-encoded MIME message
-- Keep all existing template/HTML logic unchanged
+### 3. Updated Existing Functions
 
-### File: `supabase/functions/process-email-queue/index.ts`
-- Replace `sendViaResend()` with `sendViaGmail()` 
-- Add OAuth2 token refresh logic
-- Update rate-limit detection for Gmail's error format (HTTP 429 or quota errors)
-- Keep all queue/retry/DLQ logic intact
+**`send-landing-page-confirmation`** — Replace Resend API call with internal call to `send-gmail-email` edge function.
 
-### Helper: Gmail send function
-- Exchange refresh token for access token via `https://oauth2.googleapis.com/token`
-- Build RFC 2822 MIME message with proper headers (From, To, Subject, Content-Type)
-- Base64url encode and send via Gmail API
-- Cache access token in memory for the function's lifetime (~10 min)
+**`process-email-queue`** — Replace `sendViaResend()` with internal call to `send-gmail-email` edge function for queue-based sends.
+
+### 4. Config Updates (`supabase/config.toml`)
+```toml
+[functions.gmail-oauth-callback]
+verify_jwt = false
+
+[functions.send-gmail-email]
+verify_jwt = false
+```
+
+### 5. Admin UI — "Connect Gmail" Section
+Add a Gmail connection section to `AdminSettingsPage.tsx`:
+- Shows connection status (connected email or "Not connected")
+- "Connect Gmail" button that opens OAuth consent flow in popup
+- Polls for successful connection
+- "Disconnect" button to remove tokens
+- Identical UX to the reference project
+
+### 6. Secrets Required
+Two secrets need to be added:
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
 
 ## Important Notes
 
-- Gmail API access tokens expire after ~1 hour, but Edge Functions are short-lived so each invocation refreshes
-- The refresh token is long-lived and doesn't expire unless revoked
-- Gmail quota errors return HTTP 429 — existing retry logic will handle this
-- Your "from" address must be a verified alias in Gmail/Workspace settings
+- The `RESEND_API_KEY` secret will no longer be used for email sending but remains configured
+- The redirect URI that must be added in Google Cloud Console is: `https://atwnmovdnblcqyvhaxls.supabase.co/functions/v1/gmail-oauth-callback`
+- All branding references will use "Nevorai Flow" instead of "Smart Income Program"
+- The existing email queue infrastructure (pgmq, DLQ, retry logic) is preserved — only the send mechanism changes from Resend to Gmail
+
+## Implementation Order
+1. Add secrets (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`)
+2. Create `gmail_oauth_tokens` table with RLS
+3. Create `gmail-oauth-init` edge function
+4. Create `gmail-oauth-callback` edge function
+5. Create `send-gmail-email` edge function
+6. Update `send-landing-page-confirmation` to call `send-gmail-email`
+7. Update `process-email-queue` to call `send-gmail-email`
+8. Update `config.toml` with JWT settings
+9. Add Gmail connection UI to `AdminSettingsPage.tsx`
+10. Deploy all edge functions
 
