@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Lock, Loader2, Shield } from "lucide-react";
-import logoImg from "@/assets/logo.png";
+import logoImg from "@/assets/nflow-logo.png";
 
 interface CodeGateScreenProps {
   funnelId: string;

@@ -11,7 +11,7 @@ import {
   AlertTriangle, BadgeCheck, MapPin, Instagram, Volume2, VolumeX,
   Maximize, Minimize, Share2, Loader2, Gauge, Sun, Moon
 } from "lucide-react";
-import logoImg from "@/assets/logo.png";
+import logoImg from "@/assets/nflow-logo.png";
 import { MultiStepViewer } from "@/components/funnel/MultiStepViewer";
 import { CodeGateScreen } from "@/components/funnel/CodeGateScreen";
 import { PrivateLeadForm } from "@/components/funnel/PrivateLeadForm";
