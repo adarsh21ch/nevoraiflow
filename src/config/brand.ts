@@ -4,7 +4,7 @@ export const brand = {
   nameAccent: "Flow",
   tagline: "Never lose your flow",
   description:
-    "Build smart video funnels that capture leads, collect payments, and guide your audience — all in one place.",
+    "Control how prospects watch your videos, track engagement, and follow up at the right moment — all in one place.",
   domain: "nflow.app",
   supportEmail: "support@nflow.app",
   social: {

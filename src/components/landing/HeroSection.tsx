@@ -4,11 +4,7 @@ import { brand } from "@/config/brand";
 import { motion } from "framer-motion";
 import { Play, Users, Eye, Target } from "lucide-react";
 
-const stats = [
-  { icon: Eye, label: "Video Plays", value: "51,000+" },
-  { icon: Users, label: "Monthly Users", value: "26,000+" },
-  { icon: Target, label: "Leads Captured", value: "10,000+" },
-];
+// Stats removed — placeholder numbers not real
 
 export const HeroSection = () => {
   return (
@@ -31,7 +27,7 @@ export const HeroSection = () => {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 mb-8">
               <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
               <span className="text-xs text-muted-foreground font-medium">
-                Smart Video Funnels for Entrepreneurs
+                Smart Video Follow-Up for Entrepreneurs
               </span>
             </div>
           </motion.div>
@@ -42,8 +38,8 @@ export const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
-            Turn Random Videos Into{" "}
-            <span className="gradient-text">Structured Funnels.</span>
+            Turn Videos Into{" "}
+            <span className="gradient-text">Controlled Follow-Up Journeys.</span>
           </motion.h1>
 
           <motion.p
@@ -52,7 +48,7 @@ export const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            Build smart video funnels that capture leads, structure your content, and guide your audience step by step.
+            Guide every prospect through your message step by step, keep their attention, and convert more — with a structured video flow.
           </motion.p>
 
           <motion.div
@@ -74,23 +70,15 @@ export const HeroSection = () => {
             </a>
           </motion.div>
 
-          {/* Stats */}
-          <motion.div
-            className="flex flex-wrap justify-center gap-6 md:gap-12"
+          {/* Trust line */}
+          <motion.p
+            className="text-sm text-muted-foreground max-w-xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            {stats.map((stat) => (
-              <div key={stat.label} className="glass-card px-6 py-4 flex items-center gap-3">
-                <stat.icon size={20} className="text-primary" />
-                <div className="text-left">
-                  <div className="text-lg font-heading font-bold text-foreground">{stat.value}</div>
-                  <div className="text-xs text-muted-foreground">{stat.label}</div>
-                </div>
-              </div>
-            ))}
-          </motion.div>
+            Built for creators, teams, and business owners who want more control over follow-up.
+          </motion.p>
         </div>
       </div>
     </section>
