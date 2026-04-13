@@ -22,7 +22,6 @@ const AuthPage = () => {
   const [failCount, setFailCount] = useState(0);
   const [lockUntil, setLockUntil] = useState(0);
 
-  // Show loading spinner while auth state is being determined
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -31,7 +30,6 @@ const AuthPage = () => {
     );
   }
 
-  // Use Navigate component instead of calling navigate() during render
   if (user) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -75,21 +73,46 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 gradient-bg-subtle">
+    <div className="min-h-screen flex items-center justify-center p-4 gradient-bg-subtle relative">
       <div className="absolute inset-0 animate-grid opacity-30" />
+      {/* Background glow behind card */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse at 50% 0%, rgba(26, 79, 214, 0.12) 0%, transparent 70%)",
+        }}
+      />
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <Link to="/" className="inline-block"><Logo size="lg" /></Link>
-          <p className="text-sm text-muted-foreground mt-3">
-            {tab === "login" ? "Welcome back! Sign in to your account." : "Create your free account and start building funnels."}
+          <p className="text-sm mt-3" style={{ color: "#8899AA" }}>
+            {tab === "login"
+              ? "Welcome back! Sign in to your account."
+              : "Share videos. Track every view. Never lose your flow."}
           </p>
         </div>
-        <div className="glass-card p-8">
-          <div className="flex gap-1 p-1 bg-muted rounded-lg mb-6">
+        <div className="auth-card p-8">
+          {/* Tab switcher */}
+          <div className="flex gap-0 mb-6">
             {(["login", "signup"] as const).map((t) => (
-              <button key={t} onClick={() => setTab(t)}
-                className={`flex-1 py-2.5 text-sm font-medium rounded-md transition-all ${tab === t ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className="flex-1 pb-3 text-sm font-medium transition-all duration-300 relative"
+                style={{
+                  color: tab === t ? "#FFFFFF" : "#8899AA",
+                  fontWeight: tab === t ? 700 : 500,
+                }}
+              >
                 {t === "login" ? "Log In" : "Sign Up"}
+                {/* Gradient underline for active tab */}
+                <span
+                  className="absolute bottom-0 left-0 right-0 h-[2px] transition-opacity duration-300"
+                  style={{
+                    background: "linear-gradient(90deg, #7EE83A, #00D4C8, #00AAFF)",
+                    opacity: tab === t ? 1 : 0,
+                  }}
+                />
               </button>
             ))}
           </div>
@@ -98,8 +121,8 @@ const AuthPage = () => {
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm">Full Name <span className="text-destructive">*</span></Label>
                 <div className="relative">
-                  <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input id="name" placeholder="Your full name" className="pl-9 bg-muted border-border"
+                  <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8899AA" }} />
+                  <Input id="name" placeholder="Your full name" className="auth-input pl-9"
                     value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                 </div>
               </div>
@@ -107,17 +130,17 @@ const AuthPage = () => {
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm">Email <span className="text-destructive">*</span></Label>
               <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input id="email" type="email" placeholder="you@example.com" className="pl-9 bg-muted border-border" required
+                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8899AA" }} />
+                <Input id="email" type="email" placeholder="you@example.com" className="auth-input pl-9" required
                   value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
               </div>
             </div>
             {tab === "signup" && (
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm">Phone Number <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                <Label htmlFor="phone" className="text-sm">Phone Number <span style={{ color: "#8899AA" }} className="text-xs">(optional)</span></Label>
                 <div className="relative">
-                  <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input id="phone" placeholder="+91 9876543210" className="pl-9 bg-muted border-border"
+                  <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8899AA" }} />
+                  <Input id="phone" placeholder="+91 9876543210" className="auth-input pl-9"
                     value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
                 </div>
               </div>
@@ -128,17 +151,18 @@ const AuthPage = () => {
                 {tab === "login" && <Link to="/auth/reset-password" className="text-xs text-primary hover:underline">Forgot password?</Link>}
               </div>
               <div className="relative">
-                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8899AA" }} />
                 <Input id="password" type={showPassword ? "text" : "password"} placeholder="••••••••"
-                  className="pl-9 pr-10 bg-muted border-border" value={form.password} required
+                  className="auth-input pl-9 pr-10" value={form.password} required
                   onChange={(e) => setForm({ ...form, password: e.target.value })} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 hover:text-foreground" style={{ color: "#8899AA" }}>
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
-            <Button variant="hero" className="w-full" size="lg" disabled={submitting}>
+            <Button variant="hero" className="w-full" size="lg" disabled={submitting}
+              style={{ borderRadius: "12px" }}>
               {submitting ? (
                 <span className="flex items-center gap-2">
                   <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
@@ -148,7 +172,7 @@ const AuthPage = () => {
             </Button>
             <div className="relative my-2">
               <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
-              <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">or</span></div>
+              <div className="relative flex justify-center text-xs"><span className="px-2" style={{ background: "#0F1628", color: "#8899AA" }}>or</span></div>
             </div>
             <Button type="button" variant="outline" className="w-full" size="lg" disabled={submitting}
               onClick={async () => {
@@ -192,7 +216,7 @@ const AuthPage = () => {
             </Button>
           </form>
         </div>
-        <p className="text-center text-xs text-muted-foreground mt-6">
+        <p className="text-center text-xs mt-6" style={{ color: "#8899AA" }}>
           By continuing, you agree to our <Link to="/terms" className="text-primary hover:underline">Terms</Link> and <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
         </p>
       </div>
