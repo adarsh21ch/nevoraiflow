@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { brand } from "@/config/brand";
 import { motion } from "framer-motion";
-import { Play, Users, Eye, Target } from "lucide-react";
+import { Play } from "lucide-react";
 
 // Stats removed — placeholder numbers not real
 
