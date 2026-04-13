@@ -24,7 +24,7 @@ const rows = [
   },
   {
     yt: "Views don't equal business results",
-    nf: "Built for conversion — guide users toward action, payment, or next steps",
+    nf: "Built for conversion — guide users toward action",
   },
 ];
 
@@ -50,7 +50,7 @@ export const WhyNevorai = () => {
             Why Not Just Use <span className="gradient-text">YouTube?</span>
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto text-base md:text-lg leading-relaxed">
-            Because views don't mean control, data, or conversions.
+            Because YouTube gives you views — not control, follow-up, or a guided conversion path.
           </p>
         </motion.div>
 
@@ -64,7 +64,7 @@ export const WhyNevorai = () => {
             </div>
             <div className="rounded-xl bg-success/10 border border-success/20 px-4 py-3 text-center">
               <span className="font-heading font-bold text-sm md:text-base text-success">
-                ✅ Nevorai Flow
+                ✅ nFlow
               </span>
             </div>
           </div>
@@ -116,7 +116,7 @@ export const WhyNevorai = () => {
           <p className="text-lg md:text-xl font-heading font-semibold text-foreground">
             YouTube gives views.{" "}
             <span className="gradient-text">
-              Nevorai Flow gives control + data + conversion.
+              nFlow gives control + data + conversion.
             </span>
           </p>
         </motion.div>

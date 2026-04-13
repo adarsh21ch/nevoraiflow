@@ -11,9 +11,9 @@ const freePlan = {
     { text: "View shared funnels", included: true },
     { text: "Access public content", included: true },
     { text: "Browse marketplace", included: true },
-    { text: "Create funnels", included: false },
-    { text: "Lead capture", included: false },
-    { text: "Live broadcast", included: false },
+    { text: "No funnel creation", included: false },
+    { text: "No lead capture", included: false },
+    { text: "No live broadcast", included: false },
   ],
   cta: "Start Free",
   variant: "outline" as const,
@@ -131,7 +131,7 @@ export const PricingSection = () => {
             Simple, Transparent <span className="gradient-text">Pricing</span>
           </h2>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            Start free. Upgrade when you're ready to unlock the full power.
+            Start free. Upgrade when you need more control, more funnels, and better follow-up tools.
           </p>
         </motion.div>
 
