@@ -179,4 +179,39 @@
   .safe-area-pb {
     padding-bottom: max(0.375rem, env(safe-area-inset-bottom));
   }
+
+  /* Auth card */
+  .auth-card {
+    background: #0F1628;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  [data-theme="light"] .auth-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Auth input focus */
+  .auth-input {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .auth-input::placeholder {
+    color: #8899AA;
+  }
+
+  .auth-input:focus {
+    border-color: #00AAFF !important;
+    box-shadow: 0 0 0 3px rgba(0, 170, 255, 0.15) !important;
+    outline: none;
+  }
+
+  [data-theme="light"] .auth-input {
+    border-color: hsl(var(--border));
+  }
 }
