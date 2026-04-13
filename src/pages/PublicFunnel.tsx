@@ -298,7 +298,7 @@ const CustomVideoPlayer = ({
     <div
       ref={containerRef}
       className="relative w-full bg-black rounded-2xl overflow-hidden group select-none"
-      style={{ aspectRatio: "16/9" }}
+      style={{ aspectRatio: "16 / 9", minHeight: 0 }}
       onMouseMove={resetHideTimer}
       onTouchStart={resetHideTimer}
       onClick={() => { if (started) togglePlay(); }}
