@@ -2,9 +2,9 @@ import logoImg from "@/assets/nflow-logo.png";
 
 export const Logo = ({ size = "default" }: { size?: "sm" | "default" | "lg" }) => {
   const sizes = {
-    sm: { img: "w-6 h-6", text: "text-[15px]" },
-    default: { img: "w-7 h-7", text: "text-[18px]" },
-    lg: { img: "w-9 h-9", text: "text-[24px]" },
+    sm: { img: "w-8 h-8", text: "text-[15px]" },
+    default: { img: "w-10 h-10", text: "text-[18px]" },
+    lg: { img: "w-14 h-14", text: "text-[24px]" },
   };
 
   return (
