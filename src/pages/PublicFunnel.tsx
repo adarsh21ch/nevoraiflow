@@ -297,7 +297,8 @@ const CustomVideoPlayer = ({
   return (
     <div
       ref={containerRef}
-      className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden group select-none"
+      className="relative w-full bg-black rounded-2xl overflow-hidden group select-none"
+      style={{ aspectRatio: "16/9" }}
       onMouseMove={resetHideTimer}
       onTouchStart={resetHideTimer}
       onClick={() => { if (started) togglePlay(); }}
@@ -323,8 +324,8 @@ const CustomVideoPlayer = ({
 
       {/* Watermark — bottom-right, subtle */}
       {started && (
-        <div className="absolute bottom-14 right-4 text-[10px] text-white/[0.12] font-medium pointer-events-none select-none z-10 tracking-wide">
-          flow.nevorai.com
+        <div className="absolute bottom-14 right-4 text-[11px] text-white/50 font-medium pointer-events-none select-none z-10 tracking-wide">
+          nFlow
         </div>
       )}
 
@@ -558,7 +559,7 @@ const PublicFunnel = () => {
   // OG tags
   useEffect(() => {
     if (!funnel) return;
-    document.title = `${funnel.title} | Nevorai Flow`;
+    document.title = `${funnel.title} | nFlow`;
     const setMeta = (name: string, content: string, prop = false) => {
       const attr = prop ? "property" : "name";
       let el = document.querySelector(`meta[${attr}="${name}"]`);
@@ -571,7 +572,7 @@ const PublicFunnel = () => {
     setMeta("og:type", "website", true);
     setMeta("og:url", window.location.href, true);
     if (funnel.thumbnail_url) setMeta("og:image", funnel.thumbnail_url, true);
-    setMeta("og:site_name", "Nevorai Flow", true);
+    setMeta("og:site_name", "nFlow", true);
     setMeta("twitter:card", "summary_large_image");
     setMeta("twitter:title", funnel.title);
     setMeta("twitter:description", funnel.description || funnel.title);
@@ -743,9 +744,11 @@ const PublicFunnel = () => {
         }}
       >
         <div className="flex items-center gap-2">
-          <img src={logoImg} alt="Nevorai Flow" className="h-6 w-6" />
-          <span className="font-heading font-bold text-[15px]" style={{ color: tc.text, letterSpacing: "-0.02em" }}>Nevorai</span>
-          <span className="font-heading font-extrabold text-primary text-[15px]" style={{ letterSpacing: "-0.03em", fontStyle: "italic", transform: "skewX(-4deg)", display: "inline-block", marginLeft: "-2px" }}>Flow</span>
+          <img src={logoImg} alt="nFlow" className="h-6 w-6" />
+          <div className="flex items-baseline text-[15px]" style={{ lineHeight: 1 }}>
+            <span style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 400, fontStyle: "italic", color: tc.text, letterSpacing: "-0.02em" }}>n</span>
+            <span style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 800, color: tc.text, letterSpacing: "-0.03em" }}>Flow</span>
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -982,7 +985,7 @@ const PublicFunnel = () => {
 
         {/* Footer */}
         <div className="mt-16 pt-6 pb-8 text-center" style={{ borderTop: `1px solid ${tc.footerBorder}` }}>
-          <p className="text-[11px] tracking-wide" style={{ color: tc.footerText }}>© {new Date().getFullYear()} Nevorai Flow · All rights reserved</p>
+          <p className="text-[11px] tracking-wide" style={{ color: tc.footerText }}>© {new Date().getFullYear()} nFlow · All rights reserved</p>
         </div>
       </div>
       )}
