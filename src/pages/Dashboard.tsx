@@ -45,7 +45,7 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
+      <div className="space-y-8 overflow-x-hidden">
         <UpgradeBanner />
         <div>
           <h1 className="text-2xl font-heading font-bold">Dashboard</h1>
