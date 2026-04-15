@@ -68,30 +68,30 @@ const VideosPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 overflow-x-hidden">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
+      <div className="space-y-6 w-full max-w-full overflow-x-hidden box-border">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full max-w-full">
+          <div className="min-w-0">
             <h1 className="text-2xl font-heading font-bold">Video Gallery</h1>
             <div className="page-header-accent" />
           </div>
-          <Button variant="hero" onClick={() => setLinkModalOpen(true)}>
+          <Button variant="hero" className="w-fit max-w-full" onClick={() => setLinkModalOpen(true)}>
             <Link2 size={16} /> Add Video by Link
           </Button>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1 search-premium rounded-md">
+        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-full">
+          <div className="relative flex-1 min-w-0 search-premium rounded-md">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search videos..." className="pl-9 bg-muted border-border" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Input placeholder="Search videos..." className="pl-9 bg-muted border-border w-full" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <div className="flex gap-1 p-1 bg-muted rounded-lg">
+          <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
             <button onClick={() => setView("grid")} className={`p-2 rounded-md transition-colors ${view === "grid" ? "bg-card shadow-sm" : ""}`}><Grid size={16} /></button>
             <button onClick={() => setView("list")} className={`p-2 rounded-md transition-colors ${view === "list" ? "bg-card shadow-sm" : ""}`}><List size={16} /></button>
           </div>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="glass-card p-12 text-center">
+          <div className="glass-card p-8 sm:p-12 text-center w-full max-w-full">
             <Video size={40} className="text-muted-foreground mx-auto mb-3" />
             <h3 className="font-heading font-semibold mb-2">{search ? "No videos found" : "No videos yet"}</h3>
             <p className="text-sm text-muted-foreground mb-6">Add videos to your gallery using a Nevorai Flow video link.</p>
@@ -100,16 +100,16 @@ const VideosPage = () => {
             </Button>
           </div>
         ) : (
-          <div className={view === "grid" ? "grid sm:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-2"}>
+          <div className={view === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full max-w-full" : "space-y-2 w-full max-w-full"}>
             {filtered.map((v) => (
-              <div key={v.id} className="premium-card p-4">
-                <div className="aspect-video bg-muted rounded-lg mb-3 flex items-center justify-center overflow-hidden">
-                  {v.thumbnail_url ? <img src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover rounded-lg" /> :
-                    v.public_url ? <video src={v.public_url} className="w-full h-full object-cover rounded-lg" /> :
+              <div key={v.id} className="premium-card p-3 sm:p-4 w-full max-w-full box-border min-w-0">
+                <div className="aspect-video bg-muted rounded-lg mb-3 flex items-center justify-center overflow-hidden w-full max-w-full">
+                  {v.thumbnail_url ? <img src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover rounded-lg block" /> :
+                    v.public_url ? <video src={v.public_url} className="w-full h-full object-cover rounded-lg block" /> :
                     <Video size={24} className="text-muted-foreground" />}
                 </div>
-                <h3 className="font-medium text-sm truncate">{v.title}</h3>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                <h3 className="font-medium text-sm truncate max-w-full overflow-hidden">{v.title}</h3>
+                <div className="flex items-center gap-2 sm:gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
                   <span>{formatSize(v.file_size_bytes)}</span>
                   <span className={`px-1.5 py-0.5 rounded text-[10px] ${v.status === "ready" ? "bg-success/10 text-success" : v.status === "failed" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}>
                     {v.status}
@@ -118,16 +118,15 @@ const VideosPage = () => {
                     <span className="px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary">Linked</span>
                   )}
                 </div>
-                {/* Action buttons */}
-                <div className="flex gap-1 mt-3 border-t border-border pt-3">
-                  <Button variant="ghost" size="sm" className="h-7 text-xs flex-1" onClick={() => setRenameVideo({ id: v.id, title: v.title })}>
-                    <Pencil size={12} className="mr-1" /> Rename
+                <div className="flex gap-1 mt-3 border-t border-border pt-3 w-full">
+                  <Button variant="ghost" size="sm" className="h-7 text-[11px] sm:text-xs flex-1 min-w-0 px-1 sm:px-3" onClick={() => setRenameVideo({ id: v.id, title: v.title })}>
+                    <Pencil size={12} className="shrink-0" /> <span className="truncate">Rename</span>
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs flex-1" onClick={() => setShareVideo({ id: v.id, title: v.title })}>
-                    <Share2 size={12} className="mr-1" /> Share
+                  <Button variant="ghost" size="sm" className="h-7 text-[11px] sm:text-xs flex-1 min-w-0 px-1 sm:px-3" onClick={() => setShareVideo({ id: v.id, title: v.title })}>
+                    <Share2 size={12} className="shrink-0" /> <span className="truncate">Share</span>
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs flex-1" onClick={() => useInFunnel(v.id)}>
-                    <Rocket size={12} className="mr-1" /> Funnel
+                  <Button variant="ghost" size="sm" className="h-7 text-[11px] sm:text-xs flex-1 min-w-0 px-1 sm:px-3" onClick={() => useInFunnel(v.id)}>
+                    <Rocket size={12} className="shrink-0" /> <span className="truncate">Funnel</span>
                   </Button>
                 </div>
               </div>
