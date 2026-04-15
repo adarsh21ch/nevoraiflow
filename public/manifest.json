@@ -1,6 +1,6 @@
 {
-  "name": "nFlow",
-  "short_name": "nFlow",
+  "name": "Nevorai Flow",
+  "short_name": "Nevorai Flow",
   "description": "Never lose your flow — smart video funnels that capture leads, collect payments, and guide your audience.",
   "start_url": "/dashboard",
   "display": "standalone",

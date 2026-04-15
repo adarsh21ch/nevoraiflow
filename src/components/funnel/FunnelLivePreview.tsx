@@ -1,5 +1,5 @@
 import { Play, Lock, Users, MessageCircle, Phone as PhoneIcon, Eye, Layers } from "lucide-react";
-import logoImg from "@/assets/nflow-logo.png";
+import logoImg from "@/assets/nevorai-flow-logo.png";
 
 interface FunnelLivePreviewProps {
   funnel: {

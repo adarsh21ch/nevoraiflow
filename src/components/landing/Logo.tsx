@@ -1,4 +1,4 @@
-import logoImg from "@/assets/nflow-logo.png";
+import logoImg from "@/assets/nevorai-flow-logo.png";
 
 export const Logo = ({ size = "default" }: { size?: "sm" | "default" | "lg" }) => {
   const sizes = {
@@ -9,18 +9,17 @@ export const Logo = ({ size = "default" }: { size?: "sm" | "default" | "lg" }) =
 
   return (
     <div className="flex items-center gap-2">
-      <img src={logoImg} alt="nFlow" className={`${sizes[size].img} object-contain`} />
+      <img src={logoImg} alt="Nevorai Flow" className={`${sizes[size].img} object-contain`} />
       <div className={`flex items-baseline ${sizes[size].text}`} style={{ lineHeight: 1 }}>
         <span
           style={{
             fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
-            fontWeight: 400,
-            fontStyle: "italic",
+            fontWeight: 600,
             color: "hsl(var(--foreground))",
             letterSpacing: "-0.02em",
           }}
         >
-          n
+          Nevorai
         </span>
         <span
           style={{
@@ -28,6 +27,7 @@ export const Logo = ({ size = "default" }: { size?: "sm" | "default" | "lg" }) =
             fontWeight: 800,
             color: "hsl(var(--foreground))",
             letterSpacing: "-0.03em",
+            marginLeft: "4px",
           }}
         >
           Flow
