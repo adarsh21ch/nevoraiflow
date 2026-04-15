@@ -25,6 +25,7 @@ import PublicVideoPage from "./pages/PublicVideoPage";
 import LeadsPage from "./pages/LeadsPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import InsightsPage from "./pages/InsightsPage";
 import ProfilePage from "./pages/ProfilePage";
 import KYCPage from "./pages/KYCPage";
 import NotificationsPage from "./pages/NotificationsPage";
@@ -94,6 +95,7 @@ const App = () => (
               <Route path="/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
               <Route path="/payments" element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
               <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+              <Route path="/insights" element={<ProtectedRoute><InsightsPage /></ProtectedRoute>} />
               <Route path="/live" element={<ProtectedRoute><LivePage /></ProtectedRoute>} />
               <Route path="/live/:id" element={<ProtectedRoute><LiveDetailPage /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
