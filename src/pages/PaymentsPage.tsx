@@ -53,7 +53,10 @@ const PaymentsPage = () => {
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-heading font-bold">Payments</h1>
+          <div>
+            <h1 className="text-2xl font-heading font-bold">Payments</h1>
+            <div className="page-header-accent" />
+          </div>
           <Button variant="outline" size="sm" onClick={() => {
             const csv = "Amount,Transaction ID,Status,Date\n" + payments.map((p) => `${p.amount},"${p.upi_transaction_id || ""}","${p.status}","${p.submitted_at}"`).join("\n");
             const blob = new Blob([csv], { type: "text/csv" }); const url = URL.createObjectURL(blob);

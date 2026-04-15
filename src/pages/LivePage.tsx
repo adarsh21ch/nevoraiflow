@@ -154,6 +154,7 @@ const LivePage = () => {
           <div className="flex items-center gap-3">
             <div>
               <h1 className="text-2xl font-heading font-bold">Live</h1>
+              <div className="page-header-accent" />
               <p className="text-sm text-muted-foreground mt-1">
                 Create live sessions, collect registrations, and share meeting links with your audience.
               </p>

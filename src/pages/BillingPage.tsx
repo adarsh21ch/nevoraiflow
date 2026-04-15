@@ -44,7 +44,10 @@ const BillingPage = () => {
     <DashboardLayout>
       <div className="max-w-2xl space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-heading font-bold">Billing</h1>
+          <div>
+            <h1 className="text-2xl font-heading font-bold">Billing</h1>
+            <div className="page-header-accent" />
+          </div>
           {plan.isPaid && (
             <Badge variant="outline" className="gap-1.5 border-primary/30 text-primary">
               <Crown size={12} /> {plan.tier === "pro" ? "Pro" : "Basic"} Plan

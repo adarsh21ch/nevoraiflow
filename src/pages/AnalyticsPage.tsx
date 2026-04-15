@@ -52,7 +52,10 @@ const AnalyticsPage = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <h1 className="text-2xl font-heading font-bold">Analytics</h1>
+        <div>
+          <h1 className="text-2xl font-heading font-bold">Analytics</h1>
+          <div className="page-header-accent" />
+        </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {kpis.map((k) => (

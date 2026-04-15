@@ -47,6 +47,7 @@ const NotificationsPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-heading font-bold">Notifications</h1>
+            <div className="page-header-accent" />
             {unreadCount > 0 && <p className="text-sm text-muted-foreground mt-1">{unreadCount} unread</p>}
           </div>
           {unreadCount > 0 && <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()}>Mark all as read</Button>}

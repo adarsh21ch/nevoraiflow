@@ -61,6 +61,7 @@ const InstallApp = () => {
             <img src="/icons/icon-512x512.png" alt="Nevorai Flow" className="w-full h-full" />
           </div>
           <h1 className="text-2xl font-bold mt-4">Install Nevorai Flow</h1>
+          <div className="page-header-accent" />
           <p className="text-muted-foreground text-sm">Get the app on your phone for the best experience — instant access, full screen, no browser bars.</p>
         </div>
 
