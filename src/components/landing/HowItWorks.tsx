@@ -4,18 +4,18 @@ import { Upload, Share2, UserCheck } from "lucide-react";
 const steps = [
   {
     icon: Upload,
-    title: "Upload Your Video",
+    title: "Add Your Video",
     description: "Upload your product demo, testimonial, or opportunity video in seconds.",
   },
   {
     icon: Share2,
-    title: "Share Your Funnel Link",
-    description: "Get a unique funnel link. Share on WhatsApp, Instagram, or anywhere.",
+    title: "Set the Viewing Flow",
+    description: "Control how your prospect watches — add steps, restrict skipping, and guide them through a structured journey.",
   },
   {
     icon: UserCheck,
-    title: "Collect Leads Automatically",
-    description: "Prospects fill their details. You get notified instantly. Follow up and close.",
+    title: "Track and Follow Up",
+    description: "See who watched, how much they watched, and follow up at exactly the right time to close better.",
   },
 ];
 
@@ -33,7 +33,7 @@ export const HowItWorks = () => {
             How It <span className="gradient-text">Works</span>
           </h2>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            Three simple steps to turn your videos into a lead generation machine.
+            Three simple steps to turn your videos into a controlled follow-up system.
           </p>
         </motion.div>
 

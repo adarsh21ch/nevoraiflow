@@ -4,33 +4,33 @@ import { Video, ClipboardList, MessageCircle, Route, BarChart3, Radio } from "lu
 const features = [
   {
     icon: Video,
-    title: "Video Funnels",
-    description: "Controlled playback, timed CTAs, and video access limits — your video, your rules.",
+    title: "Controlled Video Funnels",
+    description: "Control playback, restrict skipping, and guide your prospect step by step.",
   },
   {
     icon: ClipboardList,
     title: "Lead Capture",
-    description: "Capture name, phone, email, and city. Show the form before, during, or after your video.",
+    description: "Capture name, phone, email, and more before, during, or after the video.",
   },
   {
     icon: MessageCircle,
-    title: "WhatsApp Auto-message",
-    description: "Instantly message new leads on WhatsApp. Follow up before they forget your name.",
+    title: "WhatsApp Auto-Message",
+    description: "Instantly follow up with new prospects so you never lose momentum.",
   },
   {
     icon: Route,
     title: "Step-by-Step Journeys",
-    description: "Turn a normal video into a guided funnel experience with unlock rules, next steps, and structured progression.",
+    description: "Turn a simple video into a structured experience with clear next actions.",
   },
   {
     icon: BarChart3,
-    title: "Real-time Analytics",
-    description: "Track video plays, watch time, lead conversions, and drop-off points — all in real-time.",
+    title: "Real-Time Analytics",
+    description: "Track watch time, engagement, drop-offs, and conversion signals.",
   },
   {
     icon: Radio,
     title: "Live Sessions",
-    description: "Schedule live sessions, collect registrations with countdown pages, and share meeting links with your audience.",
+    description: "Schedule sessions, collect registrations, and guide prospects into meetings.",
   },
 ];
 
@@ -46,10 +46,10 @@ export const FeaturesSection = () => {
           viewport={{ once: true }}
         >
           <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4">
-            Everything You Need to <span className="gradient-text">Grow</span>
+            Everything You Need for Better <span className="gradient-text">Follow-Up</span>
           </h2>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            Purpose-built tools for entrepreneurs who want to scale their business online.
+            Purpose-built tools for entrepreneurs who want structured selling and higher conversion.
           </p>
         </motion.div>
 

@@ -5,6 +5,7 @@ import { HowItWorks } from "@/components/landing/HowItWorks";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { PricingSection } from "@/components/landing/PricingSection";
 import { FAQSection } from "@/components/landing/FAQSection";
+import { FinalCTA } from "@/components/landing/FinalCTA";
 import { Footer } from "@/components/landing/Footer";
 import { brand } from "@/config/brand";
 
@@ -18,6 +19,7 @@ const Index = () => {
       <FeaturesSection />
       <PricingSection />
       <FAQSection />
+      <FinalCTA />
       <Footer />
     </div>
   );

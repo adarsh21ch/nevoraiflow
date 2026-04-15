@@ -11,7 +11,7 @@ import {
   AlertTriangle, BadgeCheck, MapPin, Instagram, Volume2, VolumeX,
   Maximize, Minimize, Share2, Loader2, Gauge, Sun, Moon
 } from "lucide-react";
-import logoImg from "@/assets/logo.png";
+import logoImg from "@/assets/nevorai-flow-logo.png";
 import { MultiStepViewer } from "@/components/funnel/MultiStepViewer";
 import { CodeGateScreen } from "@/components/funnel/CodeGateScreen";
 import { PrivateLeadForm } from "@/components/funnel/PrivateLeadForm";
@@ -297,7 +297,8 @@ const CustomVideoPlayer = ({
   return (
     <div
       ref={containerRef}
-      className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden group select-none"
+      className="relative w-full bg-black rounded-2xl overflow-hidden group select-none"
+      style={{ aspectRatio: "16 / 9", minHeight: 0 }}
       onMouseMove={resetHideTimer}
       onTouchStart={resetHideTimer}
       onClick={() => { if (started) togglePlay(); }}
@@ -323,8 +324,8 @@ const CustomVideoPlayer = ({
 
       {/* Watermark — bottom-right, subtle */}
       {started && (
-        <div className="absolute bottom-14 right-4 text-[10px] text-white/[0.12] font-medium pointer-events-none select-none z-10 tracking-wide">
-          flow.nevorai.com
+        <div className="absolute bottom-14 right-4 text-[11px] text-white/50 font-medium pointer-events-none select-none z-10 tracking-wide">
+          Nevorai Flow
         </div>
       )}
 
@@ -744,8 +745,10 @@ const PublicFunnel = () => {
       >
         <div className="flex items-center gap-2">
           <img src={logoImg} alt="Nevorai Flow" className="h-6 w-6" />
-          <span className="font-heading font-bold text-[15px]" style={{ color: tc.text, letterSpacing: "-0.02em" }}>Nevorai</span>
-          <span className="font-heading font-extrabold text-primary text-[15px]" style={{ letterSpacing: "-0.03em", fontStyle: "italic", transform: "skewX(-4deg)", display: "inline-block", marginLeft: "-2px" }}>Flow</span>
+          <div className="flex items-baseline text-[15px]" style={{ lineHeight: 1 }}>
+            <span style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 600, color: tc.text, letterSpacing: "-0.02em" }}>Nevorai</span>
+            <span style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 800, color: tc.text, letterSpacing: "-0.03em", marginLeft: "4px" }}>Flow</span>
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <button
