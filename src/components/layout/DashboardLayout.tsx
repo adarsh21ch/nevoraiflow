@@ -31,11 +31,6 @@ const navItems = [
 
 const bottomItems = [
   { icon: User, label: "Profile", path: "/profile" },
-  { icon: CreditCard, label: "Billing", path: "/billing" },
-  { icon: FileCheck, label: "Get Verified", path: "/kyc" },
-  { icon: Bell, label: "Notifications", path: "/notifications" },
-  { icon: Settings, label: "Settings", path: "/settings" },
-  { icon: Download, label: "Install App", path: "/install" },
 ];
 
 

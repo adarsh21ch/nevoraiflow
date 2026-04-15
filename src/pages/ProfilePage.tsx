@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { User, Crown, ArrowRight, Lock, Check } from "lucide-react";
+import { User, Crown, ArrowRight, Lock, Check, CreditCard, FileCheck, Bell, Settings, Download, ChevronRight } from "lucide-react";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
