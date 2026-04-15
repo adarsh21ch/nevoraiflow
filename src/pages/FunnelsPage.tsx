@@ -81,10 +81,7 @@ const FunnelsPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-2xl font-heading font-bold">My Funnels</h1>
-              <div className="page-header-accent" />
-            </div>
+            <h1 className="text-2xl font-heading font-bold">My Funnels</h1>
             {limitBadge}
           </div>
           <Button variant="hero" onClick={handleCreate}>
@@ -93,7 +90,7 @@ const FunnelsPage = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1 search-premium rounded-md">
+          <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search funnels..." className="pl-9 bg-muted border-border" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
@@ -133,7 +130,7 @@ const FunnelsPage = () => {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((f) => (
-              <div key={f.id} className="premium-card p-5 group relative">
+              <div key={f.id} className="glass-card-hover p-5 group relative">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full ${f.is_published ? "bg-success" : "bg-muted-foreground"}`} />

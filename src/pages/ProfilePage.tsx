@@ -71,13 +71,10 @@ const ProfilePage = () => {
   return (
     <DashboardLayout>
       <div className="max-w-2xl space-y-6">
-        <div>
-          <h1 className="text-2xl font-heading font-bold">Profile</h1>
-          <div className="page-header-accent" />
-        </div>
+        <h1 className="text-2xl font-heading font-bold">Profile</h1>
 
         {/* Plan Status Card */}
-        <div className="premium-card p-6 space-y-4">
+        <div className="glass-card p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -131,7 +128,7 @@ const ProfilePage = () => {
         </div>
 
         {/* Profile form */}
-        <div className="premium-card p-6 space-y-6">
+        <div className="glass-card p-6 space-y-6">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
               <User size={28} className="text-primary" />

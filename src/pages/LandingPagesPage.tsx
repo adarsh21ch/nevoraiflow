@@ -94,9 +94,8 @@ const LandingPagesPage = () => {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-2xl font-heading font-bold">Landing Pages</h1>
-              <div className="page-header-accent" />
-              <p className="text-muted-foreground text-sm mt-1">Create registration pages for your sessions & events</p>
+              <h1 className="text-2xl font-bold">Landing Pages</h1>
+              <p className="text-muted-foreground text-sm">Create registration pages for your sessions & events</p>
             </div>
             {limitBadge}
           </div>
@@ -106,7 +105,7 @@ const LandingPagesPage = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1 search-premium rounded-md">
+          <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search landing pages..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
@@ -138,7 +137,7 @@ const LandingPagesPage = () => {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filtered.map((page: any) => (
-              <Card key={page.id} className="p-5 space-y-3 premium-card">
+              <Card key={page.id} className="p-5 space-y-3">
                 <div className="flex items-start justify-between">
                   <Badge variant={statusColor(page.status) as any} className="capitalize">{page.status}</Badge>
                   <DropdownMenu>

@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Check, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import logoImg from "@/assets/nevorai-flow-logo.png";
+import logoImg from "@/assets/logo.png";
 
 interface PrivateLeadFormProps {
   funnelId: string;
@@ -108,8 +108,8 @@ export const PrivateLeadForm = ({
         {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-6">
           <img src={logoImg} alt="Nevorai Flow" className="h-6 w-6" />
-          <span className="font-heading font-semibold text-[14px]" style={{ color: text }}>Nevorai</span>
-          <span className="font-heading font-extrabold text-[14px]" style={{ color: text, marginLeft: "3px" }}>Flow</span>
+          <span className="font-heading font-bold text-[14px]" style={{ color: text }}>Nevorai</span>
+          <span className="font-heading font-extrabold text-primary text-[14px]" style={{ fontStyle: "italic", transform: "skewX(-4deg)", display: "inline-block", marginLeft: "-3px" }}>Flow</span>
         </div>
 
         <div className="rounded-2xl p-6" style={{ background: cardBg, border: `1px solid ${border}` }}>

@@ -2,9 +2,13 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { brand } from "@/config/brand";
 import { motion } from "framer-motion";
-import { Play } from "lucide-react";
+import { Play, Users, Eye, Target } from "lucide-react";
 
-// Stats removed — placeholder numbers not real
+const stats = [
+  { icon: Eye, label: "Video Plays", value: "51,000+" },
+  { icon: Users, label: "Monthly Users", value: "26,000+" },
+  { icon: Target, label: "Leads Captured", value: "10,000+" },
+];
 
 export const HeroSection = () => {
   return (
@@ -27,7 +31,7 @@ export const HeroSection = () => {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 mb-8">
               <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
               <span className="text-xs text-muted-foreground font-medium">
-                Smart Video Follow-Up for Entrepreneurs
+                Smart Video Funnels for Entrepreneurs
               </span>
             </div>
           </motion.div>
@@ -38,8 +42,8 @@ export const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
-            Turn Videos Into{" "}
-            <span className="gradient-text">Controlled Follow-Up Journeys.</span>
+            Turn Random Videos Into{" "}
+            <span className="gradient-text">Structured Funnels.</span>
           </motion.h1>
 
           <motion.p
@@ -48,7 +52,7 @@ export const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            Guide every prospect through your message step by step, keep their attention, and convert more — with a structured video flow.
+            Build smart video funnels that capture leads, structure your content, and guide your audience step by step.
           </motion.p>
 
           <motion.div
@@ -70,15 +74,23 @@ export const HeroSection = () => {
             </a>
           </motion.div>
 
-          {/* Trust line */}
-          <motion.p
-            className="text-sm text-muted-foreground max-w-xl mx-auto"
+          {/* Stats */}
+          <motion.div
+            className="flex flex-wrap justify-center gap-6 md:gap-12"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            Built for creators, teams, and business owners who want more control over follow-up.
-          </motion.p>
+            {stats.map((stat) => (
+              <div key={stat.label} className="glass-card px-6 py-4 flex items-center gap-3">
+                <stat.icon size={20} className="text-primary" />
+                <div className="text-left">
+                  <div className="text-lg font-heading font-bold text-foreground">{stat.value}</div>
+                  <div className="text-xs text-muted-foreground">{stat.label}</div>
+                </div>
+              </div>
+            ))}
+          </motion.div>
         </div>
       </div>
     </section>

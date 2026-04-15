@@ -24,7 +24,7 @@ const rows = [
   },
   {
     yt: "Views don't equal business results",
-    nf: "Built for conversion — guide users toward action",
+    nf: "Built for conversion — guide users toward action, payment, or next steps",
   },
 ];
 
@@ -50,7 +50,7 @@ export const WhyNevorai = () => {
             Why Not Just Use <span className="gradient-text">YouTube?</span>
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto text-base md:text-lg leading-relaxed">
-            Because YouTube gives you views — not control, follow-up, or a guided conversion path.
+            Because views don't mean control, data, or conversions.
           </p>
         </motion.div>
 

@@ -9,35 +9,35 @@ import {
 const faqs = [
   {
     q: "What is Nevorai Flow?",
-    a: "Nevorai Flow is a video-based follow-up system that helps you control how prospects watch, understand, and respond to your message.",
+    a: "Nevorai Flow is a smart video funnel platform for digital entrepreneurs, creators, and coaches. Upload a video, share a link, and automatically capture leads, track engagement, and guide your audience.",
   },
   {
-    q: "Do I need technical skills?",
-    a: "No. You can create and manage your funnels easily without any technical knowledge.",
+    q: "Do I need any technical skills?",
+    a: "Not at all! Nevorai Flow is designed for non-technical users. Just upload your video, configure your funnel in a few clicks, and share the link. It's that simple.",
   },
   {
     q: "Is there a free plan?",
-    a: "Yes. You can explore shared funnels and public content for free.",
+    a: "Yes! You can start with our free plan — 2 funnels, 5 videos, and basic lead capture. Upgrade anytime when you're ready for more.",
   },
   {
     q: "Who is Nevorai Flow for?",
-    a: "Built for entrepreneurs, creators, and teams who want better follow-up and higher conversion.",
+    a: "Nevorai Flow is built for digital entrepreneurs, creators, coaches, educators, and anyone who uses video to grow their audience and business.",
   },
   {
     q: "Can I track how much of a video someone watched?",
-    a: "Yes. You can see engagement, watch time, and exact drop-off points for every prospect.",
+    a: "Yes! You get viewer progress tracking — see who watched, how far they got, and where they dropped off. This helps you follow up with the right people.",
   },
   {
     q: "Can I create step-by-step funnels?",
-    a: "Yes. You can guide viewers through a structured journey with actions and clear progression.",
+    a: "Absolutely! Turn a single video into a multi-step guided journey with unlock rules, progression, and structured viewer flow.",
   },
   {
-    q: "Can my team use this?",
-    a: "Yes. You can share funnels and build systems your entire team can use.",
+    q: "Can my team use this too?",
+    a: "Yes! Each team member creates their own account and funnels. On Pro plan, you can even share videos with your team members.",
   },
   {
     q: "What if I need help?",
-    a: "Support is available to help you set up and use the system effectively.",
+    a: "We offer priority WhatsApp support for all paid plans. Free users can reach us via email. We're here to help you succeed.",
   },
 ];
 

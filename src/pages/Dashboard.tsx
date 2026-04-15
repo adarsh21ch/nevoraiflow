@@ -35,12 +35,12 @@ const Dashboard = () => {
   const convRate = totalViews > 0 ? ((leadCount / totalViews) * 100).toFixed(1) : "0";
 
   const kpis = [
-    { icon: Layers, label: "Total Funnels", value: String(funnels.length), sub: `${publishedCount} published`, iconClass: "stat-icon" },
-    { icon: Users, label: "Total Leads", value: String(leadCount), sub: "All time", iconClass: "stat-icon-success" },
-    { icon: Eye, label: "Video Plays", value: totalViews.toLocaleString("en-IN"), sub: "All time", iconClass: "stat-icon" },
-    { icon: IndianRupee, label: "Payments", value: "₹0", sub: "This month", iconClass: "stat-icon-warning" },
-    { icon: TrendingUp, label: "Conversion Rate", value: `${convRate}%`, sub: "Leads / Views", iconClass: "stat-icon" },
-    { icon: Radio, label: "Live Broadcast", value: "None", sub: "No active broadcast", iconClass: "stat-icon" },
+    { icon: Layers, label: "Total Funnels", value: String(funnels.length), sub: `${publishedCount} published` },
+    { icon: Users, label: "Total Leads", value: String(leadCount), sub: "All time" },
+    { icon: Eye, label: "Video Plays", value: totalViews.toLocaleString("en-IN"), sub: "All time" },
+    { icon: IndianRupee, label: "Payments", value: "₹0", sub: "This month" },
+    { icon: TrendingUp, label: "Conversion Rate", value: `${convRate}%`, sub: "Leads / Views" },
+    { icon: Radio, label: "Live Broadcast", value: "None", sub: "No active broadcast" },
   ];
 
   return (
@@ -50,8 +50,7 @@ const Dashboard = () => {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-heading font-bold">Dashboard</h1>
-            <div className="page-header-accent" />
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-sm text-muted-foreground mt-1">
               Welcome back{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}! Here's your overview.
             </p>
           </div>
@@ -60,9 +59,9 @@ const Dashboard = () => {
 
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           {kpis.map((kpi) => (
-            <div key={kpi.label} className="premium-card p-5 group">
+            <div key={kpi.label} className="glass-card p-5 group hover:border-primary/20 transition-colors">
               <div className="flex items-center gap-3 mb-3">
-                <div className={`${kpi.iconClass} group-hover:scale-105 transition-transform`}>
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                   <kpi.icon size={18} className="text-primary" />
                 </div>
                 <span className="text-xs text-muted-foreground font-medium">{kpi.label}</span>
@@ -74,8 +73,8 @@ const Dashboard = () => {
         </div>
 
         {funnels.length === 0 ? (
-          <div className="premium-card p-12 text-center">
-            <div className="stat-icon mx-auto mb-4 w-16 h-16 rounded-2xl">
+          <div className="glass-card p-12 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <Layers size={28} className="text-primary" />
             </div>
             <h3 className="text-lg font-heading font-semibold mb-2">No funnels yet</h3>
@@ -90,18 +89,16 @@ const Dashboard = () => {
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {funnels.slice(0, 3).map((f) => (
-                <Link to={`/funnels/${f.id}`} key={f.id} className="premium-card p-5 group">
+                <Link to={`/funnels/${f.id}`} key={f.id} className="glass-card-hover p-5">
                   <div className="flex items-center gap-2 mb-3">
                     <span className={`w-2 h-2 rounded-full ${f.is_published ? "bg-success" : "bg-muted-foreground"}`} />
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${f.is_published ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
-                      {f.is_published ? "Published" : "Draft"}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{f.is_published ? "Published" : "Draft"}</span>
                   </div>
                   <h3 className="font-medium text-sm mb-1 truncate">{f.title}</h3>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Eye size={12} /> {f.total_views || 0}</span>
-                    <span className="flex items-center gap-1"><Users size={12} /> {f.total_leads || 0}</span>
-                    <span className="flex items-center gap-1"><IndianRupee size={12} /> {f.total_payments || 0}</span>
+                    <span>👁 {f.total_views || 0}</span>
+                    <span>👤 {f.total_leads || 0}</span>
+                    <span>💰 {f.total_payments || 0}</span>
                   </div>
                 </Link>
               ))}

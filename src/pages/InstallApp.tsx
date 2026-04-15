@@ -41,7 +41,7 @@ const InstallApp = () => {
             <Check size={32} className="text-primary" />
           </div>
           <h1 className="text-xl font-bold">You're using the app!</h1>
-           <p className="text-sm text-muted-foreground">Nevorai Flow is already installed on your device.</p>
+          <p className="text-sm text-muted-foreground">Nevorai Flow is already installed on your device.</p>
           <Link to="/dashboard"><Button className="w-full">Go to Dashboard</Button></Link>
         </Card>
       </div>

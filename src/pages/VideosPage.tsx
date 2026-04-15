@@ -70,17 +70,14 @@ const VideosPage = () => {
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-heading font-bold">Video Gallery</h1>
-            <div className="page-header-accent" />
-          </div>
+          <h1 className="text-2xl font-heading font-bold">Video Gallery</h1>
           <Button variant="hero" onClick={() => setLinkModalOpen(true)}>
             <Link2 size={16} /> Add Video by Link
           </Button>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1 search-premium rounded-md">
+          <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search videos..." className="pl-9 bg-muted border-border" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
@@ -102,7 +99,7 @@ const VideosPage = () => {
         ) : (
           <div className={view === "grid" ? "grid sm:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-2"}>
             {filtered.map((v) => (
-              <div key={v.id} className="premium-card p-4">
+              <div key={v.id} className="glass-card-hover p-4">
                 <div className="aspect-video bg-muted rounded-lg mb-3 flex items-center justify-center overflow-hidden">
                   {v.thumbnail_url ? <img src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover rounded-lg" /> :
                     v.public_url ? <video src={v.public_url} className="w-full h-full object-cover rounded-lg" /> :
