@@ -985,7 +985,7 @@ const PublicFunnel = () => {
 
         {/* Footer */}
         <div className="mt-16 pt-6 pb-8 text-center" style={{ borderTop: `1px solid ${tc.footerBorder}` }}>
-          <p className="text-[11px] tracking-wide" style={{ color: tc.footerText }}>© {new Date().getFullYear()} nFlow · All rights reserved</p>
+          <p className="text-[11px] tracking-wide" style={{ color: tc.footerText }}>© {new Date().getFullYear()} Nevorai Flow · All rights reserved</p>
         </div>
       </div>
       )}
