@@ -3,9 +3,9 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/landing/Logo";
 import {
   LayoutDashboard, Layers, Video, Users, IndianRupee, BarChart3,
-  User, Bell, Settings, LogOut, ChevronLeft, ChevronRight,
-  Shield, CreditCard, Sun, Moon, Radio, FileCheck,
-  FileText, Menu, Download,
+  User, Bell, LogOut, ChevronLeft, ChevronRight,
+  Shield, Sun, Moon, Radio,
+  FileText, Menu,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -31,11 +31,6 @@ const navItems = [
 
 const bottomItems = [
   { icon: User, label: "Profile", path: "/profile" },
-  { icon: CreditCard, label: "Billing", path: "/billing" },
-  { icon: FileCheck, label: "Get Verified", path: "/kyc" },
-  { icon: Bell, label: "Notifications", path: "/notifications" },
-  { icon: Settings, label: "Settings", path: "/settings" },
-  { icon: Download, label: "Install App", path: "/install" },
 ];
 
 
