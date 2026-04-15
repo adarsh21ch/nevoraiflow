@@ -15,11 +15,16 @@ const SettingsPage = () => {
   return (
     <DashboardLayout>
       <div className="max-w-2xl space-y-6">
-        <h1 className="text-2xl font-heading font-bold">Settings</h1>
+        <div>
+          <h1 className="text-2xl font-heading font-bold">Settings</h1>
+          <div className="page-header-accent" />
+        </div>
 
-        <div className="glass-card p-5 flex items-center justify-between">
+        <div className="premium-card p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {theme === "dark" ? <Moon size={18} className="text-primary" /> : <Sun size={18} className="text-primary" />}
+            <div className="stat-icon">
+              {theme === "dark" ? <Moon size={18} className="text-primary" /> : <Sun size={18} className="text-primary" />}
+            </div>
             <div>
               <p className="text-sm font-medium">Appearance</p>
               <p className="text-xs text-muted-foreground">{theme === "dark" ? "Dark mode" : "Light mode"}</p>
@@ -30,9 +35,11 @@ const SettingsPage = () => {
           </Button>
         </div>
 
-        <div className="glass-card p-5 flex items-center justify-between">
+        <div className="premium-card p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <CreditCard size={18} className="text-primary" />
+            <div className="stat-icon">
+              <CreditCard size={18} className="text-primary" />
+            </div>
             <div>
               <p className="text-sm font-medium">Current Plan: <span className="text-primary capitalize">{tier}</span></p>
               <p className="text-xs text-muted-foreground">{subscription?.plan_key || "free"}</p>
@@ -41,9 +48,11 @@ const SettingsPage = () => {
           <Link to="/pricing"><Button variant="outline" size="sm">Upgrade</Button></Link>
         </div>
 
-        <div className="glass-card p-5 flex items-center justify-between">
+        <div className="premium-card p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Shield size={18} className="text-primary" />
+            <div className="stat-icon">
+              <Shield size={18} className="text-primary" />
+            </div>
             <div>
               <p className="text-sm font-medium">KYC Status: <span className="capitalize">{profile?.kyc_status || "none"}</span></p>
             </div>
@@ -51,7 +60,7 @@ const SettingsPage = () => {
           <Link to="/kyc"><Button variant="outline" size="sm">Manage</Button></Link>
         </div>
 
-        <div className="glass-card p-5">
+        <div className="premium-card p-5">
           <Button variant="destructive" className="w-full" onClick={async () => { await signOut(); navigate("/"); }}>
             <LogOut size={16} /> Sign Out
           </Button>

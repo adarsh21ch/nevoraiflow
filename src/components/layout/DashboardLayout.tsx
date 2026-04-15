@@ -70,7 +70,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
       <Link key={item.path} to={item.path}
         className={cn(
           "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative",
-          active ? "bg-primary/10 text-primary" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          active ? "bg-primary/10 text-primary border-l-2 border-primary" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground border-l-2 border-transparent"
         )}>
         <item.icon size={18} />
         {!collapsed && <span>{item.label}</span>}
@@ -107,6 +107,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
     <div className="min-h-screen flex">
       {/* Desktop sidebar */}
       <aside className={cn("hidden md:flex flex-col border-r border-border bg-sidebar transition-all duration-200 sticky top-0 h-screen", collapsed ? "w-16" : "w-60")}>
+        <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #7EE83A, #00D4C8, #00AAFF, #1A4FD6)" }} />
         <div className="flex items-center justify-between h-16 px-4 border-b border-border shrink-0">
           {!collapsed && <Logo size="sm" />}
           <div className="flex items-center gap-1">
@@ -201,7 +202,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
           </div>
         </div>
 
-        <div className="flex-1 p-4 md:p-8 pb-20 md:pb-8 overflow-auto">{children}</div>
+        <div className="flex-1 p-4 md:p-8 pb-20 md:pb-8 overflow-auto gradient-bg-subtle">{children}</div>
       </main>
 
       {/* Mobile bottom tab bar */}
