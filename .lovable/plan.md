@@ -1,23 +1,63 @@
 
 
-# Update Google OAuth Credentials
+# Premium UI Upgrade — Dashboard, Admin Panel & App-wide Polish
 
-## What This Does
-Replace the current `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` secrets with new ones from your other Google Cloud Console account, then clear the old Gmail connection so you can re-authorize with the new account.
+## Overview
+Elevate the entire app interior (dashboard, admin, settings, profile, and all list pages) to match the polished, premium feel of the landing page. This involves refining card styles, adding subtle gradient accents, improving spacing, enhancing the sidebar, and creating a more cohesive visual identity throughout.
 
-## Steps
+## What Changes
 
-1. **Update secrets** — Use the add_secret tool to set new values for `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+### 1. Enhanced CSS Variables & Utility Classes
+- Add new utility classes: `.premium-card` (subtle gradient border glow on hover), `.stat-card` (gradient icon backgrounds), `.page-header` (consistent header with gradient accent line)
+- Add a subtle radial gradient background overlay to the main content area (matching the landing page's `gradient-bg-subtle`)
+- Refine glass-card hover states with smoother transitions and subtle primary border glow
 
-2. **Clear old tokens** — Run a migration to delete all rows from `gmail_oauth_tokens` so the old connection is removed.
+### 2. Dashboard Page Overhaul
+- Add gradient accent line under the welcome header
+- Upgrade KPI stat cards: gradient icon backgrounds (green-to-blue), larger icons, bolder typography, subtle shimmer on hover
+- Improve "Recent Funnels" cards with status badge pills (like landing pages), hover glow effect
+- Add the `gradient-bg-subtle` background overlay to the main content area
 
-3. **Redeploy edge functions** — Redeploy `gmail-oauth-init`, `gmail-oauth-callback`, and `send-gmail-email` so they pick up the new credentials.
+### 3. Admin Dashboard Polish
+- Upgrade admin KPI cards with colored gradient icon containers (matching each metric's semantic color)
+- Add gradient accent underline to the "Admin Dashboard" header
+- Improve card hover states with subtle border glow
 
-4. **Re-connect Gmail** — You'll go to Admin Settings and click "Connect Gmail" to authorize the new Google account.
+### 4. Sidebar Refinements
+- Add a subtle gradient accent line at the top of the sidebar (matching the landing page nav)
+- Improve active nav item styling: gradient left border indicator instead of just background tint
+- Refine the logo area with slightly more padding and polish
 
-## Important
-In your **new** Google Cloud Console project, make sure:
-- Gmail API is enabled
-- OAuth consent screen is configured
-- This redirect URI is added: `https://atwnmovdnblcqyvhaxls.supabase.co/functions/v1/gmail-oauth-callback`
+### 5. All List Pages (Funnels, Videos, Landing Pages, Leads, etc.)
+- Standardize page headers with consistent gradient accent
+- Improve search bar styling with better focus states (matching auth input glow)
+- Upgrade filter tab pills with smoother active states
+- Add subtle hover glow to all list item cards
+
+### 6. Settings & Profile Pages
+- Upgrade settings cards with icon containers (rounded gradient backgrounds)
+- Add section dividers with subtle gradient lines
+- Better spacing and visual hierarchy
+
+### 7. DashboardLayout Main Content Area
+- Apply `gradient-bg-subtle` background to the main content wrapper so every page gets the premium ambient glow
+- This single change elevates all pages at once
+
+## Files to Modify
+- `src/index.css` — new utility classes
+- `src/components/layout/DashboardLayout.tsx` — gradient bg, sidebar accent
+- `src/components/layout/AdminLayout.tsx` — admin tab styling
+- `src/pages/Dashboard.tsx` — premium KPI cards, header
+- `src/pages/AdminDashboard.tsx` — premium admin cards
+- `src/pages/SettingsPage.tsx` — enhanced card styling
+- `src/pages/ProfilePage.tsx` — visual polish
+- `src/pages/FunnelsPage.tsx` — card hover effects
+- `src/pages/VideosPage.tsx` — card hover effects
+- `src/pages/LandingPagesPage.tsx` — card hover effects
+
+## Technical Approach
+- All changes are CSS/styling only — no logic, data, or auth changes
+- Leverage existing CSS variable system and Tailwind utilities
+- Add 3-4 new reusable utility classes in `index.css`
+- One key change in `DashboardLayout` (gradient bg on main area) will uplift all pages simultaneously
 
