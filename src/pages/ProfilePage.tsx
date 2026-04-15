@@ -7,18 +7,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { User, Crown, ArrowRight, Lock, Check, CreditCard, FileCheck, Bell, Settings, Download, ChevronRight } from "lucide-react";
+import {
+  User, Crown, ArrowRight, Lock, Check, CreditCard, FileCheck,
+  Bell, Settings, Download, ChevronRight, ChevronDown, Pencil,
+} from "lucide-react";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
 import { usePlan } from "@/hooks/usePlan";
 import { format } from "date-fns";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const ProfilePage = () => {
   const { user, profile, refreshProfile } = useAuth();
   const { plan } = usePlan();
   const { isFree, config, counts, tier, canUseMultilevel } = usePlanLimits();
   const [loading, setLoading] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState({
     full_name: "", phone: "", city: "", bio: "", company: "",
     instagram_url: "", whatsapp_number: "",
@@ -63,115 +68,131 @@ const ProfilePage = () => {
   };
 
   const tierBadge = isFree
-    ? <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Free</span>
+    ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold uppercase tracking-wider">Free</span>
     : tier === "basic"
-    ? <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium">Basic</span>
-    : <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-medium">Pro</span>;
+    ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold uppercase tracking-wider">Basic</span>
+    : <span className="text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success font-semibold uppercase tracking-wider">Pro</span>;
+
+  const initials = (profile?.full_name || "U")
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 
   return (
     <DashboardLayout>
-      <div className="max-w-2xl space-y-6">
-        <div>
-          <h1 className="text-2xl font-heading font-bold">Profile</h1>
-          <div className="page-header-accent" />
+      <div className="max-w-2xl space-y-5">
+        {/* Hero badge card — name, email, plan, avatar */}
+        <div className="premium-card p-5">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border-2 border-primary/30 flex items-center justify-center shrink-0">
+              <span className="text-lg font-heading font-bold text-primary">{initials}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="font-heading font-bold text-lg truncate">{profile?.full_name || "User"}</h2>
+                {tierBadge}
+              </div>
+              <p className="text-sm text-muted-foreground truncate">{profile?.email}</p>
+              {profile?.city && <p className="text-xs text-muted-foreground mt-0.5">{profile.city}{profile.company ? ` · ${profile.company}` : ""}</p>}
+            </div>
+          </div>
         </div>
 
-        {/* Plan Status Card */}
-        <div className="premium-card p-6 space-y-4">
+        {/* Plan & Usage */}
+        <div className="premium-card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Crown size={20} className="text-primary" />
+              <div className="stat-icon">
+                <Crown size={16} className="text-primary" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-heading font-semibold capitalize">{tier} Plan</h3>
-                  {tierBadge}
-                </div>
+                <h3 className="font-heading font-semibold text-sm capitalize">{tier} Plan</h3>
                 {!isFree && plan.billingType && (
-                  <p className="text-xs text-muted-foreground capitalize">
+                  <p className="text-[11px] text-muted-foreground capitalize">
                     {plan.billingType} · {plan.expiresAt ? `Renews ${format(new Date(plan.expiresAt), "d MMM yyyy")}` : "Active"}
                   </p>
                 )}
-                {isFree && (
-                  <p className="text-xs text-muted-foreground">View only. Subscribe to start creating.</p>
-                )}
               </div>
+            </div>
+            <div className="flex gap-2">
+              {(isFree || plan.isExpired || plan.isExpiringSoon || tier === "basic") && (
+                <Link to="/pricing">
+                  <Button size="sm" variant="hero" className="h-8 text-xs gap-1">
+                    {plan.isExpired ? "Renew" : isFree ? "Upgrade" : "Upgrade"} <ArrowRight size={12} />
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
 
           {!isFree && (
-            <div className="space-y-3 pt-2 border-t border-border">
+            <div className="space-y-2.5 pt-3 border-t border-border">
               {usageBar("Funnels", counts.funnels, config.max_funnels)}
               {usageBar("Landing Pages", counts.landing_pages, config.max_landing_pages)}
               {usageBar("Live Sessions", counts.live_sessions, config.max_live_sessions)}
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Multi-level Funnels</span>
                 {canUseMultilevel ? (
-                  <span className="flex items-center gap-1 text-green-600"><Check size={12} /> Enabled</span>
+                  <span className="flex items-center gap-1 text-success"><Check size={12} /> Enabled</span>
                 ) : (
                   <span className="flex items-center gap-1 text-muted-foreground"><Lock size={12} /> Locked</span>
                 )}
               </div>
             </div>
           )}
-
-          <div className="flex gap-2 pt-2">
-            {(isFree || plan.isExpired || plan.isExpiringSoon || tier === "basic") && (
-              <Link to="/pricing">
-                <Button size="sm" className="gap-1.5">
-                  {plan.isExpired ? "Renew" : isFree ? "Upgrade" : "Upgrade to Pro"} <ArrowRight size={14} />
-                </Button>
-              </Link>
-            )}
-            <Link to="/billing">
-              <Button size="sm" variant="outline">Manage Billing</Button>
-            </Link>
-          </div>
         </div>
 
-        {/* Profile form */}
-        <div className="premium-card p-6 space-y-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <User size={28} className="text-primary" />
-            </div>
-            <div>
-              <h3 className="font-heading font-semibold">{profile?.full_name || "User"}</h3>
-              <p className="text-sm text-muted-foreground">{profile?.email}</p>
-            </div>
+        {/* Edit Profile — Collapsible */}
+        <Collapsible open={editOpen} onOpenChange={setEditOpen}>
+          <div className="premium-card overflow-hidden">
+            <CollapsibleTrigger asChild>
+              <button className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="stat-icon">
+                    <Pencil size={14} className="text-primary" />
+                  </div>
+                  <span className="text-sm font-heading font-semibold">Edit Profile</span>
+                </div>
+                <ChevronDown size={16} className={`text-muted-foreground transition-transform ${editOpen ? "rotate-180" : ""}`} />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="px-5 pb-5 space-y-4 border-t border-border pt-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div><Label className="text-xs">Full Name</Label><Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="mt-1 bg-muted border-border" /></div>
+                  <div><Label className="text-xs">Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="mt-1 bg-muted border-border" /></div>
+                  <div><Label className="text-xs">City</Label><Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="mt-1 bg-muted border-border" /></div>
+                  <div><Label className="text-xs">Company</Label><Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="mt-1 bg-muted border-border" /></div>
+                  <div><Label className="text-xs">WhatsApp</Label><Input value={form.whatsapp_number} onChange={(e) => setForm({ ...form, whatsapp_number: e.target.value })} className="mt-1 bg-muted border-border" /></div>
+                  <div><Label className="text-xs">Instagram URL</Label><Input value={form.instagram_url} onChange={(e) => setForm({ ...form, instagram_url: e.target.value })} className="mt-1 bg-muted border-border" /></div>
+                </div>
+                <div><Label className="text-xs">Bio</Label><Textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value.slice(0, 160) })} className="mt-1 bg-muted border-border" rows={2} maxLength={160} /><span className="text-[10px] text-muted-foreground">{form.bio.length}/160</span></div>
+                <Button variant="hero" size="sm" onClick={handleSave} disabled={loading}>{loading ? "Saving..." : "Save Profile"}</Button>
+              </div>
+            </CollapsibleContent>
           </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div><Label>Full Name</Label><Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="mt-1 bg-muted border-border" /></div>
-            <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="mt-1 bg-muted border-border" /></div>
-            <div><Label>City</Label><Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="mt-1 bg-muted border-border" /></div>
-            <div><Label>Company</Label><Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="mt-1 bg-muted border-border" /></div>
-            <div><Label>WhatsApp Number</Label><Input value={form.whatsapp_number} onChange={(e) => setForm({ ...form, whatsapp_number: e.target.value })} className="mt-1 bg-muted border-border" /></div>
-            <div><Label>Instagram URL</Label><Input value={form.instagram_url} onChange={(e) => setForm({ ...form, instagram_url: e.target.value })} className="mt-1 bg-muted border-border" /></div>
-          </div>
-          <div><Label>Bio</Label><Textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value.slice(0, 160) })} className="mt-1 bg-muted border-border" rows={3} maxLength={160} /><span className="text-xs text-muted-foreground">{form.bio.length}/160</span></div>
-
-          <Button variant="hero" onClick={handleSave} disabled={loading}>{loading ? "Saving..." : "Save Profile"}</Button>
-        </div>
+        </Collapsible>
 
         {/* Account Quick Links */}
         <div className="premium-card p-2 space-y-0.5">
+          <p className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Account</p>
           {[
-            { icon: CreditCard, label: "Billing", path: "/billing", desc: "Manage subscription & payments" },
-            { icon: FileCheck, label: "Get Verified", path: "/kyc", desc: "KYC verification for payouts" },
+            { icon: CreditCard, label: "Billing", path: "/billing", desc: "Subscription & payments" },
+            { icon: FileCheck, label: "Get Verified", path: "/kyc", desc: "KYC for payouts" },
             { icon: Bell, label: "Notifications", path: "/notifications", desc: "Alerts & updates" },
             { icon: Settings, label: "Settings", path: "/settings", desc: "App preferences" },
             { icon: Download, label: "Install App", path: "/install", desc: "Add to home screen" },
           ].map((item) => (
             <Link key={item.path} to={item.path}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group">
-              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <item.icon size={16} className="text-primary" />
+              className="flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-muted/50 transition-colors group">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <item.icon size={14} className="text-primary" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">{item.label}</p>
-                <p className="text-[11px] text-muted-foreground">{item.desc}</p>
+                <p className="text-[10px] text-muted-foreground">{item.desc}</p>
               </div>
               <ChevronRight size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
             </Link>
