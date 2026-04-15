@@ -26,7 +26,7 @@ const navItems = [
   { icon: Video, label: "Videos", path: "/videos" },
   { icon: Users, label: "Leads", path: "/leads" },
   { icon: IndianRupee, label: "Payments", path: "/payments" },
-  { icon: BarChart3, label: "Analytics", path: "/analytics" },
+  { icon: BarChart3, label: "Insights", path: "/insights" },
 ];
 
 const bottomItems = [
