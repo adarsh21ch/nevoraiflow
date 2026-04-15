@@ -209,9 +209,9 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border flex justify-around py-1.5 z-50 safe-area-pb">
         {[
           { icon: LayoutDashboard, label: "Home", path: "/dashboard" },
-          { icon: Layers, label: "Funnels", path: "/funnels" },
-          { icon: Radio, label: "Live", path: "/live" },
           { icon: Video, label: "Videos", path: "/videos" },
+          { icon: Layers, label: "Funnels", path: "/funnels" },
+          { icon: BarChart3, label: "Insights", path: "/insights" },
           { icon: User, label: "Profile", path: "/profile" },
         ].map((item) => {
           const active = location.pathname.startsWith(item.path);

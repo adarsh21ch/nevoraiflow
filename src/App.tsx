@@ -25,6 +25,7 @@ import PublicVideoPage from "./pages/PublicVideoPage";
 import LeadsPage from "./pages/LeadsPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import InsightsPage from "./pages/InsightsPage";
 import ProfilePage from "./pages/ProfilePage";
 import KYCPage from "./pages/KYCPage";
 import NotificationsPage from "./pages/NotificationsPage";

@@ -47,15 +47,20 @@ const Dashboard = () => {
     <DashboardLayout>
       <div className="space-y-8">
         <UpgradeBanner />
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-heading font-bold">Dashboard</h1>
-            <div className="page-header-accent" />
-            <p className="text-sm text-muted-foreground mt-2">
-              Welcome back{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}! Here's your overview.
-            </p>
-          </div>
-          <Link to="/funnels/create"><Button variant="hero"><Plus size={16} /> Create Funnel</Button></Link>
+        <div>
+          <h1 className="text-2xl font-heading font-bold">Dashboard</h1>
+          <div className="page-header-accent" />
+          <p className="text-sm text-muted-foreground mt-2">
+            Welcome back{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}! Here's your overview.
+          </p>
+        </div>
+        <div className="flex gap-3 w-full sm:w-auto">
+          <Link to="/funnels/create" className="flex-1 sm:flex-none">
+            <Button variant="hero" className="w-full"><Plus size={16} /> Create Funnel</Button>
+          </Link>
+          <Link to="/videos" className="flex-1 sm:flex-none">
+            <Button variant="outline" className="w-full"><Eye size={16} /> Add Video</Button>
+          </Link>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
