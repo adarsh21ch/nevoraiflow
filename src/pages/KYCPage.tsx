@@ -192,6 +192,7 @@ const KYCPage = () => {
       <div className="max-w-2xl space-y-6">
         <div>
           <h1 className="text-2xl font-heading font-bold">Get Verified</h1>
+          <div className="page-header-accent" />
           <p className="text-sm text-muted-foreground mt-1">Verify your identity to build more trust with your leads.</p>
         </div>
 
