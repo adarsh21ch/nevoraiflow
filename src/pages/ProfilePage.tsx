@@ -154,6 +154,29 @@ const ProfilePage = () => {
 
           <Button variant="hero" onClick={handleSave} disabled={loading}>{loading ? "Saving..." : "Save Profile"}</Button>
         </div>
+
+        {/* Account Quick Links */}
+        <div className="premium-card p-2 space-y-0.5">
+          {[
+            { icon: CreditCard, label: "Billing", path: "/billing", desc: "Manage subscription & payments" },
+            { icon: FileCheck, label: "Get Verified", path: "/kyc", desc: "KYC verification for payouts" },
+            { icon: Bell, label: "Notifications", path: "/notifications", desc: "Alerts & updates" },
+            { icon: Settings, label: "Settings", path: "/settings", desc: "App preferences" },
+            { icon: Download, label: "Install App", path: "/install", desc: "Add to home screen" },
+          ].map((item) => (
+            <Link key={item.path} to={item.path}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <item.icon size={16} className="text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">{item.label}</p>
+                <p className="text-[11px] text-muted-foreground">{item.desc}</p>
+              </div>
+              <ChevronRight size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+            </Link>
+          ))}
+        </div>
       </div>
     </DashboardLayout>
   );
