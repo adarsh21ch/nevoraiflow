@@ -107,7 +107,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
     <div className="min-h-screen flex">
       {/* Desktop sidebar */}
       <aside className={cn("hidden md:flex flex-col border-r border-border bg-sidebar transition-all duration-200 sticky top-0 h-screen", collapsed ? "w-16" : "w-60")}>
-        <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #7EE83A, #00D4C8, #00AAFF, #1A4FD6)" }} />
+        <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #00AAFF, #00D4C8, #00AAFF, #1A4FD6)" }} />
         <div className="flex items-center justify-between h-16 px-4 border-b border-border shrink-0">
           {!collapsed && <Logo size="sm" />}
           <div className="flex items-center gap-1">
