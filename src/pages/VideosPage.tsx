@@ -168,22 +168,22 @@ const VideosPage = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-1 mt-3 border-t border-border pt-3 w-full flex-wrap">
-                  <Button variant="ghost" size="sm" className="h-7 text-[11px] sm:text-xs flex-1 min-w-0 px-1 sm:px-2" onClick={() => setRenameVideo({ id: v.id, title: v.title })}>
-                    <Pencil size={12} className="shrink-0" /> <span className="truncate">Rename</span>
+                <div className="flex items-center justify-center gap-1 mt-3 border-t border-border pt-3 w-full">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setRenameVideo({ id: v.id, title: v.title })} title="Rename">
+                    <Pencil size={15} />
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-[11px] sm:text-xs flex-1 min-w-0 px-1 sm:px-2" onClick={() => copyLink(v.id)}>
-                    <Copy size={12} className="shrink-0" /> <span className="truncate">Copy Link</span>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => copyLink(v.id)} title="Copy Link">
+                    <Copy size={15} />
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-[11px] sm:text-xs flex-1 min-w-0 px-1 sm:px-2" onClick={() => setShareVideo({ id: v.id, title: v.title })}>
-                    <Share2 size={12} className="shrink-0" /> <span className="truncate">Share</span>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setShareVideo({ id: v.id, title: v.title })} title="Share">
+                    <Share2 size={15} />
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-[11px] sm:text-xs flex-1 min-w-0 px-1 sm:px-2" onClick={() => useInFunnel(v.id)}>
-                    <Rocket size={12} className="shrink-0" /> <span className="truncate">Funnel</span>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => useInFunnel(v.id)} title="Use in Funnel">
+                    <Rocket size={15} />
                   </Button>
                   {v._source === "linked" && (
-                    <Button variant="ghost" size="sm" className="h-7 text-[11px] sm:text-xs flex-1 min-w-0 px-1 sm:px-2 text-destructive hover:text-destructive" onClick={() => removeLinkedVideo(v.id)}>
-                      <Trash2 size={12} className="shrink-0" /> <span className="truncate">Remove</span>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive hover:text-destructive" onClick={() => removeLinkedVideo(v.id)} title="Remove">
+                      <Trash2 size={15} />
                     </Button>
                   )}
                 </div>
