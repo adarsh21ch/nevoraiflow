@@ -320,11 +320,11 @@ const AdminSubscriptionsPage = () => {
         </div>
 
         <Tabs defaultValue="subscriptions">
-          <TabsList>
-            <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
-            <TabsTrigger value="plans">Plans & Limits</TabsTrigger>
-            <TabsTrigger value="audit">Audit Logs</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsList className="w-full sm:w-auto flex overflow-x-auto scrollbar-none">
+            <TabsTrigger value="subscriptions" className="text-xs sm:text-sm">Subscriptions</TabsTrigger>
+            <TabsTrigger value="plans" className="text-xs sm:text-sm">Plans & Limits</TabsTrigger>
+            <TabsTrigger value="audit" className="text-xs sm:text-sm">Audit Logs</TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs sm:text-sm">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="subscriptions" className="space-y-4">
