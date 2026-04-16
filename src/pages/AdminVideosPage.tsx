@@ -255,21 +255,56 @@ const AdminVideosPage = () => {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-1.5 border-t border-border pt-2.5">
-                  <Button variant="ghost" size="sm" className="h-8 flex-1 min-w-[calc(50%-4px)] justify-center text-[11px]" onClick={() => setRenameVideo({ id: v.id, title: v.title })}>
-                    <Pencil size={13} /> Rename
+                <div className="grid grid-cols-5 gap-1.5 border-t border-border pt-2.5">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-full rounded-lg"
+                    onClick={() => setRenameVideo({ id: v.id, title: v.title })}
+                    title="Rename"
+                    aria-label="Rename video"
+                  >
+                    <Pencil size={15} />
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-8 flex-1 min-w-[calc(50%-4px)] justify-center text-[11px]" onClick={() => setShareVideo({ id: v.id, title: v.title })}>
-                    <Share2 size={13} /> Share
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-full rounded-lg"
+                    onClick={() => setShareVideo({ id: v.id, title: v.title })}
+                    title="Share"
+                    aria-label="Share video"
+                  >
+                    <Share2 size={15} />
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-8 flex-1 min-w-[calc(50%-4px)] justify-center text-[11px]" onClick={() => copyLink(v.id)}>
-                    <Link2 size={13} /> Copy Link
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-full rounded-lg"
+                    onClick={() => copyLink(v.id)}
+                    title="Copy Link"
+                    aria-label="Copy video link"
+                  >
+                    <Link2 size={15} />
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-8 flex-1 min-w-[calc(50%-4px)] justify-center text-[11px]" onClick={() => useInFunnel(v.id)}>
-                    <Rocket size={13} /> Funnel
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-full rounded-lg"
+                    onClick={() => useInFunnel(v.id)}
+                    title="Use in Funnel"
+                    aria-label="Use video in funnel"
+                  >
+                    <Rocket size={15} />
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-8 w-full justify-center text-[11px] text-destructive" onClick={() => { if (confirm("Delete?")) deleteMutation.mutate(v.id); }}>
-                    <Trash2 size={13} /> Delete
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-full rounded-lg text-destructive hover:text-destructive"
+                    onClick={() => { if (confirm("Delete?")) deleteMutation.mutate(v.id); }}
+                    title="Delete"
+                    aria-label="Delete video"
+                  >
+                    <Trash2 size={15} />
                   </Button>
                 </div>
               </div>
