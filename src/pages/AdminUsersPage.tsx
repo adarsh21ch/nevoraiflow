@@ -32,10 +32,10 @@ const AdminUsersPage = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
-        <h1 className="text-xl sm:text-2xl font-heading font-bold">User Management</h1>
+      <div className="w-full min-w-0 space-y-4">
+        <h1 className="text-lg font-heading font-bold sm:text-2xl">User Management</h1>
 
-        <div className="relative w-full max-w-md">
+        <div className="relative w-full">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Search users..." className="pl-9 bg-muted border-border" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
