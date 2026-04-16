@@ -2,10 +2,23 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { Logo } from "@/components/landing/Logo";
 import {
-  LayoutDashboard, Layers, Video, Users, IndianRupee, BarChart3,
-  User, Bell, LogOut, ChevronLeft, ChevronRight,
-  Shield, Sun, Moon, Radio,
-  FileText, Menu,
+  LayoutDashboard,
+  Layers,
+  Video,
+  Users,
+  IndianRupee,
+  BarChart3,
+  User,
+  Bell,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  Shield,
+  Sun,
+  Moon,
+  Radio,
+  FileText,
+  Menu,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -14,9 +27,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/hooks/useTheme";
-import {
-  Sheet, SheetContent, SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
@@ -29,10 +40,7 @@ const navItems = [
   { icon: BarChart3, label: "Insights", path: "/insights" },
 ];
 
-const bottomItems = [
-  { icon: User, label: "Profile", path: "/profile" },
-];
-
+const bottomItems = [{ icon: User, label: "Profile", path: "/profile" }];
 
 export const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
@@ -46,7 +54,11 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ["unread-notifications", user?.id],
     queryFn: async () => {
-      const { count } = await supabase.from("notifications").select("*", { count: "exact", head: true }).eq("user_id", user!.id).eq("is_read", false);
+      const { count } = await supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user!.id)
+        .eq("is_read", false);
       return count || 0;
     },
     enabled: !!user,
@@ -61,16 +73,27 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
   const renderNavItem = (item: typeof navItems[0], matchExact = false) => {
     const active = matchExact ? location.pathname === item.path : location.pathname.startsWith(item.path);
     const isNotif = item.path === "/notifications";
+
     return (
-      <Link key={item.path} to={item.path}
+      <Link
+        key={item.path}
+        to={item.path}
         className={cn(
-          "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative",
-          active ? "bg-primary/10 text-primary border-l-2 border-primary" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground border-l-2 border-transparent"
-        )}>
+          "relative flex items-center gap-3 rounded-lg border-l-2 px-3 py-2.5 text-sm font-medium transition-all",
+          active
+            ? "border-primary bg-primary/10 text-primary"
+            : "border-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        )}
+      >
         <item.icon size={18} />
         {!collapsed && <span>{item.label}</span>}
         {isNotif && unreadCount > 0 && (
-          <span className={cn("bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center", collapsed ? "absolute -top-1 -right-1 w-4 h-4" : "ml-auto w-5 h-5")}>
+          <span
+            className={cn(
+              "flex items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground",
+              collapsed ? "absolute -right-1 -top-1 h-4 w-4" : "ml-auto h-5 w-5"
+            )}
+          >
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -81,16 +104,21 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
   const renderMobileNavItem = (item: typeof navItems[0]) => {
     const active = location.pathname.startsWith(item.path);
     const isNotif = item.path === "/notifications";
+
     return (
-      <Link key={item.path} to={item.path} onClick={() => setMobileMenuOpen(false)}
+      <Link
+        key={item.path}
+        to={item.path}
+        onClick={() => setMobileMenuOpen(false)}
         className={cn(
-          "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all relative",
+          "relative flex min-h-[46px] items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all",
           active ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
-        )}>
-        <item.icon size={18} />
+        )}
+      >
+        <item.icon size={20} />
         <span>{item.label}</span>
         {isNotif && unreadCount > 0 && (
-          <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+          <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -99,127 +127,174 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
   };
 
   return (
-    <div className="min-h-screen flex overflow-x-hidden max-w-[100vw]">
-      {/* Desktop sidebar */}
-      <aside className={cn("hidden md:flex flex-col border-r border-border bg-sidebar transition-all duration-200 sticky top-0 h-screen", collapsed ? "w-16" : "w-60")}>
-        <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #7EE83A, #00D4C8, #00AAFF, #1A4FD6)" }} />
-        <div className="flex items-center justify-between h-16 px-4 border-b border-border shrink-0">
-          {!collapsed && <Logo size="sm" />}
-          <div className="flex items-center gap-1">
-            <button onClick={toggleTheme} className="text-muted-foreground hover:text-foreground p-1.5 rounded-md hover:bg-muted transition-colors" title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
-              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-            <button onClick={() => setCollapsed(!collapsed)} className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted transition-colors">
-              {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-            </button>
-          </div>
-        </div>
-
-        <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
-          {navItems.map((item) => renderNavItem(item))}
-
-          {isAdmin && (
-            <div className="pt-4 pb-2 px-3">
-              <Link to="/admin" className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
-                location.pathname.startsWith("/admin") ? "bg-primary/10 text-primary" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              )}>
-                <Shield size={18} />
-                {!collapsed && <span>Admin Panel</span>}
-              </Link>
-            </div>
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-background">
+      <div className="flex min-h-screen w-full max-w-full overflow-x-hidden">
+        <aside
+          className={cn(
+            "sticky top-0 hidden h-screen flex-col border-r border-border bg-sidebar transition-all duration-200 md:flex",
+            collapsed ? "w-16" : "w-60"
           )}
-        </nav>
-
-        <div className="border-t border-border py-4 px-2 space-y-1 shrink-0">
-          {bottomItems.map((item) => renderNavItem(item))}
-          <button onClick={handleLogout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-all w-full">
-            <LogOut size={18} />
-            {!collapsed && <span>Logout</span>}
-          </button>
-        </div>
-      </aside>
-
-      <main className="flex-1 flex flex-col min-h-screen">
-        {/* Mobile top header */}
-        <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-40">
-          <Logo size="sm" />
-          <div className="flex items-center gap-2">
-            <button onClick={toggleTheme} className="text-muted-foreground hover:text-foreground p-2 rounded-md">
-              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-            <Link to="/notifications" className="text-muted-foreground hover:text-foreground p-2 rounded-md relative">
-              <Bell size={18} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </Link>
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <button className="text-muted-foreground hover:text-foreground p-2 rounded-md">
-                  <Menu size={18} />
-                </button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-72 p-0">
-                <div className="p-4 border-b border-border">
-                  <Logo size="sm" />
-                </div>
-                <nav className="py-2 px-2 space-y-0.5 overflow-y-auto max-h-[calc(100vh-160px)]">
-                  <p className="px-4 py-2 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Main</p>
-                  {navItems.map(renderMobileNavItem)}
-                  <div className="border-t border-border my-2" />
-                  <p className="px-4 py-2 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Account</p>
-                  {bottomItems.map(renderMobileNavItem)}
-                  {isAdmin && (
-                    <>
-                      <div className="border-t border-border my-2" />
-                      <Link to="/admin" onClick={() => setMobileMenuOpen(false)}
-                        className={cn("flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all",
-                          location.pathname.startsWith("/admin") ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
-                        )}>
-                        <Shield size={18} />
-                        <span>Admin Panel</span>
-                      </Link>
-                    </>
-                  )}
-                </nav>
-                <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-border bg-card">
-                  <button onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-all w-full">
-                    <LogOut size={18} />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              </SheetContent>
-            </Sheet>
+        >
+          <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #7EE83A, #00D4C8, #00AAFF, #1A4FD6)" }} />
+          <div className="flex h-16 items-center justify-between border-b border-border px-4 shrink-0">
+            {!collapsed && <Logo size="sm" />}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={toggleTheme}
+                className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
+              <button
+                onClick={() => setCollapsed(!collapsed)}
+                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div className="flex-1 p-3 sm:p-4 md:p-8 pb-20 md:pb-8 overflow-x-hidden overflow-y-auto gradient-bg-subtle w-full max-w-full">{children}</div>
-      </main>
+          <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-4">
+            {navItems.map((item) => renderNavItem(item))}
 
-      {/* Mobile bottom tab bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border flex justify-around py-1.5 z-50 safe-area-pb">
-        {[
-          { icon: LayoutDashboard, label: "Home", path: "/dashboard" },
-          { icon: Video, label: "Videos", path: "/videos" },
-          { icon: Layers, label: "Funnels", path: "/funnels" },
-          { icon: BarChart3, label: "Insights", path: "/insights" },
-          { icon: User, label: "Profile", path: "/profile" },
-        ].map((item) => {
-          const active = location.pathname.startsWith(item.path);
-          return (
-            <Link key={item.path} to={item.path}
-              className={cn("flex flex-col items-center gap-0.5 px-2 py-1.5 text-[10px] transition-colors min-w-0", active ? "text-primary" : "text-muted-foreground")}>
-              <item.icon size={20} />
-              <span className="truncate">{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+            {isAdmin && (
+              <div className="px-3 pb-2 pt-4">
+                <Link
+                  to="/admin"
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+                    location.pathname.startsWith("/admin")
+                      ? "bg-primary/10 text-primary"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  <Shield size={18} />
+                  {!collapsed && <span>Admin Panel</span>}
+                </Link>
+              </div>
+            )}
+          </nav>
 
+          <div className="shrink-0 space-y-1 border-t border-border px-2 py-4">
+            {bottomItems.map((item) => renderNavItem(item))}
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive transition-all hover:bg-destructive/10"
+            >
+              <LogOut size={18} />
+              {!collapsed && <span>Logout</span>}
+            </button>
+          </div>
+        </aside>
+
+        <main className="flex min-h-screen min-w-0 flex-1 flex-col overflow-x-hidden">
+          <div className="sticky top-0 z-40 border-b border-border bg-card/85 backdrop-blur-sm md:hidden">
+            <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+              <div className="min-w-0 flex-1">
+                <Logo size="sm" />
+              </div>
+              <div className="ml-2 flex shrink-0 items-center gap-1.5">
+                <button
+                  onClick={toggleTheme}
+                  className="flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+                </button>
+                <Link
+                  to="/notifications"
+                  className="relative flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <Bell size={20} />
+                  {unreadCount > 0 && (
+                    <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </Link>
+                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                  <SheetTrigger asChild>
+                    <button className="flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                      <Menu size={20} />
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-[85vw] max-w-72 p-0">
+                    <div className="border-b border-border p-4">
+                      <Logo size="sm" />
+                    </div>
+                    <nav className="max-h-[calc(100vh-160px)] space-y-0.5 overflow-y-auto px-2 py-2">
+                      <p className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Main</p>
+                      {navItems.map(renderMobileNavItem)}
+                      <div className="my-2 border-t border-border" />
+                      <p className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
+                      {bottomItems.map(renderMobileNavItem)}
+                      {isAdmin && (
+                        <>
+                          <div className="my-2 border-t border-border" />
+                          <Link
+                            to="/admin"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={cn(
+                              "flex min-h-[46px] items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all",
+                              location.pathname.startsWith("/admin") ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                            )}
+                          >
+                            <Shield size={20} />
+                            <span>Admin Panel</span>
+                          </Link>
+                        </>
+                      )}
+                    </nav>
+                    <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-card p-3">
+                      <button
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          handleLogout();
+                        }}
+                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-destructive transition-all hover:bg-destructive/10"
+                      >
+                        <LogOut size={18} />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+            </div>
+          </div>
+
+          <div className="gradient-bg-subtle flex-1 overflow-x-hidden overflow-y-auto px-3 pb-24 pt-3 sm:px-4 sm:pb-8 sm:pt-4 md:p-8">
+            <div className="w-full min-w-0 max-w-full">{children}</div>
+          </div>
+        </main>
+
+        <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md md:hidden safe-area-pb">
+          <div className="grid grid-cols-5">
+            {[
+              { icon: LayoutDashboard, label: "Home", path: "/dashboard" },
+              { icon: Video, label: "Videos", path: "/videos" },
+              { icon: Layers, label: "Funnels", path: "/funnels" },
+              { icon: BarChart3, label: "Insights", path: "/insights" },
+              { icon: User, label: "Profile", path: "/profile" },
+            ].map((item) => {
+              const active = location.pathname.startsWith(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    "flex min-h-[64px] min-w-0 flex-col items-center justify-center gap-1 px-1 text-[11px] transition-colors",
+                    active ? "text-primary" : "text-muted-foreground"
+                  )}
+                >
+                  <item.icon size={21} />
+                  <span className="truncate">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      </div>
     </div>
   );
 };
