@@ -13,9 +13,10 @@ export interface PlanConfig {
   max_landing_pages: number;
   max_live_sessions: number;
   max_team_members: number;
+  max_videos: number;
+  max_storage_mb: number;
   multilevel_funnel_enabled: boolean;
   is_enabled?: boolean;
-  // Feature flags
   feature_lead_capture?: boolean;
   feature_analytics?: boolean;
   feature_whatsapp_automation?: boolean;
@@ -25,10 +26,14 @@ export interface PlanConfig {
   feature_go_live?: boolean;
   feature_landing_pages?: boolean;
   feature_team_analytics?: boolean;
+  feature_video_upload?: boolean;
+  feature_insights?: boolean;
+  feature_funnel_creation?: boolean;
   plan_badge_text?: string | null;
 }
 
-const FREE_CONFIG: PlanConfig = {
+// Hardcoded fallback only if DB has no free row yet
+const FREE_FALLBACK: PlanConfig = {
   plan_name: "free",
   monthly_price: 0,
   yearly_price: 0,
@@ -37,6 +42,8 @@ const FREE_CONFIG: PlanConfig = {
   max_landing_pages: 0,
   max_live_sessions: 0,
   max_team_members: 0,
+  max_videos: 0,
+  max_storage_mb: 0,
   multilevel_funnel_enabled: false,
   feature_lead_capture: false,
   feature_analytics: false,
@@ -47,6 +54,9 @@ const FREE_CONFIG: PlanConfig = {
   feature_go_live: false,
   feature_landing_pages: false,
   feature_team_analytics: false,
+  feature_video_upload: false,
+  feature_insights: false,
+  feature_funnel_creation: false,
 };
 
 export const usePlanLimits = () => {
@@ -81,37 +91,41 @@ export const usePlanLimits = () => {
   });
 
   const tier = plan.tier;
-  const config = tier === "free"
-    ? FREE_CONFIG
-    : planConfigs.find(c => c.plan_name === tier) || FREE_CONFIG;
+  // Always try to get config from DB — admin panel is source of truth
+  const config = planConfigs.find(c => c.plan_name === tier) || FREE_FALLBACK;
 
   const isFree = tier === "free" || (!plan.isPaid);
 
-  // Limit checks
-  const canCreateFunnel = !isFree && (config.max_funnels === -1 || counts.funnels < config.max_funnels);
-  const canCreateLandingPage = !isFree && config.feature_landing_pages !== false && (config.max_landing_pages === -1 || counts.landing_pages < config.max_landing_pages);
-  const canCreateLive = !isFree && config.feature_go_live !== false && (config.max_live_sessions === -1 || counts.live_sessions < config.max_live_sessions);
-  const canUseMultilevel = !isFree && config.multilevel_funnel_enabled;
+  // Limit checks — all driven by DB config
+  const canCreateFunnel = config.feature_funnel_creation !== false && (config.max_funnels === -1 || counts.funnels < config.max_funnels);
+  const canCreateLandingPage = config.feature_landing_pages !== false && (config.max_landing_pages === -1 || counts.landing_pages < config.max_landing_pages);
+  const canCreateLive = config.feature_go_live !== false && (config.max_live_sessions === -1 || counts.live_sessions < config.max_live_sessions);
+  const canUseMultilevel = config.multilevel_funnel_enabled;
   const canAddTeamMember = tier === "pro" && (config.max_team_members === -1 || teamCount < config.max_team_members);
+  const canUploadVideo = config.feature_video_upload === true && (config.max_videos === -1 || counts.videos < (config.max_videos ?? 0));
 
-  const isFunnelLimitReached = !isFree && config.max_funnels !== -1 && counts.funnels >= config.max_funnels;
-  const isLandingPageLimitReached = !isFree && config.max_landing_pages !== -1 && counts.landing_pages >= config.max_landing_pages;
-  const isLiveLimitReached = !isFree && config.max_live_sessions !== -1 && counts.live_sessions >= config.max_live_sessions;
+  const isFunnelLimitReached = config.max_funnels !== -1 && counts.funnels >= config.max_funnels;
+  const isLandingPageLimitReached = config.max_landing_pages !== -1 && counts.landing_pages >= config.max_landing_pages;
+  const isLiveLimitReached = config.max_live_sessions !== -1 && counts.live_sessions >= config.max_live_sessions;
   const isTeamLimitReached = tier === "pro" && config.max_team_members !== -1 && teamCount >= config.max_team_members;
+  const isVideoLimitReached = config.max_videos !== -1 && counts.videos >= (config.max_videos ?? 0);
 
-  // Feature flags
+  // Feature flags — all driven by DB config
   const features = {
-    leadCapture: !isFree && config.feature_lead_capture !== false,
-    analytics: !isFree && config.feature_analytics !== false,
-    whatsappAutomation: !isFree && config.feature_whatsapp_automation === true,
-    videoSharing: !isFree && config.feature_video_sharing === true,
-    prioritySupport: !isFree && config.feature_priority_support === true,
-    advancedAnalytics: !isFree && config.feature_advanced_analytics === true,
-    multilevelFunnels: !isFree && config.multilevel_funnel_enabled,
+    leadCapture: config.feature_lead_capture !== false,
+    analytics: config.feature_analytics !== false,
+    whatsappAutomation: config.feature_whatsapp_automation === true,
+    videoSharing: config.feature_video_sharing === true,
+    prioritySupport: config.feature_priority_support === true,
+    advancedAnalytics: config.feature_advanced_analytics === true,
+    multilevelFunnels: config.multilevel_funnel_enabled,
     teamMembers: tier === "pro" && config.max_team_members !== 0,
-    teamAnalytics: !isFree && config.feature_team_analytics === true,
-    goLive: !isFree && config.feature_go_live !== false,
-    landingPages: !isFree && config.feature_landing_pages !== false,
+    teamAnalytics: config.feature_team_analytics === true,
+    goLive: config.feature_go_live !== false,
+    landingPages: config.feature_landing_pages !== false,
+    videoUpload: config.feature_video_upload === true,
+    insights: config.feature_insights === true,
+    funnelCreation: config.feature_funnel_creation !== false,
   };
 
   return {
@@ -125,10 +139,12 @@ export const usePlanLimits = () => {
     canCreateLive,
     canUseMultilevel,
     canAddTeamMember,
+    canUploadVideo,
     isFunnelLimitReached,
     isLandingPageLimitReached,
     isLiveLimitReached,
     isTeamLimitReached,
+    isVideoLimitReached,
     planConfigs,
     features,
   };
