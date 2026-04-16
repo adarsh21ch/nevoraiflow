@@ -289,33 +289,33 @@ const AdminSubscriptionsPage = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <h1 className="text-2xl font-heading font-bold">Subscriptions & Billing</h1>
+      <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
+        <h1 className="text-xl sm:text-2xl font-heading font-bold">Subscriptions & Billing</h1>
 
         <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-4">
-          <div className="glass-card p-5">
-            <p className="text-xs text-muted-foreground mb-1">Total Revenue</p>
-            <p className="text-2xl font-heading font-bold">₹{totalRevenue.toLocaleString("en-IN")}</p>
+          <div className="glass-card p-3 sm:p-5">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Revenue</p>
+            <p className="text-lg sm:text-2xl font-heading font-bold">₹{totalRevenue.toLocaleString("en-IN")}</p>
           </div>
-          <div className="glass-card p-5">
-            <p className="text-xs text-muted-foreground mb-1">Active Paid</p>
-            <p className="text-2xl font-heading font-bold text-primary">{activeCount}</p>
+          <div className="glass-card p-3 sm:p-5">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Paid</p>
+            <p className="text-lg sm:text-2xl font-heading font-bold text-primary">{activeCount}</p>
           </div>
-          <div className="glass-card p-5">
-            <p className="text-xs text-muted-foreground mb-1">Free</p>
-            <p className="text-2xl font-heading font-bold text-muted-foreground">{freeCount}</p>
+          <div className="glass-card p-3 sm:p-5">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Free</p>
+            <p className="text-lg sm:text-2xl font-heading font-bold text-muted-foreground">{freeCount}</p>
           </div>
-          <div className="glass-card p-5">
-            <p className="text-xs text-muted-foreground mb-1">Basic</p>
-            <p className="text-2xl font-heading font-bold text-blue-600">{basicCount}</p>
+          <div className="glass-card p-3 sm:p-5">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Basic</p>
+            <p className="text-lg sm:text-2xl font-heading font-bold text-blue-600">{basicCount}</p>
           </div>
-          <div className="glass-card p-5">
-            <p className="text-xs text-muted-foreground mb-1">Pro</p>
-            <p className="text-2xl font-heading font-bold text-green-600">{proCount}</p>
+          <div className="glass-card p-3 sm:p-5">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Pro</p>
+            <p className="text-lg sm:text-2xl font-heading font-bold text-green-600">{proCount}</p>
           </div>
-          <div className="glass-card p-5">
-            <p className="text-xs text-muted-foreground mb-1">Failed</p>
-            <p className="text-2xl font-heading font-bold text-destructive">{failedCount}</p>
+          <div className="glass-card p-3 sm:p-5">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Failed</p>
+            <p className="text-lg sm:text-2xl font-heading font-bold text-destructive">{failedCount}</p>
           </div>
         </div>
 
