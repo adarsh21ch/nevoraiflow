@@ -93,32 +93,32 @@ const AdminVideosPage = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
+      <div className="space-y-5 w-full max-w-full overflow-x-hidden">
         <h1 className="text-xl sm:text-2xl font-heading font-bold">Video Management</h1>
 
         {/* Upload section */}
-        <div className="glass-card p-4 sm:p-6 space-y-3">
+        <div className="glass-card p-4 sm:p-6 space-y-4">
           <h2 className="text-sm sm:text-base font-heading font-semibold">Upload New Video</h2>
           <div className="space-y-3">
             <div>
               <Label className="text-xs">Title</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Video title" className="mt-1 bg-muted border-border" />
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Video title" className="mt-1.5 bg-muted border-border" />
             </div>
             <input type="file" ref={fileInputRef} accept="video/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleUpload(file); }} />
-            <Button variant="hero" className="w-full sm:w-auto" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-              {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+            <Button variant="hero" className="w-full min-h-[48px] text-base" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+              {uploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
               {uploading ? "Uploading..." : "Upload Video"}
             </Button>
           </div>
           {uploading && (
             <div className="space-y-2">
-              <Progress value={uploadProgress} className="h-2 bg-muted [&>div]:bg-white" />
+              <Progress value={uploadProgress} className="h-2.5 bg-muted [&>div]:bg-white" />
               <p className="text-xs text-muted-foreground text-center">{uploadProgress}%</p>
             </div>
           )}
         </div>
 
-        {/* Mobile: card list, Desktop: table */}
+        {/* Desktop table */}
         <div className="hidden sm:block glass-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -185,30 +185,29 @@ const AdminVideosPage = () => {
           {isLoading ? (
             Array.from({ length: 3 }).map((_, i) => <div key={i} className="glass-card p-4 h-24 animate-pulse" />)
           ) : videos.length === 0 ? (
-            <div className="glass-card p-6 text-center text-sm text-muted-foreground">No videos yet</div>
+            <div className="glass-card p-8 text-center text-sm text-muted-foreground">No videos yet</div>
           ) : (
             videos.map((v) => (
-              <div key={v.id} className="glass-card p-3 space-y-2">
+              <div key={v.id} className="glass-card p-4 space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-7 bg-muted rounded flex items-center justify-center shrink-0">
-                    {v.thumbnail_url ? <img src={v.thumbnail_url} className="w-full h-full object-cover rounded" /> : <Video size={12} className="text-muted-foreground" />}
+                  <div className="w-12 h-9 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                    {v.thumbnail_url ? <img src={v.thumbnail_url} className="w-full h-full object-cover rounded-lg" /> : <Video size={16} className="text-muted-foreground" />}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{v.title}</p>
-                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                       <span>{formatSize(v.file_size_bytes)}</span>
                       <span>·</span>
                       <span>{v.view_count || 0} views</span>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${v.status === "ready" ? "bg-success/10 text-success" : v.status === "failed" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}>{v.status}</span>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${v.status === "ready" ? "bg-success/10 text-success" : v.status === "failed" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}>{v.status}</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-1 border-t border-border pt-2">
-                  <Button variant="ghost" size="sm" className="h-7 text-[11px] flex-1 min-w-0 px-1" onClick={() => setRenameVideo({ id: v.id, title: v.title })}><Pencil size={12} /></Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-[11px] flex-1 min-w-0 px-1" onClick={() => setShareVideo({ id: v.id, title: v.title })}><Share2 size={12} /></Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-[11px] flex-1 min-w-0 px-1" onClick={() => copyLink(v.id)}><Link2 size={12} /></Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-[11px] flex-1 min-w-0 px-1" onClick={() => useInFunnel(v.id)}><Rocket size={12} /></Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-[11px] flex-1 min-w-0 px-1 text-destructive" onClick={() => { if (confirm("Delete?")) deleteMutation.mutate(v.id); }}><Trash2 size={12} /></Button>
+                <div className="flex gap-1 border-t border-border pt-2.5">
+                  <Button variant="ghost" size="sm" className="flex-1 h-10 text-xs gap-1.5" onClick={() => setRenameVideo({ id: v.id, title: v.title })}><Pencil size={14} /> Rename</Button>
+                  <Button variant="ghost" size="sm" className="flex-1 h-10 text-xs gap-1.5" onClick={() => setShareVideo({ id: v.id, title: v.title })}><Share2 size={14} /> Share</Button>
+                  <Button variant="ghost" size="sm" className="flex-1 h-10 text-xs gap-1.5" onClick={() => copyLink(v.id)}><Link2 size={14} /> Link</Button>
+                  <Button variant="ghost" size="sm" className="h-10 w-10 text-destructive shrink-0" onClick={() => { if (confirm("Delete?")) deleteMutation.mutate(v.id); }}><Trash2 size={14} /></Button>
                 </div>
               </div>
             ))

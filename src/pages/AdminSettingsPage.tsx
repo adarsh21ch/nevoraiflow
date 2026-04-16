@@ -27,8 +27,6 @@ const AdminSettingsPage = () => {
   const [announcementText, setAnnouncementText] = useState("");
   const [announcementActive, setAnnouncementActive] = useState(false);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
-
-  // Testimonial settings
   const [maxVideoSeconds, setMaxVideoSeconds] = useState("60");
   const [maxPerPage, setMaxPerPage] = useState("8");
   const [videoFeatureEnabled, setVideoFeatureEnabled] = useState(true);
@@ -68,18 +66,9 @@ const AdminSettingsPage = () => {
     queryKey: ["gmail-connection-status"],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase.functions.invoke("send-gmail-email", {
-          method: "GET",
-        });
-
-        if (error) {
-          throw error;
-        }
-
-        return {
-          connected: Boolean(data?.connected),
-          email: data?.email ?? null,
-        };
+        const { data, error } = await supabase.functions.invoke("send-gmail-email", { method: "GET" });
+        if (error) throw error;
+        return { connected: Boolean(data?.connected), email: data?.email ?? null };
       } catch {
         return { connected: false, email: null };
       }
@@ -92,20 +81,13 @@ const AdminSettingsPage = () => {
   const handleConnectGmail = useCallback(async () => {
     setConnectingGmail(true);
     try {
-      const { data, error } = await supabase.functions.invoke("gmail-oauth-init", {
-        body: {},
-      });
-
+      const { data, error } = await supabase.functions.invoke("gmail-oauth-init", { body: {} });
       if (error || !data?.auth_url) {
         toast.error(data?.error || "Failed to start Gmail connection");
         setConnectingGmail(false);
         return;
       }
-
-      // Open popup
       const popup = window.open(data.auth_url, "gmail-oauth", "width=600,height=700,scrollbars=yes");
-
-      // Poll for popup close
       const interval = setInterval(() => {
         if (popup?.closed) {
           clearInterval(interval);
@@ -114,12 +96,7 @@ const AdminSettingsPage = () => {
           toast.success("Gmail connection updated. Refreshing status...");
         }
       }, 1000);
-
-      // Timeout after 5 minutes
-      setTimeout(() => {
-        clearInterval(interval);
-        setConnectingGmail(false);
-      }, 5 * 60 * 1000);
+      setTimeout(() => { clearInterval(interval); setConnectingGmail(false); }, 5 * 60 * 1000);
     } catch {
       toast.error("Failed to connect Gmail");
       setConnectingGmail(false);
@@ -128,103 +105,88 @@ const AdminSettingsPage = () => {
 
   const disconnectMutation = useMutation({
     mutationFn: async () => {
-      // We need to delete tokens — but RLS prevents direct access.
-      // We'll create a simple approach: call gmail-oauth-init with a disconnect flag
-      // For now, let's use the service role approach through an edge function
-      // Actually, the simplest is to use supabase.rpc or a direct delete
-      // Since RLS only allows service_role, we need an edge function for disconnect too
-      // Let's just handle this by re-using the init function or creating inline logic
       toast.info("To disconnect, revoke access at myaccount.google.com/permissions");
     },
-    onSuccess: () => {
-      refetchGmail();
-    },
+    onSuccess: () => { refetchGmail(); },
   });
 
   return (
     <AdminLayout>
-      <div className="w-full max-w-full sm:max-w-2xl space-y-4 sm:space-y-6 overflow-x-hidden">
+      <div className="w-full max-w-full sm:max-w-2xl space-y-5 overflow-x-hidden">
         <h1 className="text-xl sm:text-2xl font-heading font-bold">Platform Settings</h1>
 
         {/* Gmail Connection */}
         <div className="glass-card p-4 sm:p-6 space-y-4">
           <h2 className="text-base font-heading font-semibold flex items-center gap-2">
-            <Mail size={16} className="text-primary" /> Gmail Email Connection
+            <Mail size={18} className="text-primary" /> Gmail Email Connection
           </h2>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             Connect your Gmail account to send confirmation emails to users. Supports up to 2,000 emails/day with Google Workspace.
           </p>
 
           <div className="flex items-center gap-3">
             {gmailConnected?.connected ? (
               <>
-                <CheckCircle2 size={18} className="text-green-500" />
-                <span className="text-sm text-foreground">
+                <CheckCircle2 size={18} className="text-green-500 shrink-0" />
+                <span className="text-sm text-foreground truncate">
                   Gmail Connected{gmailConnected?.email ? ` (${gmailConnected.email})` : ""}
                 </span>
               </>
             ) : (
               <>
-                <XCircle size={18} className="text-muted-foreground" />
+                <XCircle size={18} className="text-muted-foreground shrink-0" />
                 <span className="text-sm text-muted-foreground">Gmail not connected</span>
               </>
             )}
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant={gmailConnected?.connected ? "outline" : "hero"}
               size="sm"
+              className="min-h-[40px]"
               onClick={handleConnectGmail}
               disabled={connectingGmail}
             >
               {connectingGmail ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" /> Connecting...
-                </>
-              ) : gmailConnected?.connected ? (
-                "Reconnect Gmail"
-              ) : (
-                "Connect Gmail"
-              )}
+                <><Loader2 size={14} className="animate-spin" /> Connecting...</>
+              ) : gmailConnected?.connected ? "Reconnect Gmail" : "Connect Gmail"}
             </Button>
             {gmailConnected?.connected && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => disconnectMutation.mutate()}
-              >
+              <Button variant="ghost" size="sm" className="min-h-[40px]" onClick={() => disconnectMutation.mutate()}>
                 Disconnect
               </Button>
             )}
           </div>
 
-          <p className="text-[11px] text-muted-foreground">
-            Redirect URI for Google Console: <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
+          <div className="text-[11px] text-muted-foreground">
+            <p className="mb-1">Redirect URI for Google Console:</p>
+            <code className="text-xs bg-muted px-2 py-1 rounded block break-all">
               {`https://atwnmovdnblcqyvhaxls.supabase.co/functions/v1/gmail-oauth-callback`}
             </code>
-          </p>
+          </div>
         </div>
 
+        {/* Announcement & Maintenance */}
         <div className="glass-card p-4 sm:p-6 space-y-6">
           <div>
             <h2 className="text-base font-heading font-semibold mb-4">Announcement Banner</h2>
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between min-h-[44px]">
                 <Label>Show Announcement</Label>
                 <Switch checked={announcementActive} onCheckedChange={setAnnouncementActive} />
               </div>
               <div>
                 <Label>Announcement Text</Label>
-                <Textarea value={announcementText} onChange={(e) => setAnnouncementText(e.target.value)} className="mt-1 bg-muted border-border" placeholder="Write your announcement..." rows={3} />
+                <Textarea value={announcementText} onChange={(e) => setAnnouncementText(e.target.value)} className="mt-1.5 bg-muted border-border" placeholder="Write your announcement..." rows={3} />
               </div>
             </div>
           </div>
 
           <div className="border-t border-border pt-6">
             <h2 className="text-base font-heading font-semibold mb-4">Maintenance Mode</h2>
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-4 min-h-[44px]">
+              <div className="flex-1 min-w-0">
                 <Label>Enable Maintenance Mode</Label>
                 <p className="text-xs text-muted-foreground mt-1">When enabled, users will see a maintenance page.</p>
               </div>
@@ -235,14 +197,14 @@ const AdminSettingsPage = () => {
           {/* Testimonials Settings */}
           <div className="border-t border-border pt-6">
             <h2 className="text-base font-heading font-semibold mb-4 flex items-center gap-2">
-              <Star size={16} className="text-primary" /> Testimonials
+              <Star size={18} className="text-primary" /> Testimonials
             </h2>
             <div className="space-y-4">
               <div>
                 <Label>Maximum video testimonial duration</Label>
                 <p className="text-xs text-muted-foreground mt-0.5">Maximum length allowed for each testimonial video</p>
                 <Select value={maxVideoSeconds} onValueChange={setMaxVideoSeconds}>
-                  <SelectTrigger className="mt-1.5 bg-muted border-border w-48">
+                  <SelectTrigger className="mt-1.5 bg-muted border-border w-full sm:w-48">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -257,18 +219,11 @@ const AdminSettingsPage = () => {
               <div>
                 <Label>Maximum testimonials per landing page</Label>
                 <p className="text-xs text-muted-foreground mt-0.5">Maximum testimonials a creator can add per landing page</p>
-                <Input
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={maxPerPage}
-                  onChange={(e) => setMaxPerPage(e.target.value)}
-                  className="mt-1.5 bg-muted border-border w-32"
-                />
+                <Input type="number" min={1} max={20} value={maxPerPage} onChange={(e) => setMaxPerPage(e.target.value)} className="mt-1.5 bg-muted border-border w-full sm:w-32" />
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-center justify-between gap-4 min-h-[44px]">
+                <div className="flex-1 min-w-0">
                   <Label>Allow video testimonials on landing pages</Label>
                   <p className="text-xs text-muted-foreground mt-0.5">If disabled, only text testimonials will be available</p>
                 </div>
@@ -278,8 +233,8 @@ const AdminSettingsPage = () => {
           </div>
         </div>
 
-        <Button variant="hero" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-          <Save size={16} /> {saveMutation.isPending ? "Saving..." : "Save Settings"}
+        <Button variant="hero" className="w-full sm:w-auto min-h-[48px]" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+          <Save size={18} /> {saveMutation.isPending ? "Saving..." : "Save Settings"}
         </Button>
       </div>
     </AdminLayout>
