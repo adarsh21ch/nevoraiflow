@@ -309,11 +309,11 @@ const AdminSubscriptionsPage = () => {
         </div>
 
         <Tabs defaultValue="subscriptions">
-          <TabsList className="w-full sm:w-auto flex overflow-x-auto scrollbar-none">
-            <TabsTrigger value="subscriptions" className="text-xs sm:text-sm">Subscriptions</TabsTrigger>
-            <TabsTrigger value="plans" className="text-xs sm:text-sm">Plans & Limits</TabsTrigger>
-            <TabsTrigger value="audit" className="text-xs sm:text-sm">Audit Logs</TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs sm:text-sm">Settings</TabsTrigger>
+          <TabsList className="w-full grid grid-cols-4 h-10 sm:h-9 sm:w-auto sm:flex">
+            <TabsTrigger value="subscriptions" className="text-xs sm:text-sm min-h-[40px] sm:min-h-0">Subs</TabsTrigger>
+            <TabsTrigger value="plans" className="text-xs sm:text-sm min-h-[40px] sm:min-h-0">Plans</TabsTrigger>
+            <TabsTrigger value="audit" className="text-xs sm:text-sm min-h-[40px] sm:min-h-0">Audit</TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs sm:text-sm min-h-[40px] sm:min-h-0">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="subscriptions" className="space-y-4">
@@ -449,7 +449,8 @@ const AdminSubscriptionsPage = () => {
           </TabsContent>
 
           <TabsContent value="audit" className="space-y-4">
-            <div className="glass-card overflow-hidden">
+            {/* Desktop audit table */}
+            <div className="hidden sm:block glass-card overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -480,6 +481,26 @@ const AdminSubscriptionsPage = () => {
                   </tbody>
                 </table>
               </div>
+            </div>
+            {/* Mobile audit cards */}
+            <div className="sm:hidden space-y-2">
+              {auditLogs.length === 0 ? (
+                <div className="glass-card p-8 text-center text-sm text-muted-foreground">No audit logs yet</div>
+              ) : auditLogs.map((log) => {
+                const profile = profileMap[log.user_id || ""];
+                return (
+                  <div key={log.id} className="glass-card p-3 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium truncate">{profile?.full_name || "Unknown"}</p>
+                      <span className="text-[10px] text-muted-foreground shrink-0">{new Date(log.created_at).toLocaleDateString("en-IN")}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{log.event_type} · {log.source}</p>
+                    {(log.razorpay_payment_id || log.razorpay_order_id) && (
+                      <p className="text-[10px] font-mono text-muted-foreground truncate">{log.razorpay_payment_id || log.razorpay_order_id}</p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </TabsContent>
 
