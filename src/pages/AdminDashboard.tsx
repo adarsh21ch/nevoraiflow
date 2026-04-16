@@ -45,23 +45,23 @@ const AdminDashboard = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
         <div>
-          <h1 className="text-2xl font-heading font-bold">Admin Dashboard</h1>
+          <h1 className="text-xl sm:text-2xl font-heading font-bold">Admin Dashboard</h1>
           <div className="page-header-accent" />
-          <p className="text-sm text-muted-foreground mt-2">Platform overview and management.</p>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-2">Platform overview and management.</p>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
           {kpis.map((k) => (
-            <div key={k.label} className="premium-card p-5 group">
-              <div className="flex items-center gap-3 mb-3">
-                <div className={`${k.iconClass} group-hover:scale-105 transition-transform`}>
-                  <k.icon size={18} className="text-primary" />
+            <div key={k.label} className="premium-card p-3 sm:p-5 group">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                <div className={`${k.iconClass} group-hover:scale-105 transition-transform w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center`}>
+                  <k.icon size={16} className="text-primary sm:w-[18px] sm:h-[18px]" />
                 </div>
-                <span className="text-xs text-muted-foreground font-medium">{k.label}</span>
+                <span className="text-[10px] sm:text-xs text-muted-foreground font-medium leading-tight">{k.label}</span>
               </div>
-              <div className="text-2xl font-heading font-bold">{k.value}</div>
+              <div className="text-lg sm:text-2xl font-heading font-bold truncate">{k.value}</div>
             </div>
           ))}
         </div>

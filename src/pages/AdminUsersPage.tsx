@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Search, Users, Mail, Phone, Shield } from "lucide-react";
+import { Search } from "lucide-react";
 
 const AdminUsersPage = () => {
   const [search, setSearch] = useState("");
@@ -32,15 +32,16 @@ const AdminUsersPage = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <h1 className="text-2xl font-heading font-bold">User Management</h1>
+      <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
+        <h1 className="text-xl sm:text-2xl font-heading font-bold">User Management</h1>
 
-        <div className="relative max-w-md">
+        <div className="relative w-full max-w-md">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Search users..." className="pl-9 bg-muted border-border" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
 
-        <div className="glass-card overflow-hidden">
+        {/* Desktop table */}
+        <div className="hidden sm:block glass-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -94,6 +95,40 @@ const AdminUsersPage = () => {
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* Mobile card view */}
+        <div className="sm:hidden space-y-2">
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, i) => <div key={i} className="glass-card p-3 h-16 animate-pulse" />)
+          ) : filtered.length === 0 ? (
+            <div className="glass-card p-6 text-center text-sm text-muted-foreground">No users found</div>
+          ) : (
+            filtered.map((p) => {
+              const sub = subMap[p.id];
+              return (
+                <div key={p.id} className="glass-card p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{p.full_name || "—"}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{p.email}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${sub?.tier === "pro" ? "bg-warning/10 text-warning" : sub?.tier === "basic" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        {sub?.tier || "free"}
+                      </span>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${p.kyc_status === "verified" ? "bg-success/10 text-success" : p.kyc_status === "pending" ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground"}`}>
+                        {p.kyc_status || "none"}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Joined {p.created_at ? new Date(p.created_at).toLocaleDateString("en-IN") : "—"}
+                  </p>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </AdminLayout>

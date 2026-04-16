@@ -45,20 +45,20 @@ const PlanField = ({ planName, field, label, type = "number", disabled = false, 
   }
 
   return (
-    <div className="flex items-center gap-3 py-2">
-      <div className="flex-1">
+    <div className="flex items-center gap-2 sm:gap-3 py-2">
+      <div className="flex-1 min-w-0">
         <Label className="text-xs font-medium">{label}</Label>
         {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
       </div>
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 shrink-0">
         <Input ref={inputRef} type={type === "text" ? "text" : "number"} value={localValue} disabled={disabled}
-          className="w-28 h-8 text-sm" placeholder={type === "text" ? "" : "-1 = ∞"}
+          className="w-20 sm:w-28 h-8 text-sm" placeholder={type === "text" ? "" : "-1 = ∞"}
           onChange={(e) => { setLocalValue(e.target.value); setIsDirty(true); }}
           onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
         />
         {isDirty && (
           <Button size="sm" className="h-8 gap-1 text-xs" onClick={handleSave} disabled={saving}>
-            <Save size={12} /> Save
+            <Save size={12} />
           </Button>
         )}
       </div>
@@ -220,11 +220,11 @@ const AdminSubscriptionsPage = () => {
     const isBasic = planName === "basic";
 
     return (
-      <div className={`glass-card p-5 space-y-4 transition-opacity ${isDisabled ? "opacity-50" : ""}`}>
-        <div className="flex items-center justify-between mb-2">
+      <div className={`glass-card p-3 sm:p-5 space-y-4 transition-opacity ${isDisabled ? "opacity-50" : ""}`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-2">
             <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${meta.badge}`}>{meta.label}</span>
-            <span className="text-xs text-muted-foreground">{meta.desc}</span>
+            <span className="text-[11px] sm:text-xs text-muted-foreground">{meta.desc}</span>
           </div>
           {!isFree && (
             <div className="flex items-center gap-2">
@@ -333,14 +333,14 @@ const AdminSubscriptionsPage = () => {
               <Input placeholder="Search user, plan..." className="pl-9 bg-muted border-border" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
 
-            <div className="glass-card overflow-hidden">
+            {/* Desktop table */}
+            <div className="hidden sm:block glass-card overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-left">
                       <th className="p-4 text-xs text-muted-foreground font-medium">User</th>
                       <th className="p-4 text-xs text-muted-foreground font-medium">Plan</th>
-                      <th className="p-4 text-xs text-muted-foreground font-medium">Tier</th>
                       <th className="p-4 text-xs text-muted-foreground font-medium">Status</th>
                       <th className="p-4 text-xs text-muted-foreground font-medium">Amount</th>
                       <th className="p-4 text-xs text-muted-foreground font-medium">Expires</th>
@@ -356,7 +356,6 @@ const AdminSubscriptionsPage = () => {
                             <p className="font-medium">{profile?.full_name || "—"}</p>
                             <p className="text-xs text-muted-foreground">{profile?.email}</p>
                           </td>
-                          <td className="p-4 text-xs">{s.plan_key}</td>
                           <td className="p-4">
                             <span className={`px-2 py-0.5 rounded-full text-xs ${
                               s.tier === "pro" ? "bg-green-500/10 text-green-600" :
@@ -387,10 +386,10 @@ const AdminSubscriptionsPage = () => {
                             {(s.status !== "active" || s.tier === "free") && (
                               <div className="flex gap-1">
                                 <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => handleManualGrant(s.user_id, "basic")}>
-                                  Grant Basic
+                                  Basic
                                 </Button>
                                 <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => handleManualGrant(s.user_id, "pro")}>
-                                  <Crown size={12} /> Grant Pro
+                                  <Crown size={12} /> Pro
                                 </Button>
                               </div>
                             )}
@@ -402,11 +401,58 @@ const AdminSubscriptionsPage = () => {
                 </table>
               </div>
             </div>
+
+            {/* Mobile card view */}
+            <div className="sm:hidden space-y-2">
+              {filtered.map((s) => {
+                const profile = profileMap[s.user_id];
+                return (
+                  <div key={s.id} className="glass-card p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{profile?.full_name || "—"}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{profile?.email}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                          s.tier === "pro" ? "bg-green-500/10 text-green-600" :
+                          s.tier === "basic" ? "bg-blue-500/10 text-blue-600" :
+                          "bg-muted text-muted-foreground"
+                        }`}>{s.tier}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                          s.status === "active" ? "bg-green-500/10 text-green-600" :
+                          s.status === "payment_failed" ? "bg-destructive/10 text-destructive" :
+                          "bg-muted text-muted-foreground"
+                        }`}>{s.status}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-border pt-2">
+                      <div className="text-[11px] text-muted-foreground">
+                        ₹{(s.amount_paid || 0).toLocaleString("en-IN")} · Exp: {s.expires_at ? new Date(s.expires_at).toLocaleDateString("en-IN") : "—"}
+                      </div>
+                      <div className="flex gap-1">
+                        {s.status === "active" && s.tier !== "free" && (
+                          <Button size="sm" variant="outline" className="text-[10px] h-6 px-2" onClick={() => handleRevoke(s.id)}>
+                            <Ban size={10} />
+                          </Button>
+                        )}
+                        {(s.status !== "active" || s.tier === "free") && (
+                          <>
+                            <Button size="sm" variant="outline" className="text-[10px] h-6 px-2" onClick={() => handleManualGrant(s.user_id, "basic")}>Basic</Button>
+                            <Button size="sm" variant="outline" className="text-[10px] h-6 px-2" onClick={() => handleManualGrant(s.user_id, "pro")}>Pro</Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </TabsContent>
 
           <TabsContent value="plans" className="space-y-4">
             <p className="text-sm text-muted-foreground">Admin panel is the source of truth. Edit limits and features for each plan — changes apply immediately across the platform.</p>
-            <div className="grid md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
               {renderPlanCard("free", freeConfig)}
               {renderPlanCard("basic", basicConfig)}
               {renderPlanCard("pro", proConfig)}
@@ -449,7 +495,7 @@ const AdminSubscriptionsPage = () => {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4">
-            <div className="glass-card p-6 space-y-4 max-w-lg">
+            <div className="glass-card p-4 sm:p-6 space-y-4 w-full max-w-full sm:max-w-lg">
               <h3 className="font-heading font-semibold">Platform Settings</h3>
               {["razorpay_key_id", "maintenance_mode", "whatsapp_support_number"].map(key => (
                 <div key={key} className="flex items-center gap-3">

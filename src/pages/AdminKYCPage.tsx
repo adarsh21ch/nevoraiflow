@@ -70,10 +70,10 @@ const AdminKYCPage = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
         <div>
-          <h1 className="text-2xl font-heading font-bold">Creator Verification Queue</h1>
-          <p className="text-sm text-muted-foreground mt-1">Review and approve creator identity submissions.</p>
+          <h1 className="text-xl sm:text-2xl font-heading font-bold">Creator Verification Queue</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Review and approve creator identity submissions.</p>
         </div>
 
         {pending.length === 0 && !isLoading ? (
@@ -88,14 +88,14 @@ const AdminKYCPage = () => {
             {pending.map((kyc) => {
               const Icon = DocIcon(kyc.doc_type || "");
               return (
-                <div key={kyc.id} className="glass-card p-4 flex items-center justify-between">
+                <div key={kyc.id} className="glass-card p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                       <Icon size={16} className="text-primary" />
                     </div>
-                    <div>
-                      <p className="font-medium text-sm">{kyc.full_name}</p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm truncate">{kyc.full_name}</p>
+                      <p className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1 sm:gap-2 flex-wrap">
                         {kyc.city && <span className="flex items-center gap-0.5"><MapPin size={10} />{kyc.city}</span>}
                         <span>·</span>
                         <span>{kyc.doc_type === "pan" ? "PAN" : kyc.doc_type === "aadhaar" ? "Aadhaar" : "Document"}</span>
@@ -104,11 +104,11 @@ const AdminKYCPage = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => openReview(kyc)}>
+                  <div className="flex gap-2 ml-12 sm:ml-0">
+                    <Button size="sm" variant="outline" className="text-xs h-7 sm:h-8" onClick={() => openReview(kyc)}>
                       <Eye size={14} /> Review
                     </Button>
-                    <Button size="sm" variant="default" className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => reviewMutation.mutate({ id: kyc.id, userId: kyc.user_id, action: "approved" })}>
+                    <Button size="sm" variant="default" className="bg-primary hover:bg-primary/90 text-primary-foreground h-7 sm:h-8" onClick={() => reviewMutation.mutate({ id: kyc.id, userId: kyc.user_id, action: "approved" })}>
                       <Check size={14} />
                     </Button>
                   </div>

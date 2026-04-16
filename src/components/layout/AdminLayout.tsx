@@ -19,7 +19,7 @@ export const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     <DashboardLayout>
       <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
         {/* Admin horizontal nav — scrollable on mobile */}
-        <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto pb-1 border-b border-border -mx-3 sm:-mx-4 md:-mx-8 px-3 sm:px-4 md:px-8 scrollbar-none">
+        <div className="flex items-center gap-0 sm:gap-1 overflow-x-auto pb-1 border-b border-border -mx-3 sm:-mx-4 md:-mx-8 px-3 sm:px-4 md:px-8 scrollbar-none">
           {adminTabs.map((tab) => {
             const active = tab.path === "/admin"
               ? location.pathname === "/admin"
@@ -29,14 +29,14 @@ export const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                 key={tab.path}
                 to={tab.path}
                 className={cn(
-                  "flex items-center gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-t-lg whitespace-nowrap transition-all duration-200 border-b-2 -mb-[1px] shrink-0",
+                  "flex items-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-sm font-medium rounded-t-lg whitespace-nowrap transition-all duration-200 border-b-2 -mb-[1px] shrink-0",
                   active
                     ? "border-primary text-primary bg-primary/10"
                     : "border-transparent text-muted-foreground hover:text-foreground hover:bg-primary/5"
                 )}
               >
-                <tab.icon size={14} className="shrink-0" />
-                <span>{tab.label}</span>
+                <tab.icon size={13} className="shrink-0 sm:w-[14px] sm:h-[14px]" />
+                <span className="hidden xs:inline sm:inline">{tab.label}</span>
               </Link>
             );
           })}

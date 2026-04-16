@@ -99,7 +99,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex overflow-x-hidden max-w-[100vw]">
       {/* Desktop sidebar */}
       <aside className={cn("hidden md:flex flex-col border-r border-border bg-sidebar transition-all duration-200 sticky top-0 h-screen", collapsed ? "w-16" : "w-60")}>
         <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #7EE83A, #00D4C8, #00AAFF, #1A4FD6)" }} />
@@ -197,7 +197,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
           </div>
         </div>
 
-        <div className="flex-1 p-4 md:p-8 pb-20 md:pb-8 overflow-x-hidden overflow-y-auto gradient-bg-subtle">{children}</div>
+        <div className="flex-1 p-3 sm:p-4 md:p-8 pb-20 md:pb-8 overflow-x-hidden overflow-y-auto gradient-bg-subtle w-full max-w-full">{children}</div>
       </main>
 
       {/* Mobile bottom tab bar */}

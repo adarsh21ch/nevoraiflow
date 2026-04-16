@@ -143,11 +143,11 @@ const AdminSettingsPage = () => {
 
   return (
     <AdminLayout>
-      <div className="max-w-2xl space-y-6">
-        <h1 className="text-2xl font-heading font-bold">Platform Settings</h1>
+      <div className="w-full max-w-full sm:max-w-2xl space-y-4 sm:space-y-6 overflow-x-hidden">
+        <h1 className="text-xl sm:text-2xl font-heading font-bold">Platform Settings</h1>
 
         {/* Gmail Connection */}
-        <div className="glass-card p-6 space-y-4">
+        <div className="glass-card p-4 sm:p-6 space-y-4">
           <h2 className="text-base font-heading font-semibold flex items-center gap-2">
             <Mail size={16} className="text-primary" /> Gmail Email Connection
           </h2>
@@ -206,7 +206,7 @@ const AdminSettingsPage = () => {
           </p>
         </div>
 
-        <div className="glass-card p-6 space-y-6">
+        <div className="glass-card p-4 sm:p-6 space-y-6">
           <div>
             <h2 className="text-base font-heading font-semibold mb-4">Announcement Banner</h2>
             <div className="space-y-4">
