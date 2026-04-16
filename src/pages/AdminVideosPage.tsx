@@ -36,54 +36,35 @@ const AdminVideosPage = () => {
     if (!user) return;
     setUploading(true);
     setUploadProgress(0);
-
     let videoId: string | null = null;
-
     try {
       const { data, error } = await supabase.functions.invoke("get-r2-upload-url", {
         body: { filename: file.name, contentType: file.type, title: title || file.name },
       });
-
       if (error || !data?.uploadUrl) throw new Error(data?.error || "Failed to get upload URL");
       videoId = data.videoId;
-
       const xhr = new XMLHttpRequest();
       xhr.upload.addEventListener("progress", (e) => {
         if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100));
       });
-
       await new Promise<void>((resolve, reject) => {
         xhr.open("PUT", data.uploadUrl);
         xhr.setRequestHeader("Content-Type", file.type);
-        xhr.onload = () => {
-          if (xhr.status < 300) resolve();
-          else reject(new Error(`R2 rejected upload (HTTP ${xhr.status}): ${xhr.responseText?.slice(0, 200) || "unknown error"}`));
-        };
-        xhr.onerror = () => reject(new Error("Network error — check CORS config on R2 bucket"));
+        xhr.onload = () => { if (xhr.status < 300) resolve(); else reject(new Error(`Upload failed (HTTP ${xhr.status})`)); };
+        xhr.onerror = () => reject(new Error("Network error"));
         xhr.ontimeout = () => reject(new Error("Upload timed out"));
         xhr.send(file);
       });
-
       const { error: confirmErr } = await supabase.functions.invoke("confirm-r2-upload", {
         body: { videoId: data.videoId, fileSizeBytes: file.size },
       });
-
-      if (confirmErr) throw new Error("Upload succeeded but confirmation failed");
-
-      toast.success("Video uploaded successfully!");
+      if (confirmErr) throw new Error("Confirmation failed");
+      toast.success("Video uploaded!");
       setTitle("");
       queryClient.invalidateQueries({ queryKey: ["admin-all-videos"] });
     } catch (err: any) {
-      console.error("Upload error:", err);
       toast.error(err.message || "Upload failed");
-
-      if (videoId) {
-        try {
-          await supabase.functions.invoke("confirm-r2-upload", {
-            body: { videoId, failed: true, errorMessage: err.message },
-          });
-        } catch (_) { /* best effort */ }
-      }
+      if (videoId) { try { await supabase.functions.invoke("confirm-r2-upload", { body: { videoId, failed: true, errorMessage: err.message } }); } catch {} }
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -92,13 +73,8 @@ const AdminVideosPage = () => {
   };
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await supabase.from("video_assets").delete().eq("id", id);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-all-videos"] });
-      toast.success("Video deleted");
-    },
+    mutationFn: async (id: string) => { await supabase.from("video_assets").delete().eq("id", id); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-all-videos"] }); toast.success("Video deleted"); },
   });
 
   const copyLink = (id: string) => {
@@ -106,9 +82,7 @@ const AdminVideosPage = () => {
     toast.success("Video link copied!");
   };
 
-  const useInFunnel = (videoId: string) => {
-    navigate(`/funnels/create?videoId=${videoId}`);
-  };
+  const useInFunnel = (videoId: string) => navigate(`/funnels/create?videoId=${videoId}`);
 
   const formatSize = (bytes: number | null) => {
     if (!bytes) return "—";
@@ -119,27 +93,22 @@ const AdminVideosPage = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <h1 className="text-2xl font-heading font-bold">Video Management</h1>
+      <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
+        <h1 className="text-xl sm:text-2xl font-heading font-bold">Video Management</h1>
 
         {/* Upload section */}
-        <div className="glass-card p-6 space-y-4">
-          <h2 className="text-base font-heading font-semibold">Upload New Video</h2>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
+        <div className="glass-card p-4 sm:p-6 space-y-3">
+          <h2 className="text-sm sm:text-base font-heading font-semibold">Upload New Video</h2>
+          <div className="space-y-3">
+            <div>
               <Label className="text-xs">Title</Label>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Video title" className="mt-1 bg-muted border-border" />
             </div>
-            <div className="flex items-end">
-              <input type="file" ref={fileInputRef} accept="video/*" className="hidden" onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleUpload(file);
-              }} />
-              <Button variant="hero" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                {uploading ? "Uploading..." : "Upload Video"}
-              </Button>
-            </div>
+            <input type="file" ref={fileInputRef} accept="video/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleUpload(file); }} />
+            <Button variant="hero" className="w-full sm:w-auto" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+              {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+              {uploading ? "Uploading..." : "Upload Video"}
+            </Button>
           </div>
           {uploading && (
             <div className="space-y-2">
@@ -149,8 +118,8 @@ const AdminVideosPage = () => {
           )}
         </div>
 
-        {/* Video list */}
-        <div className="glass-card overflow-hidden">
+        {/* Mobile: card list, Desktop: table */}
+        <div className="hidden sm:block glass-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -174,13 +143,13 @@ const AdminVideosPage = () => {
                     </tr>
                   ))
                 ) : videos.length === 0 ? (
-                  <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No videos uploaded yet</td></tr>
+                  <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No videos yet</td></tr>
                 ) : (
                   videos.map((v) => (
-                    <tr key={v.id} className="border-b border-border hover:bg-muted/50 transition-colors">
+                    <tr key={v.id} className="border-b border-border hover:bg-muted/50">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-8 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                          <div className="w-12 h-8 bg-muted rounded flex items-center justify-center shrink-0">
                             {v.thumbnail_url ? <img src={v.thumbnail_url} className="w-full h-full object-cover rounded" /> : <Video size={14} className="text-muted-foreground" />}
                           </div>
                           <div className="min-w-0">
@@ -190,29 +159,17 @@ const AdminVideosPage = () => {
                         </div>
                       </td>
                       <td className="p-4">
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${v.status === "ready" ? "bg-success/10 text-success" : v.status === "failed" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}>
-                          {v.status}
-                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${v.status === "ready" ? "bg-success/10 text-success" : v.status === "failed" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}>{v.status}</span>
                       </td>
                       <td className="p-4 text-xs text-muted-foreground">{formatSize(v.file_size_bytes)}</td>
                       <td className="p-4 text-xs text-muted-foreground">{v.view_count || 0}</td>
                       <td className="p-4">
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRenameVideo({ id: v.id, title: v.title })} title="Rename">
-                            <Pencil size={14} />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShareVideo({ id: v.id, title: v.title })} title="Share">
-                            <Share2 size={14} />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyLink(v.id)} title="Copy Link">
-                            <Link2 size={14} />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => useInFunnel(v.id)} title="Use in Funnel">
-                            <Rocket size={14} />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { if (confirm("Delete this video?")) deleteMutation.mutate(v.id); }}>
-                            <Trash2 size={14} />
-                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRenameVideo({ id: v.id, title: v.title })}><Pencil size={14} /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShareVideo({ id: v.id, title: v.title })}><Share2 size={14} /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyLink(v.id)}><Link2 size={14} /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => useInFunnel(v.id)}><Rocket size={14} /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { if (confirm("Delete?")) deleteMutation.mutate(v.id); }}><Trash2 size={14} /></Button>
                         </div>
                       </td>
                     </tr>
@@ -222,26 +179,45 @@ const AdminVideosPage = () => {
             </table>
           </div>
         </div>
+
+        {/* Mobile card view */}
+        <div className="sm:hidden space-y-3">
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, i) => <div key={i} className="glass-card p-4 h-24 animate-pulse" />)
+          ) : videos.length === 0 ? (
+            <div className="glass-card p-6 text-center text-sm text-muted-foreground">No videos yet</div>
+          ) : (
+            videos.map((v) => (
+              <div key={v.id} className="glass-card p-3 space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-7 bg-muted rounded flex items-center justify-center shrink-0">
+                    {v.thumbnail_url ? <img src={v.thumbnail_url} className="w-full h-full object-cover rounded" /> : <Video size={12} className="text-muted-foreground" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{v.title}</p>
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <span>{formatSize(v.file_size_bytes)}</span>
+                      <span>·</span>
+                      <span>{v.view_count || 0} views</span>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${v.status === "ready" ? "bg-success/10 text-success" : v.status === "failed" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}>{v.status}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-1 border-t border-border pt-2">
+                  <Button variant="ghost" size="sm" className="h-7 text-[11px] flex-1 min-w-0 px-1" onClick={() => setRenameVideo({ id: v.id, title: v.title })}><Pencil size={12} /></Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-[11px] flex-1 min-w-0 px-1" onClick={() => setShareVideo({ id: v.id, title: v.title })}><Share2 size={12} /></Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-[11px] flex-1 min-w-0 px-1" onClick={() => copyLink(v.id)}><Link2 size={12} /></Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-[11px] flex-1 min-w-0 px-1" onClick={() => useInFunnel(v.id)}><Rocket size={12} /></Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-[11px] flex-1 min-w-0 px-1 text-destructive" onClick={() => { if (confirm("Delete?")) deleteMutation.mutate(v.id); }}><Trash2 size={12} /></Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
-      {shareVideo && (
-        <VideoShareModal
-          open={!!shareVideo}
-          onClose={() => setShareVideo(null)}
-          videoId={shareVideo.id}
-          videoTitle={shareVideo.title}
-        />
-      )}
-
-      {renameVideo && (
-        <VideoRenameModal
-          open={!!renameVideo}
-          onClose={() => setRenameVideo(null)}
-          videoId={renameVideo.id}
-          currentTitle={renameVideo.title}
-          onSuccess={() => queryClient.invalidateQueries({ queryKey: ["admin-all-videos"] })}
-        />
-      )}
+      {shareVideo && <VideoShareModal open={!!shareVideo} onClose={() => setShareVideo(null)} videoId={shareVideo.id} videoTitle={shareVideo.title} />}
+      {renameVideo && <VideoRenameModal open={!!renameVideo} onClose={() => setRenameVideo(null)} videoId={renameVideo.id} currentTitle={renameVideo.title} onSuccess={() => queryClient.invalidateQueries({ queryKey: ["admin-all-videos"] })} />}
     </AdminLayout>
   );
 };
