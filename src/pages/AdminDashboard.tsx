@@ -34,34 +34,34 @@ const AdminDashboard = () => {
   const totalLeads = funnels.reduce((a, f) => a + ((f as any).total_leads || 0), 0);
 
   const kpis = [
-    { icon: Users, label: "Total Users", value: String(profiles.length), iconClass: "stat-icon" },
-    { icon: Layers, label: "Total Funnels", value: String(funnels.length), iconClass: "stat-icon" },
-    { icon: Video, label: "Total Videos", value: String(videos.length), iconClass: "stat-icon" },
-    { icon: BarChart3, label: "Total Views", value: totalViews.toLocaleString("en-IN"), iconClass: "stat-icon" },
-    { icon: Users, label: "Total Leads", value: totalLeads.toLocaleString("en-IN"), iconClass: "stat-icon-success" },
-    { icon: IndianRupee, label: "Total Revenue", value: `₹${mrr.toLocaleString("en-IN")}`, iconClass: "stat-icon-warning" },
-    { icon: Shield, label: "KYC Pending", value: String(kycPending.length), iconClass: "stat-icon-destructive" },
+    { icon: Users, label: "Total Users", value: String(profiles.length) },
+    { icon: Layers, label: "Total Funnels", value: String(funnels.length) },
+    { icon: Video, label: "Total Videos", value: String(videos.length) },
+    { icon: BarChart3, label: "Total Views", value: totalViews.toLocaleString("en-IN") },
+    { icon: Users, label: "Total Leads", value: totalLeads.toLocaleString("en-IN") },
+    { icon: IndianRupee, label: "Revenue", value: `₹${mrr.toLocaleString("en-IN")}` },
+    { icon: Shield, label: "KYC Pending", value: String(kycPending.length) },
   ];
 
   return (
     <AdminLayout>
-      <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
+      <div className="space-y-5 w-full max-w-full overflow-x-hidden">
         <div>
           <h1 className="text-xl sm:text-2xl font-heading font-bold">Admin Dashboard</h1>
           <div className="page-header-accent" />
           <p className="text-xs sm:text-sm text-muted-foreground mt-2">Platform overview and management.</p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {kpis.map((k) => (
-            <div key={k.label} className="premium-card p-3 sm:p-5 group">
-              <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                <div className={`${k.iconClass} group-hover:scale-105 transition-transform w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center`}>
-                  <k.icon size={16} className="text-primary sm:w-[18px] sm:h-[18px]" />
+            <div key={k.label} className="glass-card p-4 sm:p-5 group">
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <div className="stat-icon group-hover:scale-105 transition-transform w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
+                  <k.icon size={18} className="text-primary" />
                 </div>
-                <span className="text-[10px] sm:text-xs text-muted-foreground font-medium leading-tight">{k.label}</span>
+                <span className="text-[11px] sm:text-xs text-muted-foreground font-medium leading-tight">{k.label}</span>
               </div>
-              <div className="text-lg sm:text-2xl font-heading font-bold truncate">{k.value}</div>
+              <div className="text-xl sm:text-2xl font-heading font-bold truncate">{k.value}</div>
             </div>
           ))}
         </div>
