@@ -127,7 +127,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
   };
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-background">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-background" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="flex min-h-screen w-full max-w-full overflow-x-hidden">
         <aside
           className={cn(
@@ -135,7 +135,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
             collapsed ? "w-16" : "w-60"
           )}
         >
-          <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #7EE83A, #00D4C8, #00AAFF, #1A4FD6)" }} />
+          <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #7EE83A, #00D4C8, #00AAFF, #1A4FD6)", marginTop: 'env(safe-area-inset-top)' }} />
           <div className="flex h-16 items-center justify-between border-b border-border px-4 shrink-0">
             {!collapsed && <Logo size="sm" />}
             <div className="flex items-center gap-1">
