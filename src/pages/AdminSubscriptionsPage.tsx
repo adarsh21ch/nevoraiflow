@@ -4,14 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Search, Crown, Ban, CheckCircle2, XCircle, Save, Target, BarChart3, MessageSquare, Video, FileText, Users, TrendingUp, Shield, Zap } from "lucide-react";
+import { Search, Crown, Ban, CheckCircle2, XCircle, Save, Target, BarChart3, MessageSquare, Video, FileText, Users, TrendingUp, Shield, Zap, Upload, Eye, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import type { PlanConfig } from "@/hooks/usePlanLimits";
 
-// Extracted PlanField to prevent focus loss on parent re-render
 const PlanField = ({ planName, field, label, type = "number", disabled = false, hint, value: initialValue, onSave }: {
   planName: string; field: string; label: string; type?: string; disabled?: boolean; hint?: string;
   value: any; onSave: (planName: string, field: string, value: any) => Promise<void>;
@@ -22,9 +21,7 @@ const PlanField = ({ planName, field, label, type = "number", disabled = false, 
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!isDirty) {
-      setLocalValue(String(initialValue ?? ""));
-    }
+    if (!isDirty) setLocalValue(String(initialValue ?? ""));
   }, [initialValue, isDirty]);
 
   const handleSave = async () => {
@@ -42,11 +39,7 @@ const PlanField = ({ planName, field, label, type = "number", disabled = false, 
           <Label className="text-xs font-medium">{label}</Label>
           {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
         </div>
-        <Switch
-          checked={!!initialValue}
-          disabled={disabled}
-          onCheckedChange={(v) => onSave(planName, field, v)}
-        />
+        <Switch checked={!!initialValue} disabled={disabled} onCheckedChange={(v) => onSave(planName, field, v)} />
       </div>
     );
   }
@@ -58,28 +51,13 @@ const PlanField = ({ planName, field, label, type = "number", disabled = false, 
         {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
       </div>
       <div className="flex items-center gap-1.5">
-        <Input
-          ref={inputRef}
-          type={type === "text" ? "text" : "number"}
-          value={localValue}
-          disabled={disabled}
-          className="w-28 h-8 text-sm"
-          placeholder={type === "text" ? "" : "-1 = ∞"}
-          onChange={(e) => {
-            setLocalValue(e.target.value);
-            setIsDirty(true);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleSave();
-          }}
+        <Input ref={inputRef} type={type === "text" ? "text" : "number"} value={localValue} disabled={disabled}
+          className="w-28 h-8 text-sm" placeholder={type === "text" ? "" : "-1 = ∞"}
+          onChange={(e) => { setLocalValue(e.target.value); setIsDirty(true); }}
+          onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
         />
         {isDirty && (
-          <Button
-            size="sm"
-            className="h-8 gap-1 text-xs"
-            onClick={handleSave}
-            disabled={saving}
-          >
+          <Button size="sm" className="h-8 gap-1 text-xs" onClick={handleSave} disabled={saving}>
             <Save size={12} /> Save
           </Button>
         )}
@@ -89,12 +67,15 @@ const PlanField = ({ planName, field, label, type = "number", disabled = false, 
 };
 
 const FEATURE_TOGGLES = [
+  { field: "feature_funnel_creation", label: "Funnel Creation", desc: "Create video funnels", icon: Layers },
   { field: "feature_lead_capture", label: "Lead Capture", desc: "Collect leads via funnel forms", icon: Target },
   { field: "feature_analytics", label: "Analytics", desc: "View funnel performance analytics", icon: BarChart3 },
+  { field: "feature_insights", label: "Insights Dashboard", desc: "Access detailed insights & reports", icon: Eye },
+  { field: "feature_video_upload", label: "Video Upload", desc: "Upload videos directly to gallery", icon: Upload },
+  { field: "feature_video_sharing", label: "Video Sharing", desc: "Share videos with prospects", icon: Video },
   { field: "feature_whatsapp_automation", label: "WhatsApp Automation", desc: "Send automated WhatsApp messages", icon: MessageSquare },
   { field: "feature_go_live", label: "Go Live", desc: "Host live sessions", icon: Video },
   { field: "feature_landing_pages", label: "Landing Pages", desc: "Create standalone landing pages", icon: FileText },
-  { field: "feature_video_sharing", label: "Video Sharing", desc: "Share videos with prospects", icon: Video },
   { field: "multilevel_funnel_enabled", label: "Multi-level Funnels", desc: "Create step-by-step video funnel sequences", icon: TrendingUp },
   { field: "feature_team_analytics", label: "Team Analytics", desc: "View analytics for your entire team", icon: Users },
   { field: "feature_advanced_analytics", label: "Advanced Analytics", desc: "Detailed conversion and engagement data", icon: Zap },
@@ -159,6 +140,7 @@ const AdminSubscriptionsPage = () => {
   const activeCount = subscriptions.filter((s) => s.status === "active" && s.tier !== "free").length;
   const basicCount = subscriptions.filter((s) => s.status === "active" && s.tier === "basic").length;
   const proCount = subscriptions.filter((s) => s.status === "active" && s.tier === "pro").length;
+  const freeCount = subscriptions.filter((s) => s.status === "active" && s.tier === "free").length;
   const failedCount = subscriptions.filter((s) => s.status === "payment_failed").length;
 
   const handleManualGrant = async (userId: string, tier: string) => {
@@ -209,6 +191,7 @@ const AdminSubscriptionsPage = () => {
     }
   };
 
+  const freeConfig = planConfigs.find(c => c.plan_name === "free") as any;
   const basicConfig = planConfigs.find(c => c.plan_name === "basic") as any;
   const proConfig = planConfigs.find(c => c.plan_name === "pro") as any;
 
@@ -224,65 +207,63 @@ const AdminSubscriptionsPage = () => {
 
   const getSettingValue = (key: string) => settings.find(s => s.key === key)?.value || "";
 
-  const renderPlanCard = (planName: string, config: any, colorClass: string, badgeClass: string) => {
+  const PLAN_META: Record<string, { label: string; badge: string; desc: string; hiddenFeatures?: string[] }> = {
+    free: { label: "Free", badge: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300", desc: "Explore only", hiddenFeatures: ["feature_team_analytics"] },
+    basic: { label: "Basic", badge: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400", desc: "For Individuals", hiddenFeatures: ["feature_team_analytics"] },
+    pro: { label: "Pro", badge: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400", desc: "For Teams" },
+  };
+
+  const renderPlanCard = (planName: string, config: any) => {
+    const meta = PLAN_META[planName];
     const isDisabled = config?.is_enabled === false;
+    const isFree = planName === "free";
     const isBasic = planName === "basic";
 
     return (
-      <div className={`glass-card p-6 space-y-4 transition-opacity ${isDisabled ? "opacity-50" : ""} ${!isBasic ? "border-primary/30" : ""}`}>
+      <div className={`glass-card p-5 space-y-4 transition-opacity ${isDisabled ? "opacity-50" : ""}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${badgeClass}`}>
-              {planName.charAt(0).toUpperCase() + planName.slice(1)}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {isBasic ? "For Individuals" : "For Teams"}
-            </span>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${meta.badge}`}>{meta.label}</span>
+            <span className="text-xs text-muted-foreground">{meta.desc}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Label className="text-xs text-muted-foreground">
-              {!isDisabled ? "Enabled" : "Disabled"}
-            </Label>
-            <Switch
-              checked={!isDisabled}
-              onCheckedChange={(v) => handleTogglePlan(planName, v)}
-            />
-          </div>
+          {!isFree && (
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground">{!isDisabled ? "Enabled" : "Disabled"}</Label>
+              <Switch checked={!isDisabled} onCheckedChange={(v) => handleTogglePlan(planName, v)} />
+            </div>
+          )}
         </div>
 
-        <Tabs defaultValue="pricing" className="w-full">
-          <TabsList className="w-full grid grid-cols-3 h-8">
-            <TabsTrigger value="pricing" className="text-xs">Pricing</TabsTrigger>
+        <Tabs defaultValue={isFree ? "limits" : "pricing"} className="w-full">
+          <TabsList className={`w-full grid h-8 ${isFree ? "grid-cols-2" : "grid-cols-3"}`}>
+            {!isFree && <TabsTrigger value="pricing" className="text-xs">Pricing</TabsTrigger>}
             <TabsTrigger value="limits" className="text-xs">Limits</TabsTrigger>
             <TabsTrigger value="features" className="text-xs">Features</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="pricing" className="pt-3 space-y-1">
-            <PlanField planName={planName} field="monthly_price" label="Monthly Price (₹)" value={config?.monthly_price} onSave={saveField} disabled={isDisabled} />
-            <PlanField planName={planName} field="yearly_price" label="Yearly Price (₹)" value={config?.yearly_price} onSave={saveField} disabled={isDisabled} />
-            <PlanField planName={planName} field="yearly_validity_days" label="Yearly Validity (days)" value={config?.yearly_validity_days} onSave={saveField} disabled={isDisabled} />
-            <PlanField planName={planName} field="plan_badge_text" label="Plan Badge Text" type="text" value={config?.plan_badge_text || ""} onSave={saveField} disabled={isDisabled} hint="Shown above plan card on pricing page" />
-          </TabsContent>
+          {!isFree && (
+            <TabsContent value="pricing" className="pt-3 space-y-1">
+              <PlanField planName={planName} field="monthly_price" label="Monthly Price (₹)" value={config?.monthly_price} onSave={saveField} disabled={isDisabled} />
+              <PlanField planName={planName} field="yearly_price" label="Yearly Price (₹)" value={config?.yearly_price} onSave={saveField} disabled={isDisabled} />
+              <PlanField planName={planName} field="yearly_validity_days" label="Yearly Validity (days)" value={config?.yearly_validity_days} onSave={saveField} disabled={isDisabled} />
+              <PlanField planName={planName} field="plan_badge_text" label="Plan Badge Text" type="text" value={config?.plan_badge_text || ""} onSave={saveField} disabled={isDisabled} hint="Shown above plan card on pricing page" />
+            </TabsContent>
+          )}
 
           <TabsContent value="limits" className="pt-3 space-y-1">
             <PlanField planName={planName} field="max_funnels" label="Max Funnels" hint="-1 = unlimited" value={config?.max_funnels} onSave={saveField} disabled={isDisabled} />
             <PlanField planName={planName} field="max_landing_pages" label="Max Landing Pages" hint="-1 = unlimited" value={config?.max_landing_pages} onSave={saveField} disabled={isDisabled} />
             <PlanField planName={planName} field="max_live_sessions" label="Max Live Sessions" hint="-1 = unlimited" value={config?.max_live_sessions} onSave={saveField} disabled={isDisabled} />
-            <PlanField
-              planName={planName}
-              field="max_team_members"
-              label="Max Team Members"
-              hint={isBasic ? "N/A — Basic plan has no team" : "-1 = unlimited"}
-              value={isBasic ? 0 : config?.max_team_members}
-              onSave={saveField}
-              disabled={isDisabled || isBasic}
-            />
+            <PlanField planName={planName} field="max_videos" label="Max Videos" hint="-1 = unlimited" value={config?.max_videos} onSave={saveField} disabled={isDisabled} />
+            <PlanField planName={planName} field="max_storage_mb" label="Max Storage (MB)" hint="-1 = unlimited, e.g. 1024 = 1GB" value={config?.max_storage_mb} onSave={saveField} disabled={isDisabled} />
+            {!isFree && !isBasic && (
+              <PlanField planName={planName} field="max_team_members" label="Max Team Members" hint="-1 = unlimited" value={config?.max_team_members} onSave={saveField} disabled={isDisabled} />
+            )}
           </TabsContent>
 
           <TabsContent value="features" className="pt-3 space-y-0.5">
             {FEATURE_TOGGLES.map(({ field, label, desc, icon: Icon }) => {
-              // Hide team-related toggles for basic
-              if (isBasic && (field === "feature_team_analytics")) return null;
+              if (meta.hiddenFeatures?.includes(field)) return null;
               return (
                 <div key={field} className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0">
                   <Icon size={14} className="text-muted-foreground shrink-0" />
@@ -290,11 +271,7 @@ const AdminSubscriptionsPage = () => {
                     <p className="text-xs font-medium">{label}</p>
                     <p className="text-[10px] text-muted-foreground truncate">{desc}</p>
                   </div>
-                  <Switch
-                    checked={!!config?.[field]}
-                    disabled={isDisabled}
-                    onCheckedChange={(v) => saveField(planName, field, v)}
-                  />
+                  <Switch checked={!!config?.[field]} disabled={isDisabled} onCheckedChange={(v) => saveField(planName, field, v)} />
                 </div>
               );
             })}
@@ -303,7 +280,7 @@ const AdminSubscriptionsPage = () => {
 
         {isDisabled && (
           <p className="text-xs text-amber-500 bg-amber-500/10 rounded-lg p-3">
-            ⚠️ {planName.charAt(0).toUpperCase() + planName.slice(1)} plan is disabled. It won't appear on the pricing page.
+            ⚠️ {meta.label} plan is disabled. It won't appear on the pricing page.
           </p>
         )}
       </div>
@@ -315,7 +292,7 @@ const AdminSubscriptionsPage = () => {
       <div className="space-y-6">
         <h1 className="text-2xl font-heading font-bold">Subscriptions & Billing</h1>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           <div className="glass-card p-5">
             <p className="text-xs text-muted-foreground mb-1">Total Revenue</p>
             <p className="text-2xl font-heading font-bold">₹{totalRevenue.toLocaleString("en-IN")}</p>
@@ -323,6 +300,10 @@ const AdminSubscriptionsPage = () => {
           <div className="glass-card p-5">
             <p className="text-xs text-muted-foreground mb-1">Active Paid</p>
             <p className="text-2xl font-heading font-bold text-primary">{activeCount}</p>
+          </div>
+          <div className="glass-card p-5">
+            <p className="text-xs text-muted-foreground mb-1">Free</p>
+            <p className="text-2xl font-heading font-bold text-muted-foreground">{freeCount}</p>
           </div>
           <div className="glass-card p-5">
             <p className="text-xs text-muted-foreground mb-1">Basic</p>
@@ -424,10 +405,11 @@ const AdminSubscriptionsPage = () => {
           </TabsContent>
 
           <TabsContent value="plans" className="space-y-4">
-            <p className="text-sm text-muted-foreground">Edit pricing, limits, and features for each plan. Changes apply immediately to the pricing page.</p>
-            <div className="grid md:grid-cols-2 gap-6">
-              {renderPlanCard("basic", basicConfig, "blue", "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400")}
-              {renderPlanCard("pro", proConfig, "green", "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400")}
+            <p className="text-sm text-muted-foreground">Admin panel is the source of truth. Edit limits and features for each plan — changes apply immediately across the platform.</p>
+            <div className="grid md:grid-cols-3 gap-5">
+              {renderPlanCard("free", freeConfig)}
+              {renderPlanCard("basic", basicConfig)}
+              {renderPlanCard("pro", proConfig)}
             </div>
           </TabsContent>
 
@@ -473,11 +455,8 @@ const AdminSubscriptionsPage = () => {
                 <div key={key} className="flex items-center gap-3">
                   <div className="flex-1">
                     <Label className="text-xs font-medium capitalize">{key.replace(/_/g, " ")}</Label>
-                    <Input
-                      className="mt-1 h-8 text-sm"
-                      value={editingSettings[key] ?? getSettingValue(key)}
-                      onChange={e => setEditingSettings(prev => ({ ...prev, [key]: e.target.value }))}
-                    />
+                    <Input className="mt-1 h-8 text-sm" value={editingSettings[key] ?? getSettingValue(key)}
+                      onChange={e => setEditingSettings(prev => ({ ...prev, [key]: e.target.value }))} />
                   </div>
                   <Button size="sm" className="h-8 mt-5" onClick={() => handleSettingSave(key)}>
                     <Save size={12} />

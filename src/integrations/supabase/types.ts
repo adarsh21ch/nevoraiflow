@@ -1538,19 +1538,24 @@ export type Database = {
         Row: {
           feature_advanced_analytics: boolean
           feature_analytics: boolean
+          feature_funnel_creation: boolean
           feature_go_live: boolean
+          feature_insights: boolean
           feature_landing_pages: boolean
           feature_lead_capture: boolean
           feature_priority_support: boolean
           feature_team_analytics: boolean
           feature_video_sharing: boolean
+          feature_video_upload: boolean
           feature_whatsapp_automation: boolean
           id: string
           is_enabled: boolean
           max_funnels: number
           max_landing_pages: number
           max_live_sessions: number
+          max_storage_mb: number
           max_team_members: number
+          max_videos: number
           monthly_price: number
           multilevel_funnel_enabled: boolean
           plan_badge_text: string | null
@@ -1562,19 +1567,24 @@ export type Database = {
         Insert: {
           feature_advanced_analytics?: boolean
           feature_analytics?: boolean
+          feature_funnel_creation?: boolean
           feature_go_live?: boolean
+          feature_insights?: boolean
           feature_landing_pages?: boolean
           feature_lead_capture?: boolean
           feature_priority_support?: boolean
           feature_team_analytics?: boolean
           feature_video_sharing?: boolean
+          feature_video_upload?: boolean
           feature_whatsapp_automation?: boolean
           id?: string
           is_enabled?: boolean
           max_funnels?: number
           max_landing_pages?: number
           max_live_sessions?: number
+          max_storage_mb?: number
           max_team_members?: number
+          max_videos?: number
           monthly_price?: number
           multilevel_funnel_enabled?: boolean
           plan_badge_text?: string | null
@@ -1586,19 +1596,24 @@ export type Database = {
         Update: {
           feature_advanced_analytics?: boolean
           feature_analytics?: boolean
+          feature_funnel_creation?: boolean
           feature_go_live?: boolean
+          feature_insights?: boolean
           feature_landing_pages?: boolean
           feature_lead_capture?: boolean
           feature_priority_support?: boolean
           feature_team_analytics?: boolean
           feature_video_sharing?: boolean
+          feature_video_upload?: boolean
           feature_whatsapp_automation?: boolean
           id?: string
           is_enabled?: boolean
           max_funnels?: number
           max_landing_pages?: number
           max_live_sessions?: number
+          max_storage_mb?: number
           max_team_members?: number
+          max_videos?: number
           monthly_price?: number
           multilevel_funnel_enabled?: boolean
           plan_badge_text?: string | null
