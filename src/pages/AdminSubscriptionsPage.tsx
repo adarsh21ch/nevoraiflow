@@ -292,7 +292,7 @@ const AdminSubscriptionsPage = () => {
       <div className="space-y-6">
         <h1 className="text-2xl font-heading font-bold">Subscriptions & Billing</h1>
 
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-4">
           <div className="glass-card p-5">
             <p className="text-xs text-muted-foreground mb-1">Total Revenue</p>
             <p className="text-2xl font-heading font-bold">₹{totalRevenue.toLocaleString("en-IN")}</p>
