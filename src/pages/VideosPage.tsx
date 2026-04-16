@@ -5,8 +5,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import { Video, Search, Grid, List, Link2, Share2, Pencil, Rocket } from "lucide-react";
+import { Video, Search, Grid, List, Link2, Share2, Pencil, Rocket, Upload, Copy, Trash2 } from "lucide-react";
 import { VideoLinkModal } from "@/components/VideoLinkModal";
+import { VideoUploadModal } from "@/components/VideoUploadModal";
 import { VideoShareModal } from "@/components/VideoShareModal";
 import { VideoRenameModal } from "@/components/VideoRenameModal";
 import { useNavigate } from "react-router-dom";
@@ -19,6 +20,7 @@ const VideosPage = () => {
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"grid" | "list">("grid");
   const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [shareVideo, setShareVideo] = useState<{ id: string; title: string } | null>(null);
   const [renameVideo, setRenameVideo] = useState<{ id: string; title: string } | null>(null);
 
@@ -63,22 +65,57 @@ const VideosPage = () => {
 
   const copyLink = (videoId: string) => {
     navigator.clipboard.writeText(`${window.location.origin}/video/${videoId}`);
-    toast.success("Video link copied!");
+    toast.success("nFlow link copied to clipboard!");
+  };
+
+  const removeLinkedVideo = async (videoId: string) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from("video_asset_access")
+      .delete()
+      .eq("video_id", videoId)
+      .eq("granted_to", user.id);
+    if (error) {
+      toast.error("Failed to remove video");
+    } else {
+      toast.success("Video removed from gallery");
+      queryClient.invalidateQueries({ queryKey: ["shared-videos"] });
+    }
+  };
+
+  const invalidateVideos = () => {
+    queryClient.invalidateQueries({ queryKey: ["videos"] });
+    queryClient.invalidateQueries({ queryKey: ["shared-videos"] });
   };
 
   return (
     <DashboardLayout>
       <div className="space-y-6 w-full max-w-full overflow-x-hidden box-border">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full max-w-full">
           <div className="min-w-0">
             <h1 className="text-2xl font-heading font-bold">Video Gallery</h1>
             <div className="page-header-accent" />
           </div>
-          <Button variant="hero" className="w-fit max-w-full" onClick={() => setLinkModalOpen(true)}>
-            <Link2 size={16} /> Add Video by Link
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button
+              variant="hero"
+              className="flex-1 sm:flex-none"
+              onClick={() => setUploadModalOpen(true)}
+            >
+              <Upload size={16} /> Upload Video
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1 sm:flex-none border-primary/50 text-primary hover:bg-primary/10"
+              onClick={() => setLinkModalOpen(true)}
+            >
+              <Link2 size={16} /> Add by nFlow Link
+            </Button>
+          </div>
         </div>
 
+        {/* Search + View toggle */}
         <div className="flex flex-col sm:flex-row gap-3 w-full max-w-full">
           <div className="relative flex-1 min-w-0 search-premium rounded-md">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -90,56 +127,82 @@ const VideosPage = () => {
           </div>
         </div>
 
+        {/* Empty state */}
         {filtered.length === 0 ? (
           <div className="glass-card p-8 sm:p-12 text-center w-full max-w-full">
             <Video size={40} className="text-muted-foreground mx-auto mb-3" />
             <h3 className="font-heading font-semibold mb-2">{search ? "No videos found" : "No videos yet"}</h3>
-            <p className="text-sm text-muted-foreground mb-6">Add videos to your gallery using a Nevorai Flow video link.</p>
-            <Button variant="hero" onClick={() => setLinkModalOpen(true)}>
-              <Link2 size={16} /> Add Video by Link
-            </Button>
+            <p className="text-sm text-muted-foreground mb-6">Upload a video or add one using an nFlow link.</p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button variant="hero" onClick={() => setUploadModalOpen(true)}>
+                <Upload size={16} /> Upload Video
+              </Button>
+              <Button variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => setLinkModalOpen(true)}>
+                <Link2 size={16} /> Add by nFlow Link
+              </Button>
+            </div>
           </div>
         ) : (
           <div className={view === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full max-w-full" : "space-y-2 w-full max-w-full"}>
             {filtered.map((v) => (
               <div key={v.id} className="premium-card p-3 sm:p-4 w-full max-w-full box-border min-w-0">
+                {/* Thumbnail */}
                 <div className="aspect-video bg-muted rounded-lg mb-3 flex items-center justify-center overflow-hidden w-full max-w-full">
                   {v.thumbnail_url ? <img src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover rounded-lg block" /> :
                     v.public_url ? <video src={v.public_url} className="w-full h-full object-cover rounded-lg block" /> :
                     <Video size={24} className="text-muted-foreground" />}
                 </div>
+
+                {/* Title & meta */}
                 <h3 className="font-medium text-sm truncate max-w-full overflow-hidden">{v.title}</h3>
-                <div className="flex items-center gap-2 sm:gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1 flex-wrap">
                   <span>{formatSize(v.file_size_bytes)}</span>
                   <span className={`px-1.5 py-0.5 rounded text-[10px] ${v.status === "ready" ? "bg-success/10 text-success" : v.status === "failed" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}>
                     {v.status}
                   </span>
-                  {v._source === "linked" && (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary">Linked</span>
+                  {v._source === "linked" ? (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary">Added via Link</span>
+                  ) : (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-muted-foreground/10 text-muted-foreground">Uploaded</span>
                   )}
                 </div>
-                <div className="flex gap-1 mt-3 border-t border-border pt-3 w-full">
-                  <Button variant="ghost" size="sm" className="h-7 text-[11px] sm:text-xs flex-1 min-w-0 px-1 sm:px-3" onClick={() => setRenameVideo({ id: v.id, title: v.title })}>
+
+                {/* Actions */}
+                <div className="flex gap-1 mt-3 border-t border-border pt-3 w-full flex-wrap">
+                  <Button variant="ghost" size="sm" className="h-7 text-[11px] sm:text-xs flex-1 min-w-0 px-1 sm:px-2" onClick={() => setRenameVideo({ id: v.id, title: v.title })}>
                     <Pencil size={12} className="shrink-0" /> <span className="truncate">Rename</span>
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-[11px] sm:text-xs flex-1 min-w-0 px-1 sm:px-3" onClick={() => setShareVideo({ id: v.id, title: v.title })}>
+                  <Button variant="ghost" size="sm" className="h-7 text-[11px] sm:text-xs flex-1 min-w-0 px-1 sm:px-2" onClick={() => copyLink(v.id)}>
+                    <Copy size={12} className="shrink-0" /> <span className="truncate">Copy Link</span>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-[11px] sm:text-xs flex-1 min-w-0 px-1 sm:px-2" onClick={() => setShareVideo({ id: v.id, title: v.title })}>
                     <Share2 size={12} className="shrink-0" /> <span className="truncate">Share</span>
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-[11px] sm:text-xs flex-1 min-w-0 px-1 sm:px-3" onClick={() => useInFunnel(v.id)}>
+                  <Button variant="ghost" size="sm" className="h-7 text-[11px] sm:text-xs flex-1 min-w-0 px-1 sm:px-2" onClick={() => useInFunnel(v.id)}>
                     <Rocket size={12} className="shrink-0" /> <span className="truncate">Funnel</span>
                   </Button>
+                  {v._source === "linked" && (
+                    <Button variant="ghost" size="sm" className="h-7 text-[11px] sm:text-xs flex-1 min-w-0 px-1 sm:px-2 text-destructive hover:text-destructive" onClick={() => removeLinkedVideo(v.id)}>
+                      <Trash2 size={12} className="shrink-0" /> <span className="truncate">Remove</span>
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
 
+        {/* Modals */}
+        <VideoUploadModal
+          open={uploadModalOpen}
+          onClose={() => setUploadModalOpen(false)}
+          onSuccess={invalidateVideos}
+        />
+
         <VideoLinkModal
           open={linkModalOpen}
           onClose={() => setLinkModalOpen(false)}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ["shared-videos"] });
-          }}
+          onSuccess={() => queryClient.invalidateQueries({ queryKey: ["shared-videos"] })}
         />
 
         {shareVideo && (
@@ -157,10 +220,7 @@ const VideosPage = () => {
             onClose={() => setRenameVideo(null)}
             videoId={renameVideo.id}
             currentTitle={renameVideo.title}
-            onSuccess={() => {
-              queryClient.invalidateQueries({ queryKey: ["videos"] });
-              queryClient.invalidateQueries({ queryKey: ["shared-videos"] });
-            }}
+            onSuccess={invalidateVideos}
           />
         )}
       </div>
