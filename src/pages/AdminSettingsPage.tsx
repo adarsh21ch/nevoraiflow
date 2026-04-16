@@ -112,30 +112,30 @@ const AdminSettingsPage = () => {
 
   return (
     <AdminLayout>
-      <div className="w-full max-w-full sm:max-w-2xl space-y-5 overflow-x-hidden">
-        <h1 className="text-xl sm:text-2xl font-heading font-bold">Platform Settings</h1>
+      <div className="w-full min-w-0 space-y-4">
+        <h1 className="text-lg font-heading font-bold sm:text-2xl">Platform Settings</h1>
 
         {/* Gmail Connection */}
-        <div className="glass-card p-4 sm:p-6 space-y-4">
-          <h2 className="text-base font-heading font-semibold flex items-center gap-2">
-            <Mail size={18} className="text-primary" /> Gmail Email Connection
+        <div className="glass-card p-3 sm:p-6 space-y-3">
+          <h2 className="text-sm font-heading font-semibold flex items-center gap-2 sm:text-base">
+            <Mail size={16} className="text-primary" /> Gmail Email Connection
           </h2>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Connect your Gmail account to send confirmation emails to users. Supports up to 2,000 emails/day with Google Workspace.
+          <p className="text-[11px] text-muted-foreground leading-relaxed sm:text-xs">
+            Connect your Gmail account to send confirmation emails. Supports up to 2,000 emails/day with Google Workspace.
           </p>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             {gmailConnected?.connected ? (
               <>
-                <CheckCircle2 size={18} className="text-green-500 shrink-0" />
-                <span className="text-sm text-foreground truncate">
-                  Gmail Connected{gmailConnected?.email ? ` (${gmailConnected.email})` : ""}
+                <CheckCircle2 size={16} className="text-green-500 shrink-0" />
+                <span className="text-xs text-foreground truncate sm:text-sm">
+                  Connected{gmailConnected?.email ? ` (${gmailConnected.email})` : ""}
                 </span>
               </>
             ) : (
               <>
-                <XCircle size={18} className="text-muted-foreground shrink-0" />
-                <span className="text-sm text-muted-foreground">Gmail not connected</span>
+                <XCircle size={16} className="text-muted-foreground shrink-0" />
+                <span className="text-xs text-muted-foreground">Not connected</span>
               </>
             )}
           </div>
@@ -144,67 +144,66 @@ const AdminSettingsPage = () => {
             <Button
               variant={gmailConnected?.connected ? "outline" : "hero"}
               size="sm"
-              className="min-h-[40px]"
+              className="min-h-[40px] text-xs"
               onClick={handleConnectGmail}
               disabled={connectingGmail}
             >
               {connectingGmail ? (
                 <><Loader2 size={14} className="animate-spin" /> Connecting...</>
-              ) : gmailConnected?.connected ? "Reconnect Gmail" : "Connect Gmail"}
+              ) : gmailConnected?.connected ? "Reconnect" : "Connect Gmail"}
             </Button>
             {gmailConnected?.connected && (
-              <Button variant="ghost" size="sm" className="min-h-[40px]" onClick={() => disconnectMutation.mutate()}>
+              <Button variant="ghost" size="sm" className="min-h-[40px] text-xs" onClick={() => disconnectMutation.mutate()}>
                 Disconnect
               </Button>
             )}
           </div>
 
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-[10px] text-muted-foreground sm:text-[11px]">
             <p className="mb-1">Redirect URI for Google Console:</p>
-            <code className="text-xs bg-muted px-2 py-1 rounded block break-all">
+            <code className="text-[10px] bg-muted px-2 py-1 rounded block break-all sm:text-xs">
               {`https://atwnmovdnblcqyvhaxls.supabase.co/functions/v1/gmail-oauth-callback`}
             </code>
           </div>
         </div>
 
         {/* Announcement & Maintenance */}
-        <div className="glass-card p-4 sm:p-6 space-y-6">
+        <div className="glass-card p-3 sm:p-6 space-y-5">
           <div>
-            <h2 className="text-base font-heading font-semibold mb-4">Announcement Banner</h2>
-            <div className="space-y-4">
+            <h2 className="text-sm font-heading font-semibold mb-3 sm:text-base">Announcement Banner</h2>
+            <div className="space-y-3">
               <div className="flex items-center justify-between min-h-[44px]">
-                <Label>Show Announcement</Label>
+                <Label className="text-xs sm:text-sm">Show Announcement</Label>
                 <Switch checked={announcementActive} onCheckedChange={setAnnouncementActive} />
               </div>
               <div>
-                <Label>Announcement Text</Label>
-                <Textarea value={announcementText} onChange={(e) => setAnnouncementText(e.target.value)} className="mt-1.5 bg-muted border-border" placeholder="Write your announcement..." rows={3} />
+                <Label className="text-xs sm:text-sm">Announcement Text</Label>
+                <Textarea value={announcementText} onChange={(e) => setAnnouncementText(e.target.value)} className="mt-1.5 bg-muted border-border text-sm" placeholder="Write your announcement..." rows={3} />
               </div>
             </div>
           </div>
 
-          <div className="border-t border-border pt-6">
-            <h2 className="text-base font-heading font-semibold mb-4">Maintenance Mode</h2>
-            <div className="flex items-center justify-between gap-4 min-h-[44px]">
+          <div className="border-t border-border pt-5">
+            <h2 className="text-sm font-heading font-semibold mb-3 sm:text-base">Maintenance Mode</h2>
+            <div className="flex items-center justify-between gap-3 min-h-[44px]">
               <div className="flex-1 min-w-0">
-                <Label>Enable Maintenance Mode</Label>
-                <p className="text-xs text-muted-foreground mt-1">When enabled, users will see a maintenance page.</p>
+                <Label className="text-xs sm:text-sm">Enable Maintenance Mode</Label>
+                <p className="text-[10px] text-muted-foreground mt-0.5 sm:text-xs">Users will see a maintenance page.</p>
               </div>
               <Switch checked={maintenanceMode} onCheckedChange={setMaintenanceMode} />
             </div>
           </div>
 
           {/* Testimonials Settings */}
-          <div className="border-t border-border pt-6">
-            <h2 className="text-base font-heading font-semibold mb-4 flex items-center gap-2">
-              <Star size={18} className="text-primary" /> Testimonials
+          <div className="border-t border-border pt-5">
+            <h2 className="text-sm font-heading font-semibold mb-3 flex items-center gap-2 sm:text-base">
+              <Star size={16} className="text-primary" /> Testimonials
             </h2>
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <Label>Maximum video testimonial duration</Label>
-                <p className="text-xs text-muted-foreground mt-0.5">Maximum length allowed for each testimonial video</p>
+                <Label className="text-xs sm:text-sm">Max video testimonial duration</Label>
                 <Select value={maxVideoSeconds} onValueChange={setMaxVideoSeconds}>
-                  <SelectTrigger className="mt-1.5 bg-muted border-border w-full sm:w-48">
+                  <SelectTrigger className="mt-1.5 bg-muted border-border w-full text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -217,15 +216,14 @@ const AdminSettingsPage = () => {
               </div>
 
               <div>
-                <Label>Maximum testimonials per landing page</Label>
-                <p className="text-xs text-muted-foreground mt-0.5">Maximum testimonials a creator can add per landing page</p>
-                <Input type="number" min={1} max={20} value={maxPerPage} onChange={(e) => setMaxPerPage(e.target.value)} className="mt-1.5 bg-muted border-border w-full sm:w-32" />
+                <Label className="text-xs sm:text-sm">Max testimonials per landing page</Label>
+                <Input type="number" min={1} max={20} value={maxPerPage} onChange={(e) => setMaxPerPage(e.target.value)} className="mt-1.5 bg-muted border-border w-full text-sm" />
               </div>
 
-              <div className="flex items-center justify-between gap-4 min-h-[44px]">
+              <div className="flex items-center justify-between gap-3 min-h-[44px]">
                 <div className="flex-1 min-w-0">
-                  <Label>Allow video testimonials on landing pages</Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">If disabled, only text testimonials will be available</p>
+                  <Label className="text-xs sm:text-sm">Allow video testimonials</Label>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 sm:text-xs">If disabled, only text testimonials available</p>
                 </div>
                 <Switch checked={videoFeatureEnabled} onCheckedChange={setVideoFeatureEnabled} />
               </div>
@@ -233,8 +231,8 @@ const AdminSettingsPage = () => {
           </div>
         </div>
 
-        <Button variant="hero" className="w-full sm:w-auto min-h-[48px]" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-          <Save size={18} /> {saveMutation.isPending ? "Saving..." : "Save Settings"}
+        <Button variant="hero" className="w-full min-h-[44px] text-sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+          <Save size={16} /> {saveMutation.isPending ? "Saving..." : "Save Settings"}
         </Button>
       </div>
     </AdminLayout>

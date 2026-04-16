@@ -60,23 +60,23 @@ const AdminDashboard = () => {
 
   return (
     <AdminLayout>
-      <div className="w-full max-w-full space-y-5 overflow-x-hidden">
+      <div className="w-full min-w-0 space-y-4">
         <div>
-          <h1 className="text-xl font-heading font-bold sm:text-2xl">Admin Dashboard</h1>
+          <h1 className="text-lg font-heading font-bold sm:text-2xl">Admin Dashboard</h1>
           <div className="page-header-accent" />
-          <p className="mt-2 text-xs text-muted-foreground sm:text-sm">Platform overview and management.</p>
+          <p className="mt-1.5 text-xs text-muted-foreground sm:text-sm">Platform overview and management.</p>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 sm:gap-3">
           {kpis.map((k) => (
-            <div key={k.label} className="glass-card min-w-0 p-4 sm:p-5">
-              <div className="flex items-center gap-3">
-                <div className="stat-icon shrink-0">
-                  <k.icon size={18} className="text-primary" />
+            <div key={k.label} className="glass-card min-w-0 p-3 sm:p-5">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <k.icon size={15} className="text-primary" />
                 </div>
-                <p className="min-w-0 text-sm font-medium leading-tight text-muted-foreground">{k.label}</p>
+                <p className="min-w-0 truncate text-xs font-medium text-muted-foreground">{k.label}</p>
               </div>
-              <p className="mt-4 truncate text-3xl font-heading font-bold sm:text-2xl">{k.value}</p>
+              <p className="mt-3 truncate text-xl font-heading font-bold sm:text-2xl">{k.value}</p>
             </div>
           ))}
         </div>

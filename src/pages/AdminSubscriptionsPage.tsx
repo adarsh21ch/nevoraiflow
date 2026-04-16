@@ -35,7 +35,7 @@ const PlanField = ({ planName, field, label, type = "number", disabled = false, 
   if (type === "boolean") {
     return (
       <div className="flex items-center gap-3 py-2">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <Label className="text-xs font-medium">{label}</Label>
           {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
         </div>
@@ -45,19 +45,19 @@ const PlanField = ({ planName, field, label, type = "number", disabled = false, 
   }
 
   return (
-    <div className="flex items-center gap-2 sm:gap-3 py-2">
+    <div className="flex items-center gap-2 py-2">
       <div className="flex-1 min-w-0">
         <Label className="text-xs font-medium">{label}</Label>
         {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
         <Input ref={inputRef} type={type === "text" ? "text" : "number"} value={localValue} disabled={disabled}
-          className="w-20 sm:w-28 h-8 text-sm" placeholder={type === "text" ? "" : "-1 = ∞"}
+          className="w-16 sm:w-24 h-8 text-xs" placeholder={type === "text" ? "" : "-1=∞"}
           onChange={(e) => { setLocalValue(e.target.value); setIsDirty(true); }}
           onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
         />
         {isDirty && (
-          <Button size="sm" className="h-8 gap-1 text-xs" onClick={handleSave} disabled={saving}>
+          <Button size="sm" className="h-8 gap-1 text-xs px-2" onClick={handleSave} disabled={saving}>
             <Save size={12} />
           </Button>
         )}
@@ -220,56 +220,52 @@ const AdminSubscriptionsPage = () => {
     const isBasic = planName === "basic";
 
     return (
-      <div className={`glass-card p-3 sm:p-5 space-y-4 transition-opacity ${isDisabled ? "opacity-50" : ""}`}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-          <div className="flex items-center gap-2">
-            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${meta.badge}`}>{meta.label}</span>
-            <span className="text-[11px] sm:text-xs text-muted-foreground">{meta.desc}</span>
+      <div className={`glass-card p-3 sm:p-4 space-y-3 transition-opacity ${isDisabled ? "opacity-50" : ""}`}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold sm:text-xs sm:px-2 ${meta.badge}`}>{meta.label}</span>
+            <span className="text-[10px] text-muted-foreground sm:text-xs truncate">{meta.desc}</span>
           </div>
           {!isFree && (
-            <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground">{!isDisabled ? "Enabled" : "Disabled"}</Label>
-              <Switch checked={!isDisabled} onCheckedChange={(v) => handleTogglePlan(planName, v)} />
-            </div>
+            <Switch checked={!isDisabled} onCheckedChange={(v) => handleTogglePlan(planName, v)} />
           )}
         </div>
 
         <Tabs defaultValue={isFree ? "limits" : "pricing"} className="w-full">
           <TabsList className={`w-full grid h-8 ${isFree ? "grid-cols-2" : "grid-cols-3"}`}>
-            {!isFree && <TabsTrigger value="pricing" className="text-xs">Pricing</TabsTrigger>}
-            <TabsTrigger value="limits" className="text-xs">Limits</TabsTrigger>
-            <TabsTrigger value="features" className="text-xs">Features</TabsTrigger>
+            {!isFree && <TabsTrigger value="pricing" className="text-[10px] sm:text-xs">Pricing</TabsTrigger>}
+            <TabsTrigger value="limits" className="text-[10px] sm:text-xs">Limits</TabsTrigger>
+            <TabsTrigger value="features" className="text-[10px] sm:text-xs">Features</TabsTrigger>
           </TabsList>
 
           {!isFree && (
-            <TabsContent value="pricing" className="pt-3 space-y-1">
-              <PlanField planName={planName} field="monthly_price" label="Monthly Price (₹)" value={config?.monthly_price} onSave={saveField} disabled={isDisabled} />
-              <PlanField planName={planName} field="yearly_price" label="Yearly Price (₹)" value={config?.yearly_price} onSave={saveField} disabled={isDisabled} />
-              <PlanField planName={planName} field="yearly_validity_days" label="Yearly Validity (days)" value={config?.yearly_validity_days} onSave={saveField} disabled={isDisabled} />
-              <PlanField planName={planName} field="plan_badge_text" label="Plan Badge Text" type="text" value={config?.plan_badge_text || ""} onSave={saveField} disabled={isDisabled} hint="Shown above plan card on pricing page" />
+            <TabsContent value="pricing" className="pt-2 space-y-0.5">
+              <PlanField planName={planName} field="monthly_price" label="Monthly (₹)" value={config?.monthly_price} onSave={saveField} disabled={isDisabled} />
+              <PlanField planName={planName} field="yearly_price" label="Yearly (₹)" value={config?.yearly_price} onSave={saveField} disabled={isDisabled} />
+              <PlanField planName={planName} field="yearly_validity_days" label="Validity (days)" value={config?.yearly_validity_days} onSave={saveField} disabled={isDisabled} />
+              <PlanField planName={planName} field="plan_badge_text" label="Badge Text" type="text" value={config?.plan_badge_text || ""} onSave={saveField} disabled={isDisabled} hint="Shown on pricing page" />
             </TabsContent>
           )}
 
-          <TabsContent value="limits" className="pt-3 space-y-1">
+          <TabsContent value="limits" className="pt-2 space-y-0.5">
             <PlanField planName={planName} field="max_funnels" label="Max Funnels" hint="-1 = unlimited" value={config?.max_funnels} onSave={saveField} disabled={isDisabled} />
             <PlanField planName={planName} field="max_landing_pages" label="Max Landing Pages" hint="-1 = unlimited" value={config?.max_landing_pages} onSave={saveField} disabled={isDisabled} />
             <PlanField planName={planName} field="max_live_sessions" label="Max Live Sessions" hint="-1 = unlimited" value={config?.max_live_sessions} onSave={saveField} disabled={isDisabled} />
             <PlanField planName={planName} field="max_videos" label="Max Videos" hint="-1 = unlimited" value={config?.max_videos} onSave={saveField} disabled={isDisabled} />
-            <PlanField planName={planName} field="max_storage_mb" label="Max Storage (MB)" hint="-1 = unlimited, e.g. 1024 = 1GB" value={config?.max_storage_mb} onSave={saveField} disabled={isDisabled} />
+            <PlanField planName={planName} field="max_storage_mb" label="Max Storage (MB)" hint="-1 = unlimited" value={config?.max_storage_mb} onSave={saveField} disabled={isDisabled} />
             {!isFree && !isBasic && (
               <PlanField planName={planName} field="max_team_members" label="Max Team Members" hint="-1 = unlimited" value={config?.max_team_members} onSave={saveField} disabled={isDisabled} />
             )}
           </TabsContent>
 
-          <TabsContent value="features" className="pt-3 space-y-0.5">
+          <TabsContent value="features" className="pt-2 space-y-0">
             {FEATURE_TOGGLES.map(({ field, label, desc, icon: Icon }) => {
               if (meta.hiddenFeatures?.includes(field)) return null;
               return (
-                <div key={field} className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0">
-                  <Icon size={14} className="text-muted-foreground shrink-0" />
+                <div key={field} className="flex items-center gap-2 py-1.5 border-b border-border/30 last:border-0">
+                  <Icon size={13} className="text-muted-foreground shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium">{label}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{desc}</p>
+                    <p className="text-[11px] font-medium sm:text-xs">{label}</p>
                   </div>
                   <Switch checked={!!config?.[field]} disabled={isDisabled} onCheckedChange={(v) => saveField(planName, field, v)} />
                 </div>
@@ -279,8 +275,8 @@ const AdminSubscriptionsPage = () => {
         </Tabs>
 
         {isDisabled && (
-          <p className="text-xs text-amber-500 bg-amber-500/10 rounded-lg p-3">
-            ⚠️ {meta.label} plan is disabled. It won't appear on the pricing page.
+          <p className="text-[10px] text-amber-500 bg-amber-500/10 rounded-lg p-2 sm:text-xs sm:p-3">
+            ⚠️ {meta.label} plan is disabled. It won't appear on pricing page.
           </p>
         )}
       </div>
@@ -289,10 +285,10 @@ const AdminSubscriptionsPage = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
-        <h1 className="text-xl sm:text-2xl font-heading font-bold">Subscriptions & Billing</h1>
+      <div className="w-full min-w-0 space-y-4">
+        <h1 className="text-lg font-heading font-bold sm:text-2xl">Subscriptions & Billing</h1>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 sm:gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 md:grid-cols-6 sm:gap-3">
           {[
             { label: "Revenue", value: `₹${totalRevenue.toLocaleString("en-IN")}`, color: "" },
             { label: "Paid", value: activeCount, color: "text-primary" },
@@ -301,23 +297,23 @@ const AdminSubscriptionsPage = () => {
             { label: "Pro", value: proCount, color: "text-success" },
             { label: "Failed", value: failedCount, color: "text-destructive" },
           ].map((stat) => (
-            <div key={stat.label} className="glass-card p-3.5 sm:p-5">
-              <p className="text-[11px] sm:text-xs text-muted-foreground mb-1">{stat.label}</p>
-              <p className={`text-lg sm:text-2xl font-heading font-bold ${stat.color}`}>{stat.value}</p>
+            <div key={stat.label} className="glass-card p-2.5 sm:p-4">
+              <p className="text-[10px] text-muted-foreground mb-0.5 sm:text-xs sm:mb-1">{stat.label}</p>
+              <p className={`text-base font-heading font-bold sm:text-2xl ${stat.color}`}>{stat.value}</p>
             </div>
           ))}
         </div>
 
         <Tabs defaultValue="subscriptions">
-          <TabsList className="w-full grid grid-cols-4 h-10 sm:h-9 sm:w-auto sm:flex">
-            <TabsTrigger value="subscriptions" className="text-xs sm:text-sm min-h-[40px] sm:min-h-0">Subs</TabsTrigger>
-            <TabsTrigger value="plans" className="text-xs sm:text-sm min-h-[40px] sm:min-h-0">Plans</TabsTrigger>
-            <TabsTrigger value="audit" className="text-xs sm:text-sm min-h-[40px] sm:min-h-0">Audit</TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs sm:text-sm min-h-[40px] sm:min-h-0">Settings</TabsTrigger>
+          <TabsList className="w-full grid grid-cols-4 h-9">
+            <TabsTrigger value="subscriptions" className="text-[10px] sm:text-sm">Subs</TabsTrigger>
+            <TabsTrigger value="plans" className="text-[10px] sm:text-sm">Plans</TabsTrigger>
+            <TabsTrigger value="audit" className="text-[10px] sm:text-sm">Audit</TabsTrigger>
+            <TabsTrigger value="settings" className="text-[10px] sm:text-sm">Settings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="subscriptions" className="space-y-4">
-            <div className="relative max-w-md">
+          <TabsContent value="subscriptions" className="space-y-3 pt-1">
+            <div className="relative w-full">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input placeholder="Search user, plan..." className="pl-9 bg-muted border-border" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
@@ -417,18 +413,18 @@ const AdminSubscriptionsPage = () => {
                     </div>
                     <div className="flex items-center justify-between border-t border-border pt-2">
                       <div className="text-[11px] text-muted-foreground">
-                        ₹{(s.amount_paid || 0).toLocaleString("en-IN")} · Exp: {s.expires_at ? new Date(s.expires_at).toLocaleDateString("en-IN") : "—"}
+                        ₹{(s.amount_paid || 0).toLocaleString("en-IN")} · {s.expires_at ? new Date(s.expires_at).toLocaleDateString("en-IN") : "—"}
                       </div>
                       <div className="flex gap-1">
                         {s.status === "active" && s.tier !== "free" && (
-                          <Button size="sm" variant="outline" className="text-[10px] h-6 px-2" onClick={() => handleRevoke(s.id)}>
+                          <Button size="sm" variant="outline" className="text-[10px] h-7 px-2" onClick={() => handleRevoke(s.id)}>
                             <Ban size={10} />
                           </Button>
                         )}
                         {(s.status !== "active" || s.tier === "free") && (
                           <>
-                            <Button size="sm" variant="outline" className="text-[10px] h-6 px-2" onClick={() => handleManualGrant(s.user_id, "basic")}>Basic</Button>
-                            <Button size="sm" variant="outline" className="text-[10px] h-6 px-2" onClick={() => handleManualGrant(s.user_id, "pro")}>Pro</Button>
+                            <Button size="sm" variant="outline" className="text-[10px] h-7 px-2" onClick={() => handleManualGrant(s.user_id, "basic")}>Basic</Button>
+                            <Button size="sm" variant="outline" className="text-[10px] h-7 px-2" onClick={() => handleManualGrant(s.user_id, "pro")}>Pro</Button>
                           </>
                         )}
                       </div>
@@ -439,16 +435,16 @@ const AdminSubscriptionsPage = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="plans" className="space-y-4">
-            <p className="text-sm text-muted-foreground">Admin panel is the source of truth. Edit limits and features for each plan — changes apply immediately across the platform.</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+          <TabsContent value="plans" className="space-y-3 pt-1">
+            <p className="text-xs text-muted-foreground sm:text-sm">Edit limits and features — changes apply immediately.</p>
+            <div className="space-y-3 md:grid md:grid-cols-3 md:gap-4 md:space-y-0">
               {renderPlanCard("free", freeConfig)}
               {renderPlanCard("basic", basicConfig)}
               {renderPlanCard("pro", proConfig)}
             </div>
           </TabsContent>
 
-          <TabsContent value="audit" className="space-y-4">
+          <TabsContent value="audit" className="space-y-3 pt-1">
             {/* Desktop audit table */}
             <div className="hidden sm:block glass-card overflow-hidden">
               <div className="overflow-x-auto">
@@ -504,17 +500,17 @@ const AdminSubscriptionsPage = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="settings" className="space-y-4">
-            <div className="glass-card p-4 sm:p-6 space-y-4 w-full max-w-full sm:max-w-lg">
-              <h3 className="font-heading font-semibold">Platform Settings</h3>
+          <TabsContent value="settings" className="space-y-3 pt-1">
+            <div className="glass-card p-3 sm:p-5 space-y-3 w-full min-w-0">
+              <h3 className="text-sm font-heading font-semibold">Platform Settings</h3>
               {["razorpay_key_id", "maintenance_mode", "whatsapp_support_number"].map(key => (
-                <div key={key} className="flex items-center gap-3">
-                  <div className="flex-1">
+                <div key={key} className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
                     <Label className="text-xs font-medium capitalize">{key.replace(/_/g, " ")}</Label>
-                    <Input className="mt-1 h-8 text-sm" value={editingSettings[key] ?? getSettingValue(key)}
+                    <Input className="mt-1 h-8 text-xs" value={editingSettings[key] ?? getSettingValue(key)}
                       onChange={e => setEditingSettings(prev => ({ ...prev, [key]: e.target.value }))} />
                   </div>
-                  <Button size="sm" className="h-8 mt-5" onClick={() => handleSettingSave(key)}>
+                  <Button size="sm" className="h-8 mt-5 px-2" onClick={() => handleSettingSave(key)}>
                     <Save size={12} />
                   </Button>
                 </div>
