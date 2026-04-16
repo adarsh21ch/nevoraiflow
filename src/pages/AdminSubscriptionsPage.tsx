@@ -292,31 +292,20 @@ const AdminSubscriptionsPage = () => {
       <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
         <h1 className="text-xl sm:text-2xl font-heading font-bold">Subscriptions & Billing</h1>
 
-        <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-4">
-          <div className="glass-card p-3 sm:p-5">
-            <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Revenue</p>
-            <p className="text-lg sm:text-2xl font-heading font-bold">₹{totalRevenue.toLocaleString("en-IN")}</p>
-          </div>
-          <div className="glass-card p-3 sm:p-5">
-            <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Paid</p>
-            <p className="text-lg sm:text-2xl font-heading font-bold text-primary">{activeCount}</p>
-          </div>
-          <div className="glass-card p-3 sm:p-5">
-            <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Free</p>
-            <p className="text-lg sm:text-2xl font-heading font-bold text-muted-foreground">{freeCount}</p>
-          </div>
-          <div className="glass-card p-3 sm:p-5">
-            <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Basic</p>
-            <p className="text-lg sm:text-2xl font-heading font-bold text-blue-600">{basicCount}</p>
-          </div>
-          <div className="glass-card p-3 sm:p-5">
-            <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Pro</p>
-            <p className="text-lg sm:text-2xl font-heading font-bold text-green-600">{proCount}</p>
-          </div>
-          <div className="glass-card p-3 sm:p-5">
-            <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Failed</p>
-            <p className="text-lg sm:text-2xl font-heading font-bold text-destructive">{failedCount}</p>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 sm:gap-4">
+          {[
+            { label: "Revenue", value: `₹${totalRevenue.toLocaleString("en-IN")}`, color: "" },
+            { label: "Paid", value: activeCount, color: "text-primary" },
+            { label: "Free", value: freeCount, color: "text-muted-foreground" },
+            { label: "Basic", value: basicCount, color: "text-primary" },
+            { label: "Pro", value: proCount, color: "text-success" },
+            { label: "Failed", value: failedCount, color: "text-destructive" },
+          ].map((stat) => (
+            <div key={stat.label} className="glass-card p-3.5 sm:p-5">
+              <p className="text-[11px] sm:text-xs text-muted-foreground mb-1">{stat.label}</p>
+              <p className={`text-lg sm:text-2xl font-heading font-bold ${stat.color}`}>{stat.value}</p>
+            </div>
+          ))}
         </div>
 
         <Tabs defaultValue="subscriptions">
