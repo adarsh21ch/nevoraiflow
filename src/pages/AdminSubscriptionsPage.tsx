@@ -333,14 +333,14 @@ const AdminSubscriptionsPage = () => {
               <Input placeholder="Search user, plan..." className="pl-9 bg-muted border-border" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
 
-            <div className="glass-card overflow-hidden">
+            {/* Desktop table */}
+            <div className="hidden sm:block glass-card overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-left">
                       <th className="p-4 text-xs text-muted-foreground font-medium">User</th>
                       <th className="p-4 text-xs text-muted-foreground font-medium">Plan</th>
-                      <th className="p-4 text-xs text-muted-foreground font-medium">Tier</th>
                       <th className="p-4 text-xs text-muted-foreground font-medium">Status</th>
                       <th className="p-4 text-xs text-muted-foreground font-medium">Amount</th>
                       <th className="p-4 text-xs text-muted-foreground font-medium">Expires</th>
@@ -356,7 +356,6 @@ const AdminSubscriptionsPage = () => {
                             <p className="font-medium">{profile?.full_name || "—"}</p>
                             <p className="text-xs text-muted-foreground">{profile?.email}</p>
                           </td>
-                          <td className="p-4 text-xs">{s.plan_key}</td>
                           <td className="p-4">
                             <span className={`px-2 py-0.5 rounded-full text-xs ${
                               s.tier === "pro" ? "bg-green-500/10 text-green-600" :
@@ -387,10 +386,10 @@ const AdminSubscriptionsPage = () => {
                             {(s.status !== "active" || s.tier === "free") && (
                               <div className="flex gap-1">
                                 <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => handleManualGrant(s.user_id, "basic")}>
-                                  Grant Basic
+                                  Basic
                                 </Button>
                                 <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => handleManualGrant(s.user_id, "pro")}>
-                                  <Crown size={12} /> Grant Pro
+                                  <Crown size={12} /> Pro
                                 </Button>
                               </div>
                             )}
@@ -401,6 +400,53 @@ const AdminSubscriptionsPage = () => {
                   </tbody>
                 </table>
               </div>
+            </div>
+
+            {/* Mobile card view */}
+            <div className="sm:hidden space-y-2">
+              {filtered.map((s) => {
+                const profile = profileMap[s.user_id];
+                return (
+                  <div key={s.id} className="glass-card p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{profile?.full_name || "—"}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{profile?.email}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                          s.tier === "pro" ? "bg-green-500/10 text-green-600" :
+                          s.tier === "basic" ? "bg-blue-500/10 text-blue-600" :
+                          "bg-muted text-muted-foreground"
+                        }`}>{s.tier}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                          s.status === "active" ? "bg-green-500/10 text-green-600" :
+                          s.status === "payment_failed" ? "bg-destructive/10 text-destructive" :
+                          "bg-muted text-muted-foreground"
+                        }`}>{s.status}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-border pt-2">
+                      <div className="text-[11px] text-muted-foreground">
+                        ₹{(s.amount_paid || 0).toLocaleString("en-IN")} · Exp: {s.expires_at ? new Date(s.expires_at).toLocaleDateString("en-IN") : "—"}
+                      </div>
+                      <div className="flex gap-1">
+                        {s.status === "active" && s.tier !== "free" && (
+                          <Button size="sm" variant="outline" className="text-[10px] h-6 px-2" onClick={() => handleRevoke(s.id)}>
+                            <Ban size={10} />
+                          </Button>
+                        )}
+                        {(s.status !== "active" || s.tier === "free") && (
+                          <>
+                            <Button size="sm" variant="outline" className="text-[10px] h-6 px-2" onClick={() => handleManualGrant(s.user_id, "basic")}>Basic</Button>
+                            <Button size="sm" variant="outline" className="text-[10px] h-6 px-2" onClick={() => handleManualGrant(s.user_id, "pro")}>Pro</Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </TabsContent>
 
