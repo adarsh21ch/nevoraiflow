@@ -1,63 +1,48 @@
 
 
-# Premium UI Upgrade — Dashboard, Admin Panel & App-wide Polish
+## Goal
+Fix the "Add to Home Screen" icon so the Nevorai mark looks bold, edge-to-edge, with no white border — matching premium apps on the iOS/Android home screen.
 
-## Overview
-Elevate the entire app interior (dashboard, admin, settings, profile, and all list pages) to match the polished, premium feel of the landing page. This involves refining card styles, adding subtle gradient accents, improving spacing, enhancing the sidebar, and creating a more cohesive visual identity throughout.
+## Root Cause
+1. **Logo is ~30% of canvas** — current `icon-512x512.png` has tons of empty dark space around a small "n" mark, so it shrinks further when iOS rounds the corners.
+2. **White border on iOS** — no proper `apple-touch-icon` at 180×180 and no opaque, properly-sized PNG, so iOS falls back to a white-padded default frame.
+3. **Maskable icon doesn't use the safe zone correctly** — should fill ~80% (currently fills ~30%).
 
-## What Changes
+## Fix (1 step, no UI route changes)
 
-### 1. Enhanced CSS Variables & Utility Classes
-- Add new utility classes: `.premium-card` (subtle gradient border glow on hover), `.stat-card` (gradient icon backgrounds), `.page-header` (consistent header with gradient accent line)
-- Add a subtle radial gradient background overlay to the main content area (matching the landing page's `gradient-bg-subtle`)
-- Refine glass-card hover states with smoother transitions and subtle primary border glow
+### Regenerate all PWA + Apple icons from `src/assets/nevorai-flow-logo.png`
 
-### 2. Dashboard Page Overhaul
-- Add gradient accent line under the welcome header
-- Upgrade KPI stat cards: gradient icon backgrounds (green-to-blue), larger icons, bolder typography, subtle shimmer on hover
-- Improve "Recent Funnels" cards with status badge pills (like landing pages), hover glow effect
-- Add the `gradient-bg-subtle` background overlay to the main content area
+Generate fresh icons where the gradient "n" mark fills ~80% of the square on a solid `#080C1A` background (no transparency, edge-to-edge):
 
-### 3. Admin Dashboard Polish
-- Upgrade admin KPI cards with colored gradient icon containers (matching each metric's semantic color)
-- Add gradient accent underline to the "Admin Dashboard" header
-- Improve card hover states with subtle border glow
+| File | Size | Purpose |
+|---|---|---|
+| `public/icons/icon-192x192.png` | 192 | PWA standard |
+| `public/icons/icon-512x512.png` | 512 | PWA standard |
+| `public/icons/icon-192x192-maskable.png` | 192 | Android adaptive (mark at ~70% for safe zone) |
+| `public/icons/icon-512x512-maskable.png` | 512 | Android adaptive |
+| `public/apple-touch-icon.png` | 180 | iOS home screen (canonical size) |
+| `public/apple-touch-icon-152.png` | 152 | iPad |
+| `public/apple-touch-icon-167.png` | 167 | iPad Pro |
+| `public/favicon-32.png` | 32 | Browser tab |
+| `public/favicon-16.png` | 16 | Browser tab |
 
-### 4. Sidebar Refinements
-- Add a subtle gradient accent line at the top of the sidebar (matching the landing page nav)
-- Improve active nav item styling: gradient left border indicator instead of just background tint
-- Refine the logo area with slightly more padding and polish
+All with **opaque** `#080C1A` background — kills the white iOS frame.
 
-### 5. All List Pages (Funnels, Videos, Landing Pages, Leads, etc.)
-- Standardize page headers with consistent gradient accent
-- Improve search bar styling with better focus states (matching auth input glow)
-- Upgrade filter tab pills with smoother active states
-- Add subtle hover glow to all list item cards
+### Update `index.html` head
+Replace the single apple-touch-icon line with proper sized variants:
+```html
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167.png" />
+<link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+```
 
-### 6. Settings & Profile Pages
-- Upgrade settings cards with icon containers (rounded gradient backgrounds)
-- Add section dividers with subtle gradient lines
-- Better spacing and visual hierarchy
+### Update `public/manifest.json`
+Bump the maskable icons (mark inside safe zone) and remove the tiny 64×64 logo entry that was confusing Android launchers.
 
-### 7. DashboardLayout Main Content Area
-- Apply `gradient-bg-subtle` background to the main content wrapper so every page gets the premium ambient glow
-- This single change elevates all pages at once
-
-## Files to Modify
-- `src/index.css` — new utility classes
-- `src/components/layout/DashboardLayout.tsx` — gradient bg, sidebar accent
-- `src/components/layout/AdminLayout.tsx` — admin tab styling
-- `src/pages/Dashboard.tsx` — premium KPI cards, header
-- `src/pages/AdminDashboard.tsx` — premium admin cards
-- `src/pages/SettingsPage.tsx` — enhanced card styling
-- `src/pages/ProfilePage.tsx` — visual polish
-- `src/pages/FunnelsPage.tsx` — card hover effects
-- `src/pages/VideosPage.tsx` — card hover effects
-- `src/pages/LandingPagesPage.tsx` — card hover effects
-
-## Technical Approach
-- All changes are CSS/styling only — no logic, data, or auth changes
-- Leverage existing CSS variable system and Tailwind utilities
-- Add 3-4 new reusable utility classes in `index.css`
-- One key change in `DashboardLayout` (gradient bg on main area) will uplift all pages simultaneously
+## Outcome
+- iOS home screen: solid dark tile, large gradient "n" filling the rounded square — no white border.
+- Android home screen: adaptive icon that crops cleanly to circle/squircle without losing the mark.
+- Browser tab: crisp 32px favicon instead of the upscaled 64px one.
 
