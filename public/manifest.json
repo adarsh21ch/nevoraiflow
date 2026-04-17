@@ -4,7 +4,7 @@
   "description": "Never lose your flow — smart video funnels that capture leads, collect payments, and guide your audience.",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#00AAFF",
+  "background_color": "#080C1A",
   "theme_color": "#00AAFF",
   "orientation": "portrait-primary",
   "icons": [
