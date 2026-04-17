@@ -1,4 +1,4 @@
-import logoImg from "@/assets/nevorai-flow-logo.png";
+import logoImg from "@/assets/nevorai-mark.png";
 
 export const Logo = ({ size = "default" }: { size?: "sm" | "default" | "lg" }) => {
   const sizes = {
