@@ -33,9 +33,10 @@
       "purpose": "maskable"
     },
     {
-      "src": "/logo.png",
-      "sizes": "64x64",
-      "type": "image/png"
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "categories": ["business", "productivity"],
