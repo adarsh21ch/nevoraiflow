@@ -18,6 +18,7 @@ const AuthPage = () => {
   );
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [failCount, setFailCount] = useState(0);
   const [lockUntil, setLockUntil] = useState(0);
