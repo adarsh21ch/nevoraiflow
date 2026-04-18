@@ -77,13 +77,29 @@ async function generateOtp(): Promise<{ code: string; hash: string }> {
 }
 
 // Infer "this email is a known Nevorai user" even if the bridge doesn't
-// explicitly return `exists`. Any user — Pro or free — should produce some
-// identifying field (callingAppUserId or registeredAt) when found.
-function inferExists(b: BridgeResponse | null): boolean {
+// explicitly return `exists`. Some bridge responses for free users may only
+// return matched contact details (email / phone) and omit profile fields.
+function inferExists(
+  b: BridgeResponse | null,
+  lookup: { email?: string; phone?: string },
+): boolean {
   if (!b) return false;
   if (b.exists === true) return true;
   if (b.isPro) return true;
-  return !!(b.callingAppUserId || b.registeredAt || b.fullName);
+
+  const requestedEmail = lookup.email?.trim().toLowerCase();
+  const requestedPhone = lookup.phone?.trim();
+  const returnedEmail = b.email?.trim().toLowerCase();
+  const returnedPhone = b.phone?.trim();
+
+  return !!(
+    b.callingAppUserId ||
+    b.registeredAt ||
+    b.fullName ||
+    (requestedEmail && returnedEmail && requestedEmail === returnedEmail) ||
+    (requestedPhone && returnedPhone && requestedPhone === returnedPhone) ||
+    (b.plan && String(b.plan).trim())
+  );
 }
 
 Deno.serve(async (req) => {
@@ -170,7 +186,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const exists = inferExists(memberData);
+    const exists = inferExists(memberData, { email, phone });
     const isPro = memberData?.isPro === true;
 
     // Lookup-only OR not found at all
