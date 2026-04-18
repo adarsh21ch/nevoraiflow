@@ -15,6 +15,8 @@ function parseState(rawState: string | null): { userId: string | null; returnTo:
   }
 }
 
+const HTML_HEADERS = { 'Content-Type': 'text/html; charset=utf-8' }
+
 Deno.serve(async (req) => {
   try {
     const url = new URL(req.url)
@@ -23,14 +25,14 @@ Deno.serve(async (req) => {
     const error = url.searchParams.get('error')
 
     if (error) {
-      return new Response(renderHtml('Authorization denied', `Error: ${error}`, false, returnTo), {
-        headers: { 'Content-Type': 'text/html' },
+      return new Response(renderHtml('Authorization denied', `Error: ${error}`, false, returnTo, null), {
+        headers: HTML_HEADERS,
       })
     }
 
     if (!code || !userId) {
-      return new Response(renderHtml('Missing parameters', 'Authorization code or state missing.', false, returnTo), {
-        headers: { 'Content-Type': 'text/html' },
+      return new Response(renderHtml('Missing parameters', 'Authorization code or state missing.', false, returnTo, null), {
+        headers: HTML_HEADERS,
       })
     }
 
@@ -55,8 +57,8 @@ Deno.serve(async (req) => {
     if (!tokenRes.ok) {
       const errText = await tokenRes.text()
       console.error('Token exchange failed:', errText)
-      return new Response(renderHtml('Token exchange failed', errText, false, returnTo), {
-        headers: { 'Content-Type': 'text/html' },
+      return new Response(renderHtml('Token exchange failed', errText, false, returnTo, null), {
+        headers: HTML_HEADERS,
       })
     }
 
@@ -64,8 +66,8 @@ Deno.serve(async (req) => {
     const { access_token, refresh_token, expires_in } = tokens
 
     if (!refresh_token) {
-      return new Response(renderHtml('No refresh token', 'Please revoke access at myaccount.google.com/permissions and try again.', false, returnTo), {
-        headers: { 'Content-Type': 'text/html' },
+      return new Response(renderHtml('No refresh token', 'Please revoke access at myaccount.google.com/permissions and try again.', false, returnTo, null), {
+        headers: HTML_HEADERS,
       })
     }
 
@@ -95,38 +97,79 @@ Deno.serve(async (req) => {
 
     if (insertErr) {
       console.error('DB insert error:', insertErr)
-      return new Response(renderHtml('Database error', insertErr.message, false, returnTo), {
-        headers: { 'Content-Type': 'text/html' },
+      return new Response(renderHtml('Database error', insertErr.message, false, returnTo, null), {
+        headers: HTML_HEADERS,
       })
     }
 
-    return new Response(renderHtml('Gmail Connected!', `Successfully connected ${gmailEmail}. Redirecting you back to settings…`, true, returnTo), {
-      headers: { 'Content-Type': 'text/html' },
+    return new Response(renderHtml('Gmail Connected!', `Successfully connected ${gmailEmail}.`, true, returnTo, gmailEmail), {
+      headers: HTML_HEADERS,
     })
   } catch (err: any) {
     console.error('Callback error:', err)
-    return new Response(renderHtml('Error', err.message, false, null), {
-      headers: { 'Content-Type': 'text/html' },
+    return new Response(renderHtml('Error', err.message, false, null, null), {
+      headers: HTML_HEADERS,
     })
   }
 })
 
-function renderHtml(title: string, message: string, success: boolean, returnTo: string | null): string {
+function renderHtml(title: string, message: string, success: boolean, returnTo: string | null, email: string | null): string {
   const color = success ? '#22c55e' : '#ef4444'
-  const redirectScript = success && returnTo
-    ? `<script>setTimeout(()=>{ window.location.href = ${JSON.stringify(returnTo)} },1200)</script>`
-    : success
-      ? '<script>setTimeout(()=>window.close(),3000)</script>'
-      : ''
+  const safeReturnTo = returnTo ? JSON.stringify(returnTo) : 'null'
+  const safeEmail = email ? JSON.stringify(email) : 'null'
+  const messageType = success ? 'GMAIL_OAUTH_SUCCESS' : 'GMAIL_OAUTH_ERROR'
+  const safeMessage = JSON.stringify(message)
 
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head>
+  // Script: try popup postMessage first, then fallback to redirect, finally show button
+  const script = `
+<script>
+(function() {
+  var payload = { type: ${JSON.stringify(messageType)}, email: ${safeEmail}, message: ${safeMessage} };
+  var returnTo = ${safeReturnTo};
+  var didNotify = false;
+
+  // 1) Popup case: notify opener and close
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage(payload, '*');
+      didNotify = true;
+      setTimeout(function() {
+        try { window.close(); } catch (e) {}
+      }, 600);
+      return;
+    }
+  } catch (e) { /* cross-origin opener access can throw — ignore */ }
+
+  // 2) Full-page fallback: redirect back to returnTo
+  if (returnTo) {
+    setTimeout(function() {
+      try { window.location.href = returnTo; } catch (e) {}
+    }, 800);
+  }
+})();
+</script>`
+
+  const fallbackButton = returnTo
+    ? `<a href="${returnTo.replace(/"/g, '&quot;')}" style="display:inline-block;margin-top:18px;padding:10px 20px;background:${color};color:#fff;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;">Return to Settings</a>`
+    : `<button onclick="window.close()" style="margin-top:18px;padding:10px 20px;background:${color};color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">Close Window</button>`
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${title}</title>
+</head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#0a0a0f;color:#fff;margin:0;">
-<div style="text-align:center;max-width:400px;padding:40px;">
+<div style="text-align:center;max-width:420px;padding:40px;">
 <div style="width:64px;height:64px;border-radius:50%;background:${color}20;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
-<span style="font-size:28px;">${success ? '✓' : '✗'}</span>
+<span style="font-size:28px;color:${color};">${success ? '✓' : '✗'}</span>
 </div>
-<h1 style="font-size:24px;margin:0 0 12px;color:${color};">${title}</h1>
-<p style="font-size:14px;color:#94a3b8;line-height:1.6;">${message}</p>
-${redirectScript}
-</div></body></html>`
+<h1 style="font-size:22px;margin:0 0 12px;color:${color};">${title}</h1>
+<p style="font-size:14px;color:#94a3b8;line-height:1.6;margin:0;">${message}</p>
+${fallbackButton}
+</div>
+${script}
+</body>
+</html>`
 }
