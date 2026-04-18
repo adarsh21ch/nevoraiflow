@@ -78,8 +78,29 @@ const AdminSettingsPage = () => {
         return { connected: false, email: null, reason: "probe_failed", hasToken: false };
       }
     },
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
+
+  // Detect ?gmail=connected on return from OAuth callback and force-refresh status
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("gmail") === "connected") {
+      // Strip the param from the URL so a refresh doesn't retrigger
+      params.delete("gmail");
+      const newSearch = params.toString();
+      const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ""}${window.location.hash}`;
+      window.history.replaceState({}, "", newUrl);
+
+      queryClient.invalidateQueries({ queryKey: ["gmail-connection-status"] });
+      // Small delay to let the freshly-written token settle, then refetch
+      setTimeout(() => {
+        refetchGmail();
+      }, 500);
+      toast.success("Gmail reconnected successfully");
+    }
+  }, [queryClient, refetchGmail]);
 
   const [connectingGmail, setConnectingGmail] = useState(false);
 
