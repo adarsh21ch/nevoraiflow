@@ -8,21 +8,25 @@ import { useAuth } from "./useAuth";
  * the calling Nevorai app — they get Individual plan access for free.
  */
 export const useNevoraiMember = () => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
 
   const { data, isLoading } = useQuery({
     queryKey: ["nevorai-member", user?.id],
     queryFn: async () => {
-      if (!user) return { isMember: false, welcomeShown: true };
+      if (!user) return { isMember: false, notified: true };
       const { data: p } = await supabase
         .from("profiles")
-        .select("nevorai_member, nevorai_member_active, member_welcome_shown, nevorai_member_granted_at")
+        .select(
+          "nevorai_member, nevorai_member_active, nevorai_member_notified, member_welcome_shown, nevorai_member_granted_at, nevorai_member_expires_at, nevorai_member_status",
+        )
         .eq("id", user.id)
         .maybeSingle();
       return {
         isMember: !!(p?.nevorai_member && p?.nevorai_member_active),
-        welcomeShown: !!p?.member_welcome_shown,
+        notified: !!p?.nevorai_member_notified || !!p?.member_welcome_shown,
         grantedAt: p?.nevorai_member_granted_at || null,
+        expiresAt: (p as any)?.nevorai_member_expires_at || null,
+        status: (p as any)?.nevorai_member_status || "inactive",
       };
     },
     enabled: !!user,
@@ -31,16 +35,20 @@ export const useNevoraiMember = () => {
 
   const markWelcomeShown = async () => {
     if (!user) return;
-    await supabase
-      .from("profiles")
-      .update({ member_welcome_shown: true })
-      .eq("id", user.id);
+    try {
+      await supabase.functions.invoke("mark-member-notified", { body: {} });
+    } catch (e) {
+      console.error("mark-member-notified failed", e);
+    }
   };
 
   return {
     isMember: data?.isMember ?? false,
-    welcomeShown: data?.welcomeShown ?? true,
+    welcomeShown: data?.notified ?? true,
+    notified: data?.notified ?? true,
     grantedAt: data?.grantedAt ?? null,
+    expiresAt: data?.expiresAt ?? null,
+    status: data?.status ?? "inactive",
     isLoading,
     markWelcomeShown,
   };

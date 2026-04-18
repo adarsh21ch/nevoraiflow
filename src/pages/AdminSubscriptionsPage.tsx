@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import type { PlanConfig } from "@/hooks/usePlanLimits";
+import { MemberGatewayTab } from "@/components/admin/MemberGatewayTab";
 
 const PlanField = ({ planName, field, label, type = "number", disabled = false, hint, value: initialValue, onSave }: {
   planName: string; field: string; label: string; type?: string; disabled?: boolean; hint?: string;
@@ -305,9 +306,10 @@ const AdminSubscriptionsPage = () => {
         </div>
 
         <Tabs defaultValue="subscriptions">
-          <TabsList className="w-full grid grid-cols-4 h-9">
+          <TabsList className="w-full grid grid-cols-5 h-9">
             <TabsTrigger value="subscriptions" className="text-[10px] sm:text-sm">Subs</TabsTrigger>
             <TabsTrigger value="plans" className="text-[10px] sm:text-sm">Plans</TabsTrigger>
+            <TabsTrigger value="gateway" className="text-[10px] sm:text-sm">Gateway</TabsTrigger>
             <TabsTrigger value="audit" className="text-[10px] sm:text-sm">Audit</TabsTrigger>
             <TabsTrigger value="settings" className="text-[10px] sm:text-sm">Settings</TabsTrigger>
           </TabsList>
@@ -442,6 +444,10 @@ const AdminSubscriptionsPage = () => {
               {renderPlanCard("basic", basicConfig)}
               {renderPlanCard("pro", proConfig)}
             </div>
+          </TabsContent>
+
+          <TabsContent value="gateway" className="space-y-3 pt-1">
+            <MemberGatewayTab />
           </TabsContent>
 
           <TabsContent value="audit" className="space-y-3 pt-1">
