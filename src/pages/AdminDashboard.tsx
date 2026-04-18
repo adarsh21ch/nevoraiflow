@@ -2,6 +2,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Users, Layers, Video, BarChart3, IndianRupee, Shield } from "lucide-react";
+import { MemberGatewayDashboardCard } from "@/components/admin/MemberGatewayDashboardCard";
 
 const AdminDashboard = () => {
   const { data: profiles = [] } = useQuery({
@@ -79,6 +80,7 @@ const AdminDashboard = () => {
               <p className="mt-3 truncate text-xl font-heading font-bold sm:text-2xl">{k.value}</p>
             </div>
           ))}
+          <MemberGatewayDashboardCard />
         </div>
       </div>
     </AdminLayout>
