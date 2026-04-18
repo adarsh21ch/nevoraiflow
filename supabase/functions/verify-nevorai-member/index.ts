@@ -1,8 +1,9 @@
 // verify-nevorai-member
-// Checks the local member registry cache (24h TTL); if stale or missing,
-// calls the Nevorai bridge edge function on the calling app's project.
-// If the email/phone matches a Pro member, generates a 6-digit OTP
-// and queues a verification email via the existing email queue.
+// Looks up a user in the Nevorai bridge. In `lookup` mode returns whether
+// the email exists in Nevorai at all (any user) and whether they are Pro.
+// In `send_otp` mode generates a 6-digit OTP and queues an email — works for
+// BOTH free and Pro Nevorai users (Pro gets Individual plan on confirm,
+// free just gets a recognized linked nFlow account).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -16,17 +17,20 @@ const corsHeaders = {
 interface VerifyRequest {
   email?: string;
   phone?: string;
-  mode?: "lookup" | "send_otp"; // lookup = just check, send_otp = generate + email
+  mode?: "lookup" | "send_otp";
 }
 
 interface BridgeResponse {
   isPro: boolean;
-  plan?: string;
-  fullName?: string;
-  registeredAt?: string;
-  callingAppUserId?: string;
-  phone?: string;
-  email?: string;
+  plan?: string | null;
+  fullName?: string | null;
+  registeredAt?: string | null;
+  callingAppUserId?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  // Optional explicit existence flag — if the bridge sets this we use it.
+  // Otherwise we infer existence from fullName / registeredAt / callingAppUserId.
+  exists?: boolean;
 }
 
 async function callNevoraiBridge(
@@ -37,7 +41,7 @@ async function callNevoraiBridge(
   const secret = Deno.env.get("NEVORAI_BRIDGE_SECRET");
 
   if (!url || !secret || url.startsWith("placeholder") || secret.startsWith("placeholder")) {
-    console.warn("[verify-nevorai-member] Bridge not configured yet — returning null");
+    console.warn("[verify-nevorai-member] Bridge not configured — returning null");
     return null;
   }
 
@@ -52,14 +56,10 @@ async function callNevoraiBridge(
     });
 
     if (!res.ok) {
-      console.error(
-        `[verify-nevorai-member] Bridge returned ${res.status}: ${await res.text()}`,
-      );
+      console.error(`[verify-nevorai-member] Bridge ${res.status}: ${await res.text()}`);
       return null;
     }
-
-    const data = await res.json();
-    return data as BridgeResponse;
+    return (await res.json()) as BridgeResponse;
   } catch (e) {
     console.error("[verify-nevorai-member] Bridge call failed:", e);
     return null;
@@ -76,10 +76,18 @@ async function generateOtp(): Promise<{ code: string; hash: string }> {
   return { code, hash };
 }
 
+// Infer "this email is a known Nevorai user" even if the bridge doesn't
+// explicitly return `exists`. Any user — Pro or free — should produce some
+// identifying field (callingAppUserId or registeredAt) when found.
+function inferExists(b: BridgeResponse | null): boolean {
+  if (!b) return false;
+  if (b.exists === true) return true;
+  if (b.isPro) return true;
+  return !!(b.callingAppUserId || b.registeredAt || b.fullName);
+}
+
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const body = (await req.json()) as VerifyRequest;
@@ -99,7 +107,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // 1. Look in cache first
+    // Cache lookup
     let cached: any = null;
     if (email) {
       const { data } = await supabase
@@ -118,9 +126,7 @@ Deno.serve(async (req) => {
       cached = data;
     }
 
-    const now = new Date();
-    const isFresh = cached && new Date(cached.expires_at) > now;
-
+    const isFresh = cached && new Date(cached.expires_at) > new Date();
     let memberData: BridgeResponse | null = null;
 
     if (isFresh) {
@@ -132,12 +138,11 @@ Deno.serve(async (req) => {
         callingAppUserId: cached.calling_app_user_id,
         email: cached.email,
         phone: cached.phone,
+        exists: !!(cached.calling_app_user_id || cached.registered_at || cached.full_name || cached.is_pro),
       };
     } else {
-      // 2. Cache stale — hit bridge
       memberData = await callNevoraiBridge(email, phone);
 
-      // 3. Update cache (even if not pro, so we don't keep retrying)
       if (memberData !== null) {
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         const upsertEmail = memberData.email?.toLowerCase() || email;
@@ -165,27 +170,48 @@ Deno.serve(async (req) => {
       }
     }
 
-    const isMember = memberData?.isPro === true;
+    const exists = inferExists(memberData);
+    const isPro = memberData?.isPro === true;
 
-    // 4. If lookup-only OR not a member, return early
-    if (mode === "lookup" || !isMember) {
+    // Lookup-only OR not found at all
+    if (mode === "lookup" || !exists) {
       return new Response(
         JSON.stringify({
-          isMember,
-          fullName: memberData?.fullName,
-          email: memberData?.email,
-          plan: memberData?.plan,
+          // Backwards-compat field
+          isMember: isPro,
+          // New explicit fields
+          exists,
+          isPro,
+          fullName: memberData?.fullName ?? null,
+          email: memberData?.email ?? null,
+          phone: memberData?.phone ?? null,
+          plan: memberData?.plan ?? null,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // 5. Generate OTP and queue email
+    // send_otp mode + recognized Nevorai user (Pro OR free)
     const targetEmail = memberData?.email || email;
     if (!targetEmail) {
       return new Response(
         JSON.stringify({ error: "No email available to send OTP" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Rate limit: max 3 sends per email per hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count: recentCount } = await supabase
+      .from("member_otps")
+      .select("id", { count: "exact", head: true })
+      .eq("email", targetEmail)
+      .gte("created_at", oneHourAgo);
+
+    if ((recentCount ?? 0) >= 3) {
+      return new Response(
+        JSON.stringify({ error: "Too many code requests. Please wait an hour and try again." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -197,17 +223,17 @@ Deno.serve(async (req) => {
       ip_address: req.headers.get("x-forwarded-for") || null,
     });
 
-    // Queue the OTP email via the existing email queue
     try {
       await supabase.rpc("enqueue_email", {
         queue_name: "transactional_emails",
         payload: {
           template: "nevorai_member_otp",
           to: targetEmail,
-          subject: "Your Nevorai Flow access code",
+          subject: "Your nFlow access code",
           data: {
             code,
             fullName: memberData?.fullName || "there",
+            isPro,
           },
         },
       });
@@ -217,10 +243,12 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        isMember: true,
+        isMember: isPro, // backwards-compat
+        exists: true,
+        isPro,
         otpSent: true,
         email: targetEmail,
-        fullName: memberData?.fullName,
+        fullName: memberData?.fullName ?? null,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

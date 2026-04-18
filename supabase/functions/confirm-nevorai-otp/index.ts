@@ -1,6 +1,10 @@
 // confirm-nevorai-otp
-// Verifies the 6-digit OTP, then upgrades the user's profile to Nevorai Member
-// (Individual plan = plan_key 'pro'). Logs the event to member_access_logs.
+// Verifies the 6-digit OTP and either:
+//   (a) signs in an existing nFlow account for that email, OR
+//   (b) creates a brand-new nFlow account auto-linked to the Nevorai user.
+// Pro members also get the Individual ('pro') plan flipped on; free Nevorai
+// users just get nevorai_member=true with active=false (recognition only).
+// Returns a Supabase session the client can set via supabase.auth.setSession.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -24,10 +28,21 @@ async function hashCode(code: string): Promise<string> {
     .join("");
 }
 
+function randomPassword(): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function jsonError(message: string, status: number) {
+  return new Response(
+    JSON.stringify({ error: message }),
+    { status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
+}
+
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const body = (await req.json()) as ConfirmRequest;
@@ -35,36 +50,8 @@ Deno.serve(async (req) => {
     const code = body.code?.trim();
 
     if (!email || !code || !/^\d{6}$/.test(code)) {
-      return new Response(
-        JSON.stringify({ error: "Valid email and 6-digit code required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return jsonError("Valid email and 6-digit code required", 400);
     }
-
-    // Require a logged-in user (we need their user_id to grant access)
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Authentication required" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    const userClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: claimsErr } = await userClient.auth.getClaims(token);
-    if (claimsErr || !claims?.claims?.sub) {
-      return new Response(
-        JSON.stringify({ error: "Invalid session" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-    const userId = claims.claims.sub as string;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -73,7 +60,7 @@ Deno.serve(async (req) => {
 
     const codeHash = await hashCode(code);
 
-    // Find latest unconsumed OTP for this email
+    // Find latest unconsumed OTP
     const { data: otp, error: otpErr } = await supabase
       .from("member_otps")
       .select("*")
@@ -85,113 +72,171 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (otpErr || !otp) {
-      return new Response(
-        JSON.stringify({ error: "Code expired or not found. Please request a new one." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return jsonError("Code expired or not found. Please request a new one.", 400);
     }
-
     if (otp.attempts >= 5) {
-      return new Response(
-        JSON.stringify({ error: "Too many attempts. Request a new code." }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return jsonError("Too many attempts. Request a new code.", 429);
     }
-
     if (otp.code_hash !== codeHash) {
       await supabase
         .from("member_otps")
         .update({ attempts: otp.attempts + 1 })
         .eq("id", otp.id);
-      return new Response(
-        JSON.stringify({ error: "Incorrect code" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return jsonError("Incorrect code", 400);
     }
 
-    // Mark OTP consumed
+    // Mark consumed
     await supabase
       .from("member_otps")
       .update({ consumed_at: new Date().toISOString() })
       .eq("id", otp.id);
 
-    // Look up the registry entry to capture plan info
+    // Look up registry for plan + name + phone
     const { data: registry } = await supabase
       .from("nevorai_member_registry")
       .select("*")
       .eq("email", email)
       .maybeSingle();
 
-    if (!registry?.is_pro) {
-      return new Response(
-        JSON.stringify({ error: "No active Nevorai Pro subscription found for this email." }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    if (!registry) {
+      return jsonError("No Nevorai record found for this email.", 403);
     }
 
-    // Grant Member status on the profile
+    const isPro = !!registry.is_pro;
+
+    // Find or create the nFlow auth user for this email
+    let userId: string | null = null;
+    let createdNew = false;
+    let session: any = null;
+
+    // Try to find existing auth user via profiles (email is stored there)
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (existingProfile?.id) {
+      userId = existingProfile.id;
+    } else {
+      // Create a brand-new account
+      const tempPassword = randomPassword();
+      const { data: created, error: createErr } = await supabase.auth.admin.createUser({
+        email,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: {
+          full_name: registry.full_name || "",
+          phone: registry.phone || "",
+          source: "nevorai_bridge",
+        },
+      });
+      if (createErr || !created.user) {
+        console.error("[confirm-nevorai-otp] createUser failed:", createErr);
+        return jsonError("Could not create account. Please try again.", 500);
+      }
+      userId = created.user.id;
+      createdNew = true;
+    }
+
+    // Update profile flags + identifying info
     await supabase
       .from("profiles")
       .update({
         nevorai_member: true,
-        nevorai_member_active: true,
+        nevorai_member_active: isPro,
         nevorai_member_source: "bridge",
         nevorai_member_granted_at: new Date().toISOString(),
         nevorai_member_last_checked_at: new Date().toISOString(),
+        ...(registry.full_name ? { full_name: registry.full_name } : {}),
+        ...(registry.phone ? { phone: registry.phone } : {}),
       })
       .eq("id", userId);
 
-    // Create / update active subscription as 'pro' (Individual UI label)
-    const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
-    const { data: existingSub } = await supabase
-      .from("user_subscriptions")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("status", "active")
-      .maybeSingle();
-
-    if (existingSub) {
-      await supabase
+    if (isPro) {
+      // Grant / refresh Individual plan ('pro')
+      const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: existingSub } = await supabase
         .from("user_subscriptions")
-        .update({
+        .select("id")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (existingSub) {
+        await supabase
+          .from("user_subscriptions")
+          .update({
+            plan_key: "pro",
+            tier: "pro",
+            status: "active",
+            billing_type: "nevorai_member",
+            expires_at: expiresAt,
+            started_at: new Date().toISOString(),
+          })
+          .eq("id", existingSub.id);
+      } else {
+        await supabase.from("user_subscriptions").insert({
+          user_id: userId,
           plan_key: "pro",
           tier: "pro",
           status: "active",
           billing_type: "nevorai_member",
-          expires_at: expiresAt,
           started_at: new Date().toISOString(),
-        })
-        .eq("id", existingSub.id);
-    } else {
-      await supabase.from("user_subscriptions").insert({
-        user_id: userId,
-        plan_key: "pro",
-        tier: "pro",
-        status: "active",
-        billing_type: "nevorai_member",
-        started_at: new Date().toISOString(),
-        expires_at: expiresAt,
-      });
+          expires_at: expiresAt,
+        });
+      }
     }
 
-    // Log event
+    // Issue a session via magic-link generation (server-side, no email sent)
+    const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+    });
+
+    if (!linkErr && linkData?.properties?.hashed_token) {
+      // Exchange hashed_token for a session using verifyOtp
+      const anonClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+      );
+      const { data: verifyData, error: verifyErr } = await anonClient.auth.verifyOtp({
+        type: "magiclink",
+        token_hash: linkData.properties.hashed_token,
+      });
+      if (!verifyErr && verifyData.session) {
+        session = {
+          access_token: verifyData.session.access_token,
+          refresh_token: verifyData.session.refresh_token,
+        };
+      } else {
+        console.error("[confirm-nevorai-otp] verifyOtp failed:", verifyErr);
+      }
+    } else {
+      console.error("[confirm-nevorai-otp] generateLink failed:", linkErr);
+    }
+
+    // Log the event
     await supabase.from("member_access_logs").insert({
       user_id: userId,
       email,
-      event_type: "member_granted",
+      event_type: createdNew ? "account_created_via_otp" : "account_linked_via_otp",
       source: "bridge_otp",
-      metadata: { plan: registry.plan, registry_id: registry.id },
+      metadata: { isPro, plan: registry.plan, createdNew },
     });
 
     return new Response(
-      JSON.stringify({ success: true, plan: "Individual" }),
+      JSON.stringify({
+        success: true,
+        createdNew,
+        isPro,
+        plan: isPro ? "Individual" : "Free",
+        session,
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
     console.error("[confirm-nevorai-otp] Unhandled error:", e);
-    return new Response(
-      JSON.stringify({ error: "Internal error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return jsonError("Internal error", 500);
   }
 });
