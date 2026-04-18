@@ -114,6 +114,48 @@ async function refreshAccessToken(supabase: any, tokenRow: any): Promise<string>
   return data.access_token
 }
 
+function parseGmailApiError(errText: string): {
+  message: string
+  code?: string
+  activationUrl?: string | null
+  googleProjectNumber?: string | null
+} {
+  try {
+    const parsed = JSON.parse(errText)
+    const topLevelMessage = typeof parsed?.error?.message === 'string' ? parsed.error.message : errText
+    const topLevelReason = typeof parsed?.error?.errors?.[0]?.reason === 'string'
+      ? parsed.error.errors[0].reason
+      : undefined
+    const details = Array.isArray(parsed?.error?.details) ? parsed.error.details : []
+    const errorInfo = details.find((detail) => detail?.['@type'] === 'type.googleapis.com/google.rpc.ErrorInfo')
+    const help = details.find((detail) => detail?.['@type'] === 'type.googleapis.com/google.rpc.Help')
+    const serviceDisabled = errorInfo?.reason === 'SERVICE_DISABLED' || topLevelReason === 'accessNotConfigured'
+
+    if (serviceDisabled) {
+      const activationUrl = typeof errorInfo?.metadata?.activationUrl === 'string'
+        ? errorInfo.metadata.activationUrl
+        : typeof help?.links?.[0]?.url === 'string'
+          ? help.links[0].url
+          : null
+      const consumer = typeof errorInfo?.metadata?.consumer === 'string' ? errorInfo.metadata.consumer : null
+
+      return {
+        message: 'Gmail API is disabled in Google Cloud for this OAuth app. Enable Gmail API, wait a few minutes, then retry.',
+        code: 'gmail_api_disabled',
+        activationUrl,
+        googleProjectNumber: consumer?.replace(/^projects\//, '') ?? null,
+      }
+    }
+
+    return {
+      message: topLevelMessage,
+      code: topLevelReason,
+    }
+  } catch {
+    return { message: errText }
+  }
+}
+
 Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -297,6 +339,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     if (!gmailRes.ok) {
       const errBody = await gmailRes.text()
+      const parsedError = parseGmailApiError(errBody)
       console.error(`Gmail API error [${gmailRes.status}]:`, errBody)
 
       // If 401, try refreshing token once more
@@ -313,7 +356,18 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
         if (!retryRes.ok) {
           const retryErr = await retryRes.text()
-          throw new Error(`Gmail API retry failed [${retryRes.status}]: ${retryErr}`)
+          const retryParsedError = parseGmailApiError(retryErr)
+          const retryError = new Error(retryParsedError.message) as Error & {
+            status?: number
+            code?: string
+            activationUrl?: string | null
+            googleProjectNumber?: string | null
+          }
+          retryError.status = retryRes.status
+          retryError.code = retryParsedError.code
+          retryError.activationUrl = retryParsedError.activationUrl
+          retryError.googleProjectNumber = retryParsedError.googleProjectNumber
+          throw retryError
         }
 
         const retryResult = await retryRes.json()
@@ -321,7 +375,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return jsonResponse({ sent: true, message_id: retryResult.id })
       }
 
-      throw new Error(`Gmail API error [${gmailRes.status}]: ${errBody}`)
+      const sendError = new Error(parsedError.message) as Error & {
+        status?: number
+        code?: string
+        activationUrl?: string | null
+        googleProjectNumber?: string | null
+      }
+      sendError.status = gmailRes.status
+      sendError.code = parsedError.code
+      sendError.activationUrl = parsedError.activationUrl
+      sendError.googleProjectNumber = parsedError.googleProjectNumber
+      throw sendError
     }
 
     const result = await gmailRes.json()
@@ -330,6 +394,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return jsonResponse({ sent: true, message_id: result.id })
   } catch (err: any) {
     console.error('Gmail email error:', err)
-    return jsonResponse({ error: err.message, sent: false }, 500)
+    return jsonResponse({
+      error: err.message,
+      sent: false,
+      code: err.code ?? null,
+      activation_url: err.activationUrl ?? null,
+      google_project_number: err.googleProjectNumber ?? null,
+    }, err.status ?? 500)
   }
 })
