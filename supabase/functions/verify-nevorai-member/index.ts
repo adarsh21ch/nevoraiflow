@@ -165,23 +165,30 @@ Deno.serve(async (req) => {
         const upsertPhone = memberData.phone || phone;
 
         if (upsertEmail) {
-          await supabase
+          const { error: upsertErr } = await supabase
             .from("nevorai_member_registry")
             .upsert(
               {
                 email: upsertEmail,
-                phone: upsertPhone,
-                full_name: memberData.fullName,
-                is_pro: memberData.isPro,
-                plan: memberData.plan,
-                calling_app_user_id: memberData.callingAppUserId,
-                registered_at: memberData.registeredAt,
+                phone: upsertPhone || null,
+                full_name: memberData.fullName || null,
+                is_pro: !!memberData.isPro,
+                plan: memberData.plan || null,
+                calling_app_user_id: memberData.callingAppUserId || null,
+                registered_at: memberData.registeredAt || null,
                 last_synced_at: new Date().toISOString(),
                 expires_at: expiresAt,
                 source: "bridge",
               },
               { onConflict: "email" },
             );
+          if (upsertErr) {
+            console.error("[verify-nevorai-member] Registry upsert FAILED:", JSON.stringify(upsertErr));
+          } else {
+            console.log(`[verify-nevorai-member] Registry upserted for ${upsertEmail} (mode=${mode}, isPro=${memberData.isPro})`);
+          }
+        } else {
+          console.warn("[verify-nevorai-member] No email available to upsert registry");
         }
       }
     }

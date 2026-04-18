@@ -5,6 +5,11 @@
 // Pro members also get the Individual ('pro') plan flipped on; free Nevorai
 // users just get nevorai_member=true with active=false (recognition only).
 // Returns a Supabase session the client can set via supabase.auth.setSession.
+//
+// SELF-HEALING: If nevorai_member_registry row is missing, this function will
+// call the Nevorai bridge directly to fetch user info. If bridge is also
+// unreachable, it falls back to creating a free Nevorai-linked account
+// (the OTP itself proves email ownership).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -18,6 +23,17 @@ const corsHeaders = {
 interface ConfirmRequest {
   email: string;
   code: string;
+}
+
+interface BridgeResponse {
+  isPro?: boolean;
+  plan?: string | null;
+  fullName?: string | null;
+  registeredAt?: string | null;
+  callingAppUserId?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  exists?: boolean;
 }
 
 async function hashCode(code: string): Promise<string> {
@@ -39,6 +55,35 @@ function jsonError(message: string, status: number) {
     JSON.stringify({ error: message }),
     { status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );
+}
+
+async function callNevoraiBridge(email: string): Promise<BridgeResponse | null> {
+  const url = Deno.env.get("NEVORAI_BRIDGE_URL");
+  const secret = Deno.env.get("NEVORAI_BRIDGE_SECRET");
+
+  if (!url || !secret || url.startsWith("placeholder") || secret.startsWith("placeholder")) {
+    console.warn("[confirm-nevorai-otp] Bridge not configured");
+    return null;
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${secret}`,
+      },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      console.error(`[confirm-nevorai-otp] Bridge ${res.status}: ${await res.text()}`);
+      return null;
+    }
+    return (await res.json()) as BridgeResponse;
+  } catch (e) {
+    console.error("[confirm-nevorai-otp] Bridge call failed:", e);
+    return null;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -92,17 +137,56 @@ Deno.serve(async (req) => {
       .eq("id", otp.id);
 
     // Look up registry for plan + name + phone
-    const { data: registry } = await supabase
+    let { data: registry } = await supabase
       .from("nevorai_member_registry")
       .select("*")
       .eq("email", email)
       .maybeSingle();
 
+    // SELF-HEAL: If no cached registry row, try the bridge live
     if (!registry) {
-      return jsonError("No Nevorai record found for this email.", 403);
+      console.log(`[confirm-nevorai-otp] No registry row for ${email}, calling bridge`);
+      const bridge = await callNevoraiBridge(email);
+      if (bridge) {
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        const { data: upserted, error: upErr } = await supabase
+          .from("nevorai_member_registry")
+          .upsert(
+            {
+              email: bridge.email?.toLowerCase() || email,
+              phone: bridge.phone || null,
+              full_name: bridge.fullName || null,
+              is_pro: !!bridge.isPro,
+              plan: bridge.plan || null,
+              calling_app_user_id: bridge.callingAppUserId || null,
+              registered_at: bridge.registeredAt || null,
+              last_synced_at: new Date().toISOString(),
+              expires_at: expiresAt,
+              source: "bridge_self_heal",
+            },
+            { onConflict: "email" },
+          )
+          .select()
+          .maybeSingle();
+        if (upErr) {
+          console.error("[confirm-nevorai-otp] Self-heal upsert failed:", upErr);
+        }
+        registry = upserted;
+      }
     }
 
-    const isPro = !!registry.is_pro;
+    // Final fallback: OTP already proves email ownership AND verify-nevorai-member
+    // already confirmed this user exists on Nevorai before issuing the code.
+    // Treat as a free Nevorai-linked account.
+    const safeRegistry = registry ?? {
+      email,
+      full_name: null,
+      phone: null,
+      is_pro: false,
+      plan: null,
+    };
+
+    const isPro = !!safeRegistry.is_pro;
 
     // Find or create the nFlow auth user for this email
     let userId: string | null = null;
@@ -126,8 +210,8 @@ Deno.serve(async (req) => {
         password: tempPassword,
         email_confirm: true,
         user_metadata: {
-          full_name: registry.full_name || "",
-          phone: registry.phone || "",
+          full_name: safeRegistry.full_name || "",
+          phone: safeRegistry.phone || "",
           source: "nevorai_bridge",
         },
       });
@@ -148,8 +232,8 @@ Deno.serve(async (req) => {
         nevorai_member_source: "bridge",
         nevorai_member_granted_at: new Date().toISOString(),
         nevorai_member_last_checked_at: new Date().toISOString(),
-        ...(registry.full_name ? { full_name: registry.full_name } : {}),
-        ...(registry.phone ? { phone: registry.phone } : {}),
+        ...(safeRegistry.full_name ? { full_name: safeRegistry.full_name } : {}),
+        ...(safeRegistry.phone ? { phone: safeRegistry.phone } : {}),
       })
       .eq("id", userId);
 
@@ -222,7 +306,7 @@ Deno.serve(async (req) => {
       email,
       event_type: createdNew ? "account_created_via_otp" : "account_linked_via_otp",
       source: "bridge_otp",
-      metadata: { isPro, plan: registry.plan, createdNew },
+      metadata: { isPro, plan: safeRegistry.plan, createdNew, hadRegistry: !!registry },
     });
 
     return new Response(
