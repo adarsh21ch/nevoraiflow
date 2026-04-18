@@ -258,7 +258,19 @@ const AdminSettingsPage = () => {
       toast.success(`Test email sent to ${gmailConnected?.email}`);
     },
     onError: (e: any) => {
-      toast.error(`Test email failed: ${e?.message || "unknown error"}`);
+      const details = [e?.message || "unknown error"];
+      const googleProjectNumber = e?.context?.google_project_number ?? e?.google_project_number;
+      const activationUrl = e?.context?.activation_url ?? e?.activation_url;
+
+      if (googleProjectNumber) {
+        details.push(`Google project: ${googleProjectNumber}`);
+      }
+
+      if (activationUrl) {
+        details.push(`Enable here: ${activationUrl}`);
+      }
+
+      toast.error(`Test email failed: ${details.join(" • ")}`);
     },
   });
 
