@@ -1,49 +1,57 @@
 
 
-## Root cause
+## Diagnosis (why every previous attempt looked broken)
 
-Looking at the actual code in `src/pages/AdminSettingsPage.tsx`, the file is **missing** the `useEffect` that was supposed to detect `?gmail=connected` on return from Google. So the flow is:
+Looking at the code I just read:
 
-1. You click **Reconnect Gmail** → redirected to Google → approve → Google redirects to the callback edge function.
-2. The callback **does** successfully write a fresh token to the database (this part works — Google confirmed the email earlier).
-3. Callback HTML auto-redirects you back to `/admin/settings?gmail=connected`.
-4. **AdminSettingsPage mounts but never reads `?gmail=connected`, never invalidates the query, and the React Query cache still holds the old "Reconnect needed (token_revoked)" result for 30 seconds** — so the badge stays orange.
+1. **Frontend** uses `window.location.href` → full-page redirect. On a custom domain you lose the React Query cache and the listener that would refresh status.
+2. **Callback HTML** has `Content-Type: text/html` (no `charset=utf-8`). On some browsers/configurations the HTML gets shown as raw source — exactly what your screenshot showed.
+3. **Auto-redirect** uses `setTimeout(... window.location.href = returnTo, 1200)` — if the script never runs (e.g. raw-source rendering, popup blocker, browser policy on cross-origin auto-nav), the user is stuck.
+4. **No popup → parent communication.** Even when redirect works, the parent only knows via `?gmail=connected` URL detection, which is fragile.
 
-Compounding this on a custom domain (`nflow.nevorai.com`), the user perception is "nothing happened" because the page looks identical before and after.
+The OAuth params are actually already correct (`access_type=offline`, `prompt=consent`, `gmail.send` scope). Tokens ARE being stored. The breakage is purely in the **post-callback handoff to the UI**.
 
-The token IS being refreshed in the DB. The UI just doesn't know.
+## The fix — popup + postMessage (3 files)
 
-## Fix (3 small changes, all in `src/pages/AdminSettingsPage.tsx`)
+### 1. `supabase/functions/gmail-oauth-callback/index.ts` (rewrite the response layer)
 
-1. **Add a `useEffect` that detects `?gmail=connected` on mount**, then:
-   - Invalidates the `gmail-connection-status` query.
-   - Refetches it immediately.
-   - Shows a success toast.
-   - Strips the `?gmail=connected` param from the URL so refresh doesn't retrigger it.
-2. **Drop `staleTime` from 30s to 0** for the Gmail status query, and add `refetchOnMount: "always"` so every navigation back re-probes Gmail.
-3. **Also refetch on window focus** — covers the case where the OAuth tab/window swap leaves stale data.
+- Add explicit `Content-Type: text/html; charset=utf-8` header (kills raw-HTML bug).
+- On success, the page does THREE things in order, so it works no matter how it was opened:
+  1. `window.opener.postMessage({ type: 'GMAIL_OAUTH_SUCCESS', email }, '*')` then `window.close()` (popup case).
+  2. If `!window.opener` (full-page fallback or popup blocked) → redirect to `returnTo` after 800ms.
+  3. Always render a visible "Return to Settings" button as a final fallback so the user is never stranded.
+- On error, same pattern with `GMAIL_OAUTH_ERROR`.
+- **Keep using the existing `gmail_oauth_tokens` table** — do NOT switch to `platform_settings`. That table is already wired into `send-gmail-email` and `process-email-queue`; switching would break live email sending and orphan the existing token row.
+- OAuth scopes/params are already correct — no changes needed in `gmail-oauth-init`.
 
-That's it. No edge function changes needed — the OAuth flow itself works (logs already show successful boots after reconnect attempts; the 401s in `process-email-queue` are old queued messages that pre-date the reconnect).
+### 2. `src/pages/AdminSettingsPage.tsx` (popup flow)
 
-## Why this is the right diagnosis (not the same loop as before)
+Replace `handleConnectGmail`:
+- Open a centered 500×650 popup pointing at `about:blank` first (so popup blockers don't fire), then set `popup.location.href = data.auth_url` after the init call returns.
+- Register a `message` listener that:
+  - Checks `event.data?.type === 'GMAIL_OAUTH_SUCCESS'` → close popup, invalidate + refetch `gmail-connection-status`, success toast.
+  - Checks `'GMAIL_OAUTH_ERROR'` → error toast.
+  - **Origin check**: accept messages from the Supabase functions origin (`https://atwnmovdnblcqyvhaxls.supabase.co`) since that's where the callback page is served.
+- Poll `popup.closed` every 500ms; if user closes popup manually without finishing, clean up listener and re-enable button.
+- Keep the existing `?gmail=connected` URL detection as a backup path (covers popup-blocked → full-page fallback).
+- Keep `staleTime: 0`, `refetchOnMount: 'always'`, `refetchOnWindowFocus: true` (already in place).
 
-Previous attempts fixed:
-- Popup → full-page redirect ✓ (already done, working)
-- `returnTo` on custom domain ✓ (`sanitizeReturnTo` allows `nflow.nevorai.com`)
-- Live probe instead of "token exists" check ✓ (already done)
+### 3. (No backend change for `send-gmail-email`)
 
-The one missing piece across all those iterations is the **client-side cache invalidation on return**. The data is correct on the server; the UI just keeps showing the cached "bad" result for 30 seconds and the user clicks Reconnect again, perpetuating the perception of failure.
+Token refresh logic in `send-gmail-email` already does the right thing (refreshes 5 min before expiry, falls back to retry on 401). No changes needed.
 
-## After the fix, what you'll see
+## After the fix — what you'll see
 
-1. Click **Reconnect Gmail** → Google approval screen → return to settings.
-2. Within ~1 second the status flips to green **Connected (teamnevorai@gmail.com)**.
-3. Toast: "Gmail reconnected successfully".
-4. Queued OTPs in `process-email-queue` start delivering on the next 5-second cron tick.
+1. Click **Connect Gmail** → small centered popup opens with Google's consent screen.
+2. Approve → popup shows green "Gmail Connected!" for ~1 second → popup closes itself automatically.
+3. Settings page (still open behind the popup) immediately flips to green **Connected (teamnevorai@gmail.com)** and shows toast "Gmail connected successfully".
+4. If the popup is blocked: it falls back to full-page redirect, and on return the existing `?gmail=connected` handler still works.
+5. Queued OTPs in `process-email-queue` deliver on the next 5-second cron tick.
 
-## Files to change
+## Files changed
 
-- `src/pages/AdminSettingsPage.tsx` — add the `useEffect`, tweak the `useQuery` options. ~15 lines added.
+- `supabase/functions/gmail-oauth-callback/index.ts` — new HTML with postMessage + charset + manual fallback button.
+- `src/pages/AdminSettingsPage.tsx` — popup-based `handleConnectGmail` + message listener.
 
-No edge function redeploy needed.
+That's it. No DB schema changes. No new tables. Existing tokens remain valid.
 
