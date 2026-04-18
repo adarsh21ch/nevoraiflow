@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, Link, useNavigate, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/landing/Logo";
-import { Eye, EyeOff, Mail, Lock, User, Phone, Sparkles, ArrowLeft, ShieldCheck, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Phone, Sparkles, ArrowLeft, ShieldCheck, Loader2, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { lovable } from "@/integrations/lovable/index";
 import { supabase } from "@/integrations/supabase/client";
