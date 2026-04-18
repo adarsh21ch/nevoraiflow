@@ -146,6 +146,8 @@ const AuthPage = () => {
     setNevoraiInfo(null);
     setOtp("");
     setForm((f) => ({ ...f, password: "", name: "", phone: "" }));
+    setAutoCheckStatus("idle");
+    setAutoCheckInfo(null);
   };
 
   // Step 1: Email continue — branch into login / signup / nevorai-otp
