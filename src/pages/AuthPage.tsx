@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/landing/Logo";
-import { Eye, EyeOff, Mail, Lock, User, Phone } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Phone, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { lovable } from "@/integrations/lovable/index";
+import { supabase } from "@/integrations/supabase/client";
+import { NevoraiMemberAccessModal } from "@/components/NevoraiMemberAccessModal";
 import { toast } from "sonner";
 
 const AuthPage = () => {
@@ -22,6 +24,21 @@ const AuthPage = () => {
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [failCount, setFailCount] = useState(0);
   const [lockUntil, setLockUntil] = useState(0);
+  const [memberModalOpen, setMemberModalOpen] = useState(false);
+  const [memberInfo, setMemberInfo] = useState<{ email: string; fullName?: string } | null>(null);
+
+  const checkNevoraiMember = async (email: string) => {
+    if (!email) return null;
+    try {
+      const { data } = await supabase.functions.invoke("verify-nevorai-member", {
+        body: { email, mode: "lookup" },
+      });
+      if (data?.isMember) return data;
+    } catch (e) {
+      console.error("Member lookup failed", e);
+    }
+    return null;
+  };
 
   if (loading) {
     return (
@@ -50,6 +67,12 @@ const AuthPage = () => {
         const { error } = await signUp(form.email, form.password, form.name, form.phone);
         if (error) { toast.error(error.message); return; }
         toast.success("Account created! Please check your email to verify.");
+        // After signup, check if this email matches a Nevorai Pro member
+        const member = await checkNevoraiMember(form.email);
+        if (member) {
+          setMemberInfo({ email: form.email, fullName: member.fullName });
+          setMemberModalOpen(true);
+        }
       } else {
         if (!form.email.trim()) { toast.error("Please enter your email"); return; }
         const { error } = await signIn(form.email, form.password);
@@ -66,6 +89,13 @@ const AuthPage = () => {
           return;
         }
         toast.success("Welcome back!");
+        // Silent member check on login — modal opens only if matched and not yet a member
+        const member = await checkNevoraiMember(form.email);
+        if (member) {
+          setMemberInfo({ email: form.email, fullName: member.fullName });
+          setMemberModalOpen(true);
+          return; // Stay on page so user can complete OTP flow
+        }
         navigate("/dashboard");
       }
     } finally {
