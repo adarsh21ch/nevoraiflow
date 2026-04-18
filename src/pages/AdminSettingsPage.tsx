@@ -86,22 +86,16 @@ const AdminSettingsPage = () => {
   const handleConnectGmail = useCallback(async () => {
     setConnectingGmail(true);
     try {
-      const { data, error } = await supabase.functions.invoke("gmail-oauth-init", { body: {} });
+      const returnTo = `${window.location.origin}/admin/settings?gmail=connected`;
+      const { data, error } = await supabase.functions.invoke("gmail-oauth-init", {
+        body: { return_to: returnTo },
+      });
       if (error || !data?.auth_url) {
         toast.error(data?.error || "Failed to start Gmail connection");
         setConnectingGmail(false);
         return;
       }
-      const popup = window.open(data.auth_url, "gmail-oauth", "width=600,height=700,scrollbars=yes");
-      const interval = setInterval(() => {
-        if (popup?.closed) {
-          clearInterval(interval);
-          setConnectingGmail(false);
-          refetchGmail();
-          toast.success("Gmail connection updated. Refreshing status...");
-        }
-      }, 1000);
-      setTimeout(() => { clearInterval(interval); setConnectingGmail(false); }, 5 * 60 * 1000);
+      window.location.href = data.auth_url;
     } catch {
       toast.error("Failed to connect Gmail");
       setConnectingGmail(false);
