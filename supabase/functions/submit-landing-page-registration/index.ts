@@ -120,24 +120,47 @@ Deno.serve(async (req) => {
       total_registrations: (page.total_registrations || 0) + 1,
     }).eq('id', landing_page_id)
 
-    // Fire confirmation email (non-blocking)
-    if (page.send_confirmation_email && email) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-      const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-      fetch(`${supabaseUrl}/functions/v1/send-landing-page-confirmation`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${anonKey}`,
-        },
-        body: JSON.stringify({
-          registration_id: reg.id,
-          landing_page_id,
-        }),
-      }).catch(() => {}) // fire and forget
+    // Fire confirmation email — call synchronously so we know the real result.
+    // Use service role key so the downstream function authenticates as backend
+    // (anon key is rejected by send-gmail-email for security).
+    let emailDelivery: { attempted: boolean; sent: boolean; reason?: string } = {
+      attempted: false,
+      sent: false,
     }
 
-    return new Response(JSON.stringify({ success: true, registration_id: reg.id }), {
+    if (page.send_confirmation_email && email) {
+      emailDelivery.attempted = true
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      try {
+        const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-landing-page-confirmation`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${serviceRoleKey}`,
+          },
+          body: JSON.stringify({
+            registration_id: reg.id,
+            landing_page_id,
+          }),
+        })
+        const emailJson = await emailRes.json().catch(() => ({}))
+        emailDelivery.sent = !!emailJson?.sent
+        if (!emailDelivery.sent) {
+          emailDelivery.reason = emailJson?.reason || emailJson?.error || `status_${emailRes.status}`
+          console.error('Confirmation email not sent:', emailDelivery.reason)
+        }
+      } catch (e: any) {
+        emailDelivery.reason = e?.message || 'fetch_failed'
+        console.error('Confirmation email request failed:', e)
+      }
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      registration_id: reg.id,
+      email_delivery: emailDelivery,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err: any) {

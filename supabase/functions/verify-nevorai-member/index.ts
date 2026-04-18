@@ -240,17 +240,42 @@ Deno.serve(async (req) => {
     });
 
     try {
+      const displayName = memberData?.fullName || "there";
+      const subject = "Your nFlow access code";
+      const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#ffffff;color:#1a1a1a;padding:40px 20px;">
+  <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:12px;padding:32px;border:1px solid #e5e5e5;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <h1 style="color:#22c55e;font-size:20px;margin:0;">Nevorai Flow</h1>
+    </div>
+    <h2 style="font-size:20px;margin:0 0 12px;color:#1a1a1a;">Hi ${displayName},</h2>
+    <p style="font-size:15px;line-height:1.6;color:#555;margin:0 0 20px;">
+      Use the access code below to ${isPro ? "activate your nFlow Individual plan" : "sign in to your nFlow account"}.
+    </p>
+    <div style="text-align:center;margin:24px 0;">
+      <div style="display:inline-block;font-size:32px;letter-spacing:10px;font-weight:700;background:#f5f5f5;padding:16px 24px;border-radius:10px;color:#111;">
+        ${code}
+      </div>
+    </div>
+    <p style="font-size:13px;color:#888;margin:0;text-align:center;">
+      This code expires in 10 minutes. If you didn't request it, you can ignore this email.
+    </p>
+  </div>
+</body>
+</html>`;
+
       await supabase.rpc("enqueue_email", {
         queue_name: "transactional_emails",
         payload: {
-          template: "nevorai_member_otp",
           to: targetEmail,
-          subject: "Your nFlow access code",
-          data: {
-            code,
-            fullName: memberData?.fullName || "there",
-            isPro,
-          },
+          subject,
+          html,
+          label: "nevorai_member_otp",
+          message_id: `nevorai-otp-${crypto.randomUUID()}`,
+          queued_at: new Date().toISOString(),
+          from: "Nevorai Flow",
         },
       });
     } catch (e) {

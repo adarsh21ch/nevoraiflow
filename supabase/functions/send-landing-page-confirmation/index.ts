@@ -83,7 +83,8 @@ Deno.serve(async (req) => {
 </body>
 </html>`
 
-    // Send via Gmail edge function
+    // Send via Gmail edge function. Authenticate as backend by sending the
+    // project's service role key in the Authorization header.
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
