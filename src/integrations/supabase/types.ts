@@ -1500,6 +1500,54 @@ export type Database = {
         }
         Relationships: []
       }
+      member_gateway_settings: {
+        Row: {
+          access_duration_days: number | null
+          access_duration_type: string
+          gateway_enabled: boolean
+          id: number
+          last_check_at: string | null
+          last_check_summary: Json | null
+          notification_template: string
+          notify_email: boolean
+          notify_enabled: boolean
+          notify_in_app: boolean
+          notify_whatsapp: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          access_duration_days?: number | null
+          access_duration_type?: string
+          gateway_enabled?: boolean
+          id?: number
+          last_check_at?: string | null
+          last_check_summary?: Json | null
+          notification_template?: string
+          notify_email?: boolean
+          notify_enabled?: boolean
+          notify_in_app?: boolean
+          notify_whatsapp?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          access_duration_days?: number | null
+          access_duration_type?: string
+          gateway_enabled?: boolean
+          id?: number
+          last_check_at?: string | null
+          last_check_summary?: Json | null
+          notification_template?: string
+          notify_email?: boolean
+          notify_enabled?: boolean
+          notify_in_app?: boolean
+          notify_whatsapp?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       member_otps: {
         Row: {
           attempts: number
@@ -1799,9 +1847,13 @@ export type Database = {
           member_welcome_shown: boolean
           nevorai_member: boolean
           nevorai_member_active: boolean
+          nevorai_member_expires_at: string | null
           nevorai_member_granted_at: string | null
           nevorai_member_last_checked_at: string | null
+          nevorai_member_notification_sent_at: string | null
+          nevorai_member_notified: boolean
           nevorai_member_source: string | null
+          nevorai_member_status: string
           onboarding_completed: boolean | null
           onboarding_data: Json | null
           phone: string | null
@@ -1825,9 +1877,13 @@ export type Database = {
           member_welcome_shown?: boolean
           nevorai_member?: boolean
           nevorai_member_active?: boolean
+          nevorai_member_expires_at?: string | null
           nevorai_member_granted_at?: string | null
           nevorai_member_last_checked_at?: string | null
+          nevorai_member_notification_sent_at?: string | null
+          nevorai_member_notified?: boolean
           nevorai_member_source?: string | null
+          nevorai_member_status?: string
           onboarding_completed?: boolean | null
           onboarding_data?: Json | null
           phone?: string | null
@@ -1851,9 +1907,13 @@ export type Database = {
           member_welcome_shown?: boolean
           nevorai_member?: boolean
           nevorai_member_active?: boolean
+          nevorai_member_expires_at?: string | null
           nevorai_member_granted_at?: string | null
           nevorai_member_last_checked_at?: string | null
+          nevorai_member_notification_sent_at?: string | null
+          nevorai_member_notified?: boolean
           nevorai_member_source?: string | null
+          nevorai_member_status?: string
           onboarding_completed?: boolean | null
           onboarding_data?: Json | null
           phone?: string | null
