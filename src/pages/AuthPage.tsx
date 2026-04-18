@@ -153,15 +153,27 @@ const AuthPage = () => {
   // Step 1: Email continue — branch into login / signup / nevorai-otp
   const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.email.trim()) {
+    const email = form.email.trim().toLowerCase();
+    if (!email) {
       toast.error("Please enter your email");
+      return;
+    }
+    // Use cached auto-detect result if we already know
+    const cached = lookupCacheRef.current.get(email);
+    if (cached) {
+      if (cached.exists) {
+        setNevoraiInfo({ fullName: cached.fullName, isPro: cached.isPro });
+        setStage("nevorai-otp");
+        handleSendOtp();
+        return;
+      }
+      setStage("signup");
       return;
     }
     setSubmitting(true);
     try {
-      // Check Nevorai bridge
       const { data, error } = await supabase.functions.invoke("verify-nevorai-member", {
-        body: { email: form.email.trim().toLowerCase(), mode: "lookup" },
+        body: { email, mode: "lookup" },
       });
       if (error) throw error;
 
@@ -170,11 +182,9 @@ const AuthPage = () => {
         setStage("nevorai-otp");
         return;
       }
-      // Not in Nevorai — show signup form (login tab still reachable via toggle)
       setStage("signup");
     } catch (e: any) {
       console.error("Lookup failed", e);
-      // Graceful fallback: show signup form
       setStage("signup");
     } finally {
       setSubmitting(false);
