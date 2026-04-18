@@ -221,8 +221,18 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length).trim() : ''
     const claims = token ? parseJwtClaims(token) : null
 
+    // Internal backend callers (process-email-queue, send-landing-page-confirmation,
+    // verify-nevorai-member, etc.) authenticate by sending the project's
+    // SUPABASE_SERVICE_ROLE_KEY in the Authorization header. We accept this in two ways:
+    //   1) The token JWT has role = service_role (legacy keys).
+    //   2) The token equals the SUPABASE_SERVICE_ROLE_KEY exactly (covers new
+    //      signing-keys system where the JWT may not parse with role claim
+    //      that we expect).
+    const isInternalServiceRole =
+      claims?.role === 'service_role' || (token && token === serviceRoleKey)
+
     let supabase: any
-    if (claims?.role === 'service_role') {
+    if (isInternalServiceRole) {
       supabase = createClient(supabaseUrl, serviceRoleKey)
     } else {
       const adminAccess = await requireAdminAccess(authHeader, supabaseUrl, serviceRoleKey)
