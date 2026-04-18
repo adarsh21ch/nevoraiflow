@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Check, X } from "lucide-react";
+import { Check, X, Crown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -116,7 +116,25 @@ export const PricingSection = () => {
     });
   }
 
-  const gridCols = cards.length === 1 ? "max-w-md mx-auto" : cards.length === 2 ? "md:grid-cols-2 max-w-3xl mx-auto" : "md:grid-cols-3 max-w-4xl mx-auto";
+  // Enterprise card is always shown (sales conversation, no DB toggle)
+  const enterpriseFeatures = [
+    { text: "Everything in Leaders plan", included: true },
+    { text: "Your own white-label app", included: true },
+    { text: "Custom features for your network", included: true },
+    { text: "Dedicated onboarding support", included: true },
+    { text: "Direct WhatsApp support line", included: true },
+    { text: "Custom domain for your app", included: true },
+    { text: "Team admin dashboard", included: true },
+    { text: "Priority feature requests", included: true },
+  ];
+
+  const totalCards = cards.length + 1; // +1 for enterprise
+  const gridCols =
+    totalCards === 2
+      ? "md:grid-cols-2 max-w-3xl mx-auto"
+      : totalCards === 3
+      ? "md:grid-cols-3 max-w-5xl mx-auto"
+      : "md:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto";
 
   return (
     <section id="pricing" className="py-24 relative">
@@ -183,6 +201,47 @@ export const PricingSection = () => {
               </Link>
             </motion.div>
           ))}
+
+          {/* Enterprise card — always last, premium look */}
+          <motion.div
+            className="relative flex flex-col p-6 rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-500/[0.06] via-background to-background shadow-[0_0_40px_-15px_rgba(245,158,11,0.4)]"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: cards.length * 0.1 }}
+          >
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-xs font-semibold text-background flex items-center gap-1 whitespace-nowrap">
+              <Crown size={12} /> For Large Networks
+            </div>
+            <div className="mb-4">
+              <h3 className="text-lg font-heading font-semibold mb-1">Enterprise</h3>
+              <p className="text-[11px] text-amber-500 font-medium mb-3">100+ active team members</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-heading font-bold">₹5,999</span>
+                <span className="text-sm text-muted-foreground">/month</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Custom pricing based on scope</p>
+            </div>
+            <p className="text-xs italic text-amber-500/90 mb-4 leading-relaxed">
+              Your own branded app. Built for your team.
+            </p>
+            <ul className="space-y-2.5 flex-1 mb-6">
+              {enterpriseFeatures.map((f) => (
+                <li key={f.text} className="flex items-center gap-2 text-sm">
+                  <Check size={16} className="text-amber-500 shrink-0" />
+                  <span className="text-foreground">{f.text}</span>
+                </li>
+              ))}
+            </ul>
+            <Link to="/enterprise">
+              <Button
+                variant="outline"
+                className="w-full border-amber-500/50 hover:bg-amber-500/10 hover:text-amber-500"
+              >
+                Book a Call
+              </Button>
+            </Link>
+          </motion.div>
         </div>
       </div>
     </section>
