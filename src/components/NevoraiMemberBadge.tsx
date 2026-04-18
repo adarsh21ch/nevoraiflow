@@ -16,7 +16,7 @@ export const NevoraiMemberBadge = ({ className, size = "sm" }: NevoraiMemberBadg
     <Badge
       variant="outline"
       className={cn(
-        "gap-1 border-teal-400/30 bg-teal-400/10 text-teal-300 hover:bg-teal-400/15",
+        "gap-1 border-[hsl(var(--member-border))] bg-[hsl(var(--member-muted))] text-member hover:bg-[hsl(var(--member-muted))]",
         size === "sm" ? "text-[10px] px-2 py-0" : "text-xs px-2.5 py-0.5",
         className,
       )}

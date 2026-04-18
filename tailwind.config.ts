@@ -60,6 +60,10 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         surface: "hsl(var(--surface))",
+        member: {
+          DEFAULT: "hsl(var(--member))",
+          foreground: "hsl(var(--member-foreground))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

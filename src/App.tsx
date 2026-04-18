@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "@/components/auth/AdminRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { NevoraiMemberWelcome } from "@/components/NevoraiMemberWelcome";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import ResetPassword from "./pages/ResetPassword";
@@ -61,6 +62,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <ErrorBoundary>
+            <NevoraiMemberWelcome />
             <Routes>
               {/* Public */}
               <Route path="/" element={<Index />} />

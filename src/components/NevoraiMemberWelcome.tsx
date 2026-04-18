@@ -32,8 +32,8 @@ export const NevoraiMemberWelcome = () => {
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-400/20 to-primary/20 flex items-center justify-center mx-auto mb-3">
-            <Sparkles className="text-teal-400" size={26} />
+          <div className="w-14 h-14 rounded-full bg-[hsl(var(--member-muted))] flex items-center justify-center mx-auto mb-3">
+            <Sparkles className="text-member" size={26} />
           </div>
           <DialogTitle className="text-center text-xl">Welcome, Nevorai Member 🎉</DialogTitle>
           <DialogDescription className="text-center">

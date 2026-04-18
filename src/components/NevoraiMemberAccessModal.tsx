@@ -166,8 +166,8 @@ export const NevoraiMemberAccessModal = ({
         {step === "success" && (
           <>
             <DialogHeader>
-              <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-2">
-                <Sparkles className="text-emerald-500" size={22} />
+              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-2">
+                <Sparkles className="text-success" size={22} />
               </div>
               <DialogTitle className="text-center">Individual plan unlocked</DialogTitle>
               <DialogDescription className="text-center">
