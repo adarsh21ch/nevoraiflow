@@ -2,6 +2,8 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { usePlan } from "@/hooks/usePlan";
 import { useWhatsAppSupport } from "@/hooks/useWhatsAppSupport";
 import { useAuth } from "@/hooks/useAuth";
+import { useNevoraiMember } from "@/hooks/useNevoraiMember";
+import { NevoraiMemberBadge } from "@/components/NevoraiMemberBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -23,6 +25,7 @@ const statusConfig: Record<string, { label: string; icon: any; color: string }> 
 const BillingPage = () => {
   const { plan, isLoading } = usePlan();
   const { profile } = useAuth();
+  const { isMember } = useNevoraiMember();
   const { openSupport } = useWhatsAppSupport();
   const status = statusConfig[plan.status] || statusConfig.active;
   const StatusIcon = status.icon;
@@ -53,7 +56,7 @@ const BillingPage = () => {
               <Badge variant="outline" className="gap-1.5 border-primary/30 text-primary">
                 <Crown size={12} /> {plan.tier === "pro" ? "Individual" : "Basic"} Plan
               </Badge>
-              <NevoraiMemberBadgeWrapper />
+              {isMember && <NevoraiMemberBadge size="md" />}
             </div>
           )}
         </div>
