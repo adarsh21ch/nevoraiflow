@@ -158,6 +158,60 @@ export type Database = {
         }
         Relationships: []
       }
+      enterprise_inquiries: {
+        Row: {
+          admin_notes: string | null
+          contacted_at: string | null
+          custom_needs: string | null
+          email: string
+          full_name: string
+          id: string
+          ip_address: string | null
+          network_name: string
+          platform: string | null
+          status: string
+          submitted_at: string
+          team_size: string
+          updated_at: string
+          user_agent: string | null
+          whatsapp_phone: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          contacted_at?: string | null
+          custom_needs?: string | null
+          email: string
+          full_name: string
+          id?: string
+          ip_address?: string | null
+          network_name: string
+          platform?: string | null
+          status?: string
+          submitted_at?: string
+          team_size: string
+          updated_at?: string
+          user_agent?: string | null
+          whatsapp_phone: string
+        }
+        Update: {
+          admin_notes?: string | null
+          contacted_at?: string | null
+          custom_needs?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          ip_address?: string | null
+          network_name?: string
+          platform?: string | null
+          status?: string
+          submitted_at?: string
+          team_size?: string
+          updated_at?: string
+          user_agent?: string | null
+          whatsapp_phone?: string
+        }
+        Relationships: []
+      }
       funnel_access_logs: {
         Row: {
           attempted_at: string | null

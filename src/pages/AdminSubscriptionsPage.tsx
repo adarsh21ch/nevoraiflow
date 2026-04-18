@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import type { PlanConfig } from "@/hooks/usePlanLimits";
 import { MemberGatewayTab } from "@/components/admin/MemberGatewayTab";
+import { EnterpriseInquiriesTab } from "@/components/admin/EnterpriseInquiriesTab";
 
 const PlanField = ({ planName, field, label, type = "number", disabled = false, hint, value: initialValue, onSave }: {
   planName: string; field: string; label: string; type?: string; disabled?: boolean; hint?: string;
@@ -306,10 +307,11 @@ const AdminSubscriptionsPage = () => {
         </div>
 
         <Tabs defaultValue="subscriptions">
-          <TabsList className="w-full grid grid-cols-5 h-9">
+          <TabsList className="w-full grid grid-cols-6 h-9">
             <TabsTrigger value="subscriptions" className="text-[10px] sm:text-sm">Subs</TabsTrigger>
             <TabsTrigger value="plans" className="text-[10px] sm:text-sm">Plans</TabsTrigger>
             <TabsTrigger value="gateway" className="text-[10px] sm:text-sm">Gateway</TabsTrigger>
+            <TabsTrigger value="enterprise" className="text-[10px] sm:text-sm">Enterprise</TabsTrigger>
             <TabsTrigger value="audit" className="text-[10px] sm:text-sm">Audit</TabsTrigger>
             <TabsTrigger value="settings" className="text-[10px] sm:text-sm">Settings</TabsTrigger>
           </TabsList>
@@ -448,6 +450,10 @@ const AdminSubscriptionsPage = () => {
 
           <TabsContent value="gateway" className="space-y-3 pt-1">
             <MemberGatewayTab />
+          </TabsContent>
+
+          <TabsContent value="enterprise" className="space-y-3 pt-1">
+            <EnterpriseInquiriesTab />
           </TabsContent>
 
           <TabsContent value="audit" className="space-y-3 pt-1">

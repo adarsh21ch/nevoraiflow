@@ -36,6 +36,7 @@ import LivePage from "./pages/LivePage";
 import LiveDetailPage from "./pages/LiveDetailPage";
 import PublicLivePage from "./pages/PublicLivePage";
 import PricingFullPage from "./pages/PricingFullPage";
+import EnterpriseInquiryPage from "./pages/EnterpriseInquiryPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminVideosPage from "./pages/AdminVideosPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
@@ -69,6 +70,7 @@ const App = () => (
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/auth/reset-password" element={<ResetPassword />} />
               <Route path="/pricing" element={<PricingFullPage />} />
+              <Route path="/enterprise" element={<EnterpriseInquiryPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/features" element={<FeaturesPage />} />
