@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, Link, useNavigate, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/landing/Logo";
-import { Eye, EyeOff, Mail, Lock, User, Phone, Sparkles, ArrowLeft, ShieldCheck, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Phone, Sparkles, ArrowLeft, ShieldCheck, Loader2, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { lovable } from "@/integrations/lovable/index";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +37,101 @@ const AuthPage = () => {
   const [failCount, setFailCount] = useState(0);
   const [lockUntil, setLockUntil] = useState(0);
 
+  // Auto-detect state
+  const [autoCheckStatus, setAutoCheckStatus] = useState<"idle" | "checking" | "match" | "none">("idle");
+  const [autoCheckInfo, setAutoCheckInfo] = useState<NevoraiInfo | null>(null);
+  const lookupCacheRef = useRef<Map<string, { exists: boolean; isPro: boolean; fullName: string | null }>>(new Map());
+  const abortRef = useRef<AbortController | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const checkStartRef = useRef<number>(0);
+
+  const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+
+  // Debounced auto-lookup as the user types (only on email stage)
+  useEffect(() => {
+    if (stage !== "email") return;
+    const email = form.email.trim().toLowerCase();
+
+    // Reset visual state when email changes
+    if (!isValidEmail(email)) {
+      setAutoCheckStatus("idle");
+      setAutoCheckInfo(null);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (abortRef.current) abortRef.current.abort();
+      return;
+    }
+
+    // Cache hit — instant
+    const cached = lookupCacheRef.current.get(email);
+    if (cached) {
+      if (cached.exists) {
+        setAutoCheckStatus("match");
+        setAutoCheckInfo({ fullName: cached.fullName, isPro: cached.isPro });
+      } else {
+        setAutoCheckStatus("none");
+        setAutoCheckInfo(null);
+      }
+      return;
+    }
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      if (abortRef.current) abortRef.current.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      setAutoCheckStatus("checking");
+      checkStartRef.current = Date.now();
+
+      try {
+        const { data, error } = await supabase.functions.invoke("verify-nevorai-member", {
+          body: { email, mode: "lookup" },
+        });
+        if (controller.signal.aborted) return;
+        if (error) throw error;
+
+        const result = {
+          exists: !!data?.exists,
+          isPro: !!data?.isPro,
+          fullName: data?.fullName ?? null,
+        };
+        lookupCacheRef.current.set(email, result);
+
+        // Min display time for "checking" to avoid flicker
+        const elapsed = Date.now() - checkStartRef.current;
+        const wait = Math.max(0, 300 - elapsed);
+        setTimeout(() => {
+          if (controller.signal.aborted) return;
+          if (result.exists) {
+            setAutoCheckStatus("match");
+            setAutoCheckInfo({ fullName: result.fullName, isPro: result.isPro });
+          } else {
+            setAutoCheckStatus("none");
+            setAutoCheckInfo(null);
+          }
+        }, wait);
+      } catch (e) {
+        if (!controller.signal.aborted) {
+          // Fail silently — manual Continue still works
+          setAutoCheckStatus("idle");
+          setAutoCheckInfo(null);
+        }
+      }
+    }, 700);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [form.email, stage]);
+
+  // Move user into the OTP stage when they confirm a detected match
+  const enterOtpFromAutoDetect = () => {
+    if (!autoCheckInfo) return;
+    setNevoraiInfo(autoCheckInfo);
+    setStage("nevorai-otp");
+    // Auto-send the OTP so they don't need an extra click
+    handleSendOtp();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -51,20 +146,34 @@ const AuthPage = () => {
     setNevoraiInfo(null);
     setOtp("");
     setForm((f) => ({ ...f, password: "", name: "", phone: "" }));
+    setAutoCheckStatus("idle");
+    setAutoCheckInfo(null);
   };
 
   // Step 1: Email continue — branch into login / signup / nevorai-otp
   const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.email.trim()) {
+    const email = form.email.trim().toLowerCase();
+    if (!email) {
       toast.error("Please enter your email");
+      return;
+    }
+    // Use cached auto-detect result if we already know
+    const cached = lookupCacheRef.current.get(email);
+    if (cached) {
+      if (cached.exists) {
+        setNevoraiInfo({ fullName: cached.fullName, isPro: cached.isPro });
+        setStage("nevorai-otp");
+        handleSendOtp();
+        return;
+      }
+      setStage("signup");
       return;
     }
     setSubmitting(true);
     try {
-      // Check Nevorai bridge
       const { data, error } = await supabase.functions.invoke("verify-nevorai-member", {
-        body: { email: form.email.trim().toLowerCase(), mode: "lookup" },
+        body: { email, mode: "lookup" },
       });
       if (error) throw error;
 
@@ -73,11 +182,9 @@ const AuthPage = () => {
         setStage("nevorai-otp");
         return;
       }
-      // Not in Nevorai — show signup form (login tab still reachable via toggle)
       setStage("signup");
     } catch (e: any) {
       console.error("Lookup failed", e);
-      // Graceful fallback: show signup form
       setStage("signup");
     } finally {
       setSubmitting(false);
@@ -241,14 +348,62 @@ const AuthPage = () => {
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                   />
                 </div>
+
+                {/* Auto-detect status */}
+                {autoCheckStatus === "checking" && (
+                  <div className="flex items-center gap-2 text-xs px-1" style={{ color: "#8899AA" }}>
+                    <Loader2 size={12} className="animate-spin" /> Checking your email…
+                  </div>
+                )}
+                {autoCheckStatus === "match" && autoCheckInfo && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg border border-primary/30 bg-primary/5">
+                    <CheckCircle2 size={16} className="text-primary mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-foreground">
+                        {autoCheckInfo.fullName
+                          ? `Welcome back, ${autoCheckInfo.fullName.split(" ")[0]}!`
+                          : "Welcome back!"}{" "}
+                        <span className="text-primary">You're part of the Nevorai family.</span>
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: "#8899AA" }}>
+                        {autoCheckInfo.isPro
+                          ? "Verify your email to unlock the Individual plan — free."
+                          : "We'll send a code to securely sign you in."}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
-              <Button variant="hero" className="w-full" size="lg" disabled={submitting} style={{ borderRadius: "12px" }}>
-                {submitting ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 size={16} className="animate-spin" /> Checking…
-                  </span>
-                ) : "Continue"}
-              </Button>
+
+              {autoCheckStatus === "match" ? (
+                <Button
+                  type="button"
+                  variant="hero"
+                  className="w-full"
+                  size="lg"
+                  disabled={submitting}
+                  onClick={enterOtpFromAutoDetect}
+                  style={{ borderRadius: "12px" }}
+                >
+                  {submitting ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 size={16} className="animate-spin" /> Sending code…
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <ShieldCheck size={16} /> Send verification code
+                    </span>
+                  )}
+                </Button>
+              ) : (
+                <Button variant="hero" className="w-full" size="lg" disabled={submitting || autoCheckStatus === "checking"} style={{ borderRadius: "12px" }}>
+                  {submitting ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 size={16} className="animate-spin" /> Checking…
+                    </span>
+                  ) : "Continue"}
+                </Button>
+              )}
 
               <div className="text-center">
                 <button
