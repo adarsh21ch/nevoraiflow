@@ -170,18 +170,23 @@ Deno.serve(async (req: Request): Promise<Response> => {
         probeReason = 'token_revoked'
       }
 
+      // Probe with userinfo endpoint — only requires the userinfo.email scope
+      // we actually have. Calling Gmail API endpoints would 403 due to
+      // insufficient scope (we only requested gmail.send), which previously
+      // caused false "token_revoked" reports.
+      const PROBE_URL = 'https://www.googleapis.com/oauth2/v2/userinfo'
       let healthy = false
       if (!probeReason) {
-        const probe = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+        const probe = await fetch(PROBE_URL, {
           headers: { Authorization: `Bearer ${accessToken}` },
         })
         if (probe.ok) {
           healthy = true
-        } else if (probe.status === 401 || probe.status === 403) {
-          // Try one refresh + retry
+        } else if (probe.status === 401) {
+          // Truly invalid access token — try one refresh + retry
           try {
             accessToken = await refreshAccessToken(adminSupabase, tokenRow)
-            const retry = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+            const retry = await fetch(PROBE_URL, {
               headers: { Authorization: `Bearer ${accessToken}` },
             })
             healthy = retry.ok
@@ -190,7 +195,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
             probeReason = 'token_revoked'
           }
         } else {
-          probeReason = `gmail_api_error_${probe.status}`
+          // 403 / 5xx etc — do NOT mark as revoked, log the status
+          probeReason = `probe_status_${probe.status}`
+          // Token is still considered usable for sending; trust DB state
+          healthy = true
         }
       }
 
