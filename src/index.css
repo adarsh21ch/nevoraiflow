@@ -69,6 +69,12 @@
     --surface-hover: 222 25% 14%;
     --glass: 222 30% 11% / 0.6;
     --glass-border: 0 0% 100% / 0.08;
+
+    /* Nevorai Member badge — teal/cyan */
+    --member: 174 72% 56%;
+    --member-foreground: 0 0% 100%;
+    --member-muted: 174 72% 56% / 0.12;
+    --member-border: 174 72% 56% / 0.3;
   }
 
   /* LIGHT THEME */
