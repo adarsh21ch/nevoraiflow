@@ -15,6 +15,7 @@ import logoImg from "@/assets/nevorai-flow-logo.png";
 import { MultiStepViewer } from "@/components/funnel/MultiStepViewer";
 import { CodeGateScreen } from "@/components/funnel/CodeGateScreen";
 import { PrivateLeadForm } from "@/components/funnel/PrivateLeadForm";
+import { FunnelDailyLimitGate } from "@/components/funnel/FunnelDailyLimitGate";
 /* ─── Speed Popover ─── */
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
 
@@ -536,6 +537,33 @@ const PublicFunnel = () => {
   const isPrivateFunnel = funnel?.visibility === "private";
   const requiredFields = funnel?.required_fields || { email: false, city: false, state: false, whatsapp: false };
 
+  // Daily view limit check — runs once per (funnel, session)
+  const [dailyLimitState, setDailyLimitState] = useState<"unknown" | "allowed" | "blocked">("unknown");
+  useEffect(() => {
+    if (!funnel?.id) return;
+    const sessionKey = `nf_view_check_${funnel.id}_${new Date().toISOString().slice(0, 10)}`;
+    if (sessionStorage.getItem(sessionKey)) {
+      setDailyLimitState("allowed");
+      return;
+    }
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke("check-funnel-view-limit", {
+          body: { funnelId: funnel.id },
+        });
+        if (data?.allowed === false) {
+          setDailyLimitState("blocked");
+        } else {
+          setDailyLimitState("allowed");
+          sessionStorage.setItem(sessionKey, "1");
+        }
+      } catch {
+        // Fail open
+        setDailyLimitState("allowed");
+      }
+    })();
+  }, [funnel?.id]);
+
   // Check localStorage for existing code verification and lead submission
   useEffect(() => {
     if (!funnel) return;
@@ -636,6 +664,9 @@ const PublicFunnel = () => {
       </div>
     </div>
   );
+
+  // Daily view limit gate — overrides everything else
+  if (dailyLimitState === "blocked") return <FunnelDailyLimitGate />;
 
   // Password gate (legacy)
   if (funnel.visibility === "password" && !passwordUnlocked) {

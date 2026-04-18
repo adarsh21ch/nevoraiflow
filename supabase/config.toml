@@ -11,3 +11,12 @@ verify_jwt = false
 
 [functions.send-gmail-email]
 verify_jwt = false
+
+[functions.verify-nevorai-member]
+verify_jwt = false
+
+[functions.confirm-nevorai-otp]
+verify_jwt = false
+
+[functions.check-funnel-view-limit]
+verify_jwt = false
