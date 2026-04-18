@@ -193,6 +193,33 @@ export type Database = {
           },
         ]
       }
+      funnel_daily_views: {
+        Row: {
+          created_at: string
+          funnel_id: string
+          id: string
+          updated_at: string
+          view_count: number
+          view_date: string
+        }
+        Insert: {
+          created_at?: string
+          funnel_id: string
+          id?: string
+          updated_at?: string
+          view_count?: number
+          view_date?: string
+        }
+        Update: {
+          created_at?: string
+          funnel_id?: string
+          id?: string
+          updated_at?: string
+          view_count?: number
+          view_date?: string
+        }
+        Relationships: []
+      }
       funnel_lead_form_config: {
         Row: {
           capture_enabled: boolean | null
@@ -1443,6 +1470,114 @@ export type Database = {
           },
         ]
       }
+      member_access_logs: {
+        Row: {
+          created_at: string
+          email: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          source?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      member_otps: {
+        Row: {
+          attempts: number
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          ip_address: string | null
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+        }
+        Relationships: []
+      }
+      nevorai_member_registry: {
+        Row: {
+          calling_app_user_id: string | null
+          created_at: string
+          email: string | null
+          expires_at: string
+          full_name: string | null
+          id: string
+          is_pro: boolean
+          last_synced_at: string
+          phone: string | null
+          plan: string | null
+          registered_at: string | null
+          source: string
+        }
+        Insert: {
+          calling_app_user_id?: string | null
+          created_at?: string
+          email?: string | null
+          expires_at?: string
+          full_name?: string | null
+          id?: string
+          is_pro?: boolean
+          last_synced_at?: string
+          phone?: string | null
+          plan?: string | null
+          registered_at?: string | null
+          source?: string
+        }
+        Update: {
+          calling_app_user_id?: string | null
+          created_at?: string
+          email?: string | null
+          expires_at?: string
+          full_name?: string | null
+          id?: string
+          is_pro?: boolean
+          last_synced_at?: string
+          phone?: string | null
+          plan?: string | null
+          registered_at?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -1536,6 +1671,7 @@ export type Database = {
       }
       plan_config: {
         Row: {
+          daily_view_limit: number
           feature_advanced_analytics: boolean
           feature_analytics: boolean
           feature_funnel_creation: boolean
@@ -1565,6 +1701,7 @@ export type Database = {
           yearly_validity_days: number
         }
         Insert: {
+          daily_view_limit?: number
           feature_advanced_analytics?: boolean
           feature_analytics?: boolean
           feature_funnel_creation?: boolean
@@ -1594,6 +1731,7 @@ export type Database = {
           yearly_validity_days?: number
         }
         Update: {
+          daily_view_limit?: number
           feature_advanced_analytics?: boolean
           feature_analytics?: boolean
           feature_funnel_creation?: boolean
@@ -1658,6 +1796,12 @@ export type Database = {
           instagram_url: string | null
           kyc_status: string | null
           kyc_verified_at: string | null
+          member_welcome_shown: boolean
+          nevorai_member: boolean
+          nevorai_member_active: boolean
+          nevorai_member_granted_at: string | null
+          nevorai_member_last_checked_at: string | null
+          nevorai_member_source: string | null
           onboarding_completed: boolean | null
           onboarding_data: Json | null
           phone: string | null
@@ -1678,6 +1822,12 @@ export type Database = {
           instagram_url?: string | null
           kyc_status?: string | null
           kyc_verified_at?: string | null
+          member_welcome_shown?: boolean
+          nevorai_member?: boolean
+          nevorai_member_active?: boolean
+          nevorai_member_granted_at?: string | null
+          nevorai_member_last_checked_at?: string | null
+          nevorai_member_source?: string | null
           onboarding_completed?: boolean | null
           onboarding_data?: Json | null
           phone?: string | null
@@ -1698,6 +1848,12 @@ export type Database = {
           instagram_url?: string | null
           kyc_status?: string | null
           kyc_verified_at?: string | null
+          member_welcome_shown?: boolean
+          nevorai_member?: boolean
+          nevorai_member_active?: boolean
+          nevorai_member_granted_at?: string | null
+          nevorai_member_last_checked_at?: string | null
+          nevorai_member_source?: string | null
           onboarding_completed?: boolean | null
           onboarding_data?: Json | null
           phone?: string | null
@@ -2160,6 +2316,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_member_otps: { Args: never; Returns: undefined }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -2175,6 +2332,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_funnel_daily_view: {
+        Args: { _funnel_id: string }
+        Returns: number
+      }
       increment_funnel_views: {
         Args: { _funnel_id: string }
         Returns: undefined
@@ -2183,6 +2344,7 @@ export type Database = {
         Args: { _landing_page_id: string }
         Returns: undefined
       }
+      is_nevorai_member: { Args: { _user_id: string }; Returns: boolean }
       move_to_dlq: {
         Args: {
           dlq_name: string
