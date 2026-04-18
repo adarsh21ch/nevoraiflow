@@ -212,6 +212,56 @@ const AdminSettingsPage = () => {
     onError: () => toast.error("Failed to disconnect Gmail"),
   });
 
+  const testEmailMutation = useMutation({
+    mutationFn: async () => {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const { data: { session } } = await supabase.auth.getSession();
+      const targetEmail = gmailConnected?.email;
+      if (!targetEmail) throw new Error("No connected Gmail address found");
+
+      const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#1a1a1a;padding:40px 20px;">
+  <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;border:1px solid #e5e5e5;">
+    <h1 style="color:#22c55e;font-size:20px;margin:0 0 12px;">Nevorai Flow — Test Email</h1>
+    <p style="font-size:15px;color:#444;line-height:1.6;margin:0 0 12px;">
+      If you can read this, your Gmail connection is fully working end-to-end.
+    </p>
+    <p style="font-size:13px;color:#888;margin:0;">Sent at ${new Date().toLocaleString()}</p>
+  </div>
+</body></html>`;
+
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/send-gmail-email`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token ?? ""}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            to: targetEmail,
+            subject: "nFlow — Gmail test email",
+            html,
+            sender_name: "Nevorai Flow",
+          }),
+        }
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json?.sent) {
+        throw new Error(json?.error || `HTTP ${res.status}`);
+      }
+      return json;
+    },
+    onSuccess: () => {
+      toast.success(`Test email sent to ${gmailConnected?.email}`);
+    },
+    onError: (e: any) => {
+      toast.error(`Test email failed: ${e?.message || "unknown error"}`);
+    },
+  });
+
   return (
     <AdminLayout>
       <div className="w-full min-w-0 space-y-4">
@@ -273,6 +323,19 @@ const AdminSettingsPage = () => {
                 <><Loader2 size={14} className="animate-spin" /> Connecting...</>
               ) : gmailConnected?.connected ? "Reconnect" : gmailConnected?.hasToken ? "Reconnect Gmail" : "Connect Gmail"}
             </Button>
+            {gmailConnected?.connected && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="min-h-[40px] text-xs"
+                onClick={() => testEmailMutation.mutate()}
+                disabled={testEmailMutation.isPending}
+              >
+                {testEmailMutation.isPending ? (
+                  <><Loader2 size={14} className="animate-spin" /> Sending…</>
+                ) : "Send Test Email"}
+              </Button>
+            )}
             {gmailConnected?.hasToken && (
               <Button
                 variant="ghost"
