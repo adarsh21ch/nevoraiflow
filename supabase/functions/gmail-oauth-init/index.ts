@@ -4,12 +4,33 @@ const corsHeaders = {
 };
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+function sanitizeReturnTo(value: unknown): string | null {
+  if (typeof value !== 'string' || !value.trim()) return null
+
+  try {
+    const url = new URL(value)
+    const hostname = url.hostname.toLowerCase()
+    const isLovableHost = hostname.endsWith('.lovable.app')
+    const isProjectHost = hostname === 'nflow.nevorai.com' || hostname === 'flow.nevorai.com'
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1'
+
+    if ((url.protocol === 'https:' && (isLovableHost || isProjectHost)) || (url.protocol === 'http:' && isLocalhost)) {
+      return url.toString()
+    }
+  } catch {
+    return null
+  }
+
+  return null
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
+    const body = await req.json().catch(() => ({}))
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -63,7 +84,10 @@ Deno.serve(async (req) => {
       scope: scopes.join(' '),
       access_type: 'offline',
       prompt: 'consent',
-      state: user.id,
+      state: btoa(JSON.stringify({
+        userId: user.id,
+        returnTo: sanitizeReturnTo(body?.return_to),
+      })),
     })
 
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
