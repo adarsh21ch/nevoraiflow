@@ -187,6 +187,31 @@ Deno.serve(async (req) => {
           ? (failedAttemptsByMessageId.get(payload.message_id) ?? 0)
           : 0
 
+      // Validate payload shape — malformed messages go straight to DLQ
+      // so a single bad enqueue can never clog the queue again.
+      const toValue = typeof payload?.to === 'string' ? payload.to.trim() : ''
+      const subjectValue = typeof payload?.subject === 'string' ? payload.subject : ''
+      const htmlValue = typeof payload?.html === 'string' ? payload.html : ''
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+      if (!toValue || !subjectValue || !htmlValue) {
+        const reason = `Malformed payload: missing ${[
+          !toValue && 'to',
+          !subjectValue && 'subject',
+          !htmlValue && 'html',
+        ].filter(Boolean).join(', ')}`
+        console.warn('Dropping malformed email to DLQ', { queue, msg_id: msg.msg_id, reason })
+        await moveToDlq(supabase, queue, msg, reason)
+        continue
+      }
+
+      if (!emailRegex.test(toValue)) {
+        const reason = `Invalid recipient email format: ${toValue}`
+        console.warn('Dropping invalid recipient to DLQ', { queue, msg_id: msg.msg_id, reason })
+        await moveToDlq(supabase, queue, msg, reason)
+        continue
+      }
+
       // Drop expired messages (TTL exceeded)
       if (payload.queued_at) {
         const ageMs = Date.now() - new Date(payload.queued_at).getTime()
