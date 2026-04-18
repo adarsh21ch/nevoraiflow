@@ -1,42 +1,49 @@
 
 
-## What's happening
+## Root cause
 
-Your screen shows Gmail as "Connected" — but that status only checks if a token row exists in the database, **not whether the token still works with Google**. The actual Gmail API call is failing with `401 Unauthorized` because Google revoked the refresh token (this happens every ~7 days when the OAuth app is in "Testing" mode).
+Looking at the actual code in `src/pages/AdminSettingsPage.tsx`, the file is **missing** the `useEffect` that was supposed to detect `?gmail=connected` on return from Google. So the flow is:
 
-So the UI lies a little: it says Connected, but sending is broken.
+1. You click **Reconnect Gmail** → redirected to Google → approve → Google redirects to the callback edge function.
+2. The callback **does** successfully write a fresh token to the database (this part works — Google confirmed the email earlier).
+3. Callback HTML auto-redirects you back to `/admin/settings?gmail=connected`.
+4. **AdminSettingsPage mounts but never reads `?gmail=connected`, never invalidates the query, and the React Query cache still holds the old "Reconnect needed (token_revoked)" result for 30 seconds** — so the badge stays orange.
 
-## What to do — two parts
+Compounding this on a custom domain (`nflow.nevorai.com`), the user perception is "nothing happened" because the page looks identical before and after.
 
-### Part A: Fix it right now (manual, 30 seconds)
+The token IS being refreshed in the DB. The UI just doesn't know.
 
-1. On this screen, click **Disconnect**.
-2. Click **Connect Gmail** → sign in as `teamnevorai@gmail.com` → approve.
-3. Queued OTP emails will start delivering within ~1 minute (the queue retries automatically).
+## Fix (3 small changes, all in `src/pages/AdminSettingsPage.tsx`)
 
-That's it for the immediate fix. Test by trying the signup OTP flow again.
+1. **Add a `useEffect` that detects `?gmail=connected` on mount**, then:
+   - Invalidates the `gmail-connection-status` query.
+   - Refetches it immediately.
+   - Shows a success toast.
+   - Strips the `?gmail=connected` param from the URL so refresh doesn't retrigger it.
+2. **Drop `staleTime` from 30s to 0** for the Gmail status query, and add `refetchOnMount: "always"` so every navigation back re-probes Gmail.
+3. **Also refetch on window focus** — covers the case where the OAuth tab/window swap leaves stale data.
 
-### Part B: Stop this from happening every week (one-time, ~5 minutes)
+That's it. No edge function changes needed — the OAuth flow itself works (logs already show successful boots after reconnect attempts; the 401s in `process-email-queue` are old queued messages that pre-date the reconnect).
 
-The root cause is that your Google OAuth app is in **Testing** mode. Google force-expires refresh tokens after 7 days in Testing mode. Switch it to **Production** and tokens stop expiring.
+## Why this is the right diagnosis (not the same loop as before)
 
-Steps (you do this in Google Cloud Console, not in Lovable):
-1. Go to https://console.cloud.google.com/apis/credentials/consent
-2. Select the project that owns the OAuth client used for Gmail.
-3. Under **Publishing status**, click **Publish App** → confirm.
-4. Status changes to "In production". No Google verification review is needed because you're only using the `gmail.send` scope for your own account.
+Previous attempts fixed:
+- Popup → full-page redirect ✓ (already done, working)
+- `returnTo` on custom domain ✓ (`sanitizeReturnTo` allows `nflow.nevorai.com`)
+- Live probe instead of "token exists" check ✓ (already done)
 
-After this, the refresh token issued on your next reconnect (Part A) will live indefinitely.
+The one missing piece across all those iterations is the **client-side cache invalidation on return**. The data is correct on the server; the UI just keeps showing the cached "bad" result for 30 seconds and the user clicks Reconnect again, perpetuating the perception of failure.
 
-### Part C (optional, recommended): Make the UI honest
+## After the fix, what you'll see
 
-Right now the "Connected" badge is misleading because it doesn't actually probe Gmail. I can improve `send-gmail-email` (GET branch) to do a lightweight Gmail API ping (e.g. `users.getProfile`) and return `connected: false` + `reason: "token_revoked"` when the token is dead. That way the admin screen shows a red "Reconnect needed" state instead of a false green check, so you catch this before users do.
+1. Click **Reconnect Gmail** → Google approval screen → return to settings.
+2. Within ~1 second the status flips to green **Connected (teamnevorai@gmail.com)**.
+3. Toast: "Gmail reconnected successfully".
+4. Queued OTPs in `process-email-queue` start delivering on the next 5-second cron tick.
 
-This is a small edit — one extra fetch in the GET handler plus a status pill in `AdminSettingsPage.tsx`. Say the word and I'll add it after you've done Part A + B.
+## Files to change
 
-## Recommended order
+- `src/pages/AdminSettingsPage.tsx` — add the `useEffect`, tweak the `useQuery` options. ~15 lines added.
 
-1. **Now:** Do Part A (Disconnect → Connect Gmail).
-2. **Today:** Do Part B (publish OAuth app to Production) so this never recurs.
-3. **Optional:** Approve Part C and I'll ship the honest-status improvement.
+No edge function redeploy needed.
 
