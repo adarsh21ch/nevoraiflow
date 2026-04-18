@@ -556,7 +556,7 @@ const AuthPage = () => {
                 ) : "Sign In"}
               </Button>
               <div className="text-center">
-                <button type="button" onClick={() => setStage("signup")} className="text-xs hover:underline" style={{ color: "#8899AA" }}>
+                <button type="button" onClick={resetToEmail} className="text-xs hover:underline" style={{ color: "#8899AA" }}>
                   No account yet? <span className="text-primary">Create one</span>
                 </button>
               </div>
