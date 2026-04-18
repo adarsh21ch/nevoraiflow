@@ -139,12 +139,66 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return adminAccess.response
       }
 
-      const tokenRow = await getLatestToken(adminAccess.adminSupabase)
+      const url = new URL(req.url)
+      const action = url.searchParams.get('action')
+      const adminSupabase = adminAccess.adminSupabase
+      const tokenRow = await getLatestToken(adminSupabase)
+
+      // Disconnect: delete all stored tokens
+      if (action === 'disconnect') {
+        if (tokenRow) {
+          await adminSupabase.from('gmail_oauth_tokens').delete().eq('id', tokenRow.id)
+        }
+        return jsonResponse({ disconnected: true })
+      }
+
+      if (!tokenRow) {
+        return jsonResponse({ connected: false, email: null, token_expiry: null, reason: 'no_token' })
+      }
+
+      // Probe Gmail to verify token actually works
+      let accessToken = tokenRow.access_token
+      const expiresAt = new Date(tokenRow.token_expiry).getTime()
+      let probeReason: string | null = null
+
+      try {
+        if (Number.isFinite(expiresAt) && Date.now() > expiresAt - 5 * 60 * 1000) {
+          accessToken = await refreshAccessToken(adminSupabase, tokenRow)
+        }
+      } catch (e: any) {
+        console.error('Refresh failed during probe:', e?.message)
+        probeReason = 'token_revoked'
+      }
+
+      let healthy = false
+      if (!probeReason) {
+        const probe = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
+        if (probe.ok) {
+          healthy = true
+        } else if (probe.status === 401 || probe.status === 403) {
+          // Try one refresh + retry
+          try {
+            accessToken = await refreshAccessToken(adminSupabase, tokenRow)
+            const retry = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            })
+            healthy = retry.ok
+            if (!retry.ok) probeReason = 'token_revoked'
+          } catch {
+            probeReason = 'token_revoked'
+          }
+        } else {
+          probeReason = `gmail_api_error_${probe.status}`
+        }
+      }
 
       return jsonResponse({
-        connected: Boolean(tokenRow),
-        email: tokenRow?.gmail_email ?? null,
-        token_expiry: tokenRow?.token_expiry ?? null,
+        connected: healthy,
+        email: tokenRow.gmail_email,
+        token_expiry: tokenRow.token_expiry,
+        reason: healthy ? null : probeReason,
       })
     }
 

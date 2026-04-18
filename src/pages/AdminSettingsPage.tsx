@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useState, useEffect, useCallback } from "react";
-import { Save, Star, Mail, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Save, Star, Mail, CheckCircle2, XCircle, Loader2, AlertTriangle } from "lucide-react";
 
 const AdminSettingsPage = () => {
   const queryClient = useQueryClient();
@@ -62,15 +62,20 @@ const AdminSettingsPage = () => {
     },
   });
 
-  const { data: gmailConnected, refetch: refetchGmail } = useQuery({
+  const { data: gmailConnected, refetch: refetchGmail, isFetching: gmailChecking } = useQuery({
     queryKey: ["gmail-connection-status"],
     queryFn: async () => {
       try {
         const { data, error } = await supabase.functions.invoke("send-gmail-email", { method: "GET" });
         if (error) throw error;
-        return { connected: Boolean(data?.connected), email: data?.email ?? null };
+        return {
+          connected: Boolean(data?.connected),
+          email: data?.email ?? null,
+          reason: (data?.reason as string | null) ?? null,
+          hasToken: Boolean(data?.email),
+        };
       } catch {
-        return { connected: false, email: null };
+        return { connected: false, email: null, reason: "probe_failed", hasToken: false };
       }
     },
     staleTime: 30_000,
@@ -105,9 +110,33 @@ const AdminSettingsPage = () => {
 
   const disconnectMutation = useMutation({
     mutationFn: async () => {
-      toast.info("To disconnect, revoke access at myaccount.google.com/permissions");
+      const { error } = await supabase.functions.invoke("send-gmail-email", {
+        method: "GET",
+        body: undefined,
+        // pass action via query string
+        headers: undefined,
+      } as any);
+      // supabase-js doesn't expose query params on invoke; use direct fetch
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/send-gmail-email?action=disconnect`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${session?.access_token ?? ""}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
+      if (!res.ok) throw new Error("Disconnect failed");
+      if (error) throw error;
     },
-    onSuccess: () => { refetchGmail(); },
+    onSuccess: () => {
+      toast.success("Gmail disconnected. Click Connect Gmail to re-authorize.");
+      refetchGmail();
+    },
+    onError: () => toast.error("Failed to disconnect Gmail"),
   });
 
   return (
@@ -125,12 +154,31 @@ const AdminSettingsPage = () => {
           </p>
 
           <div className="flex items-center gap-2.5">
-            {gmailConnected?.connected ? (
+            {gmailChecking ? (
+              <>
+                <Loader2 size={16} className="text-muted-foreground shrink-0 animate-spin" />
+                <span className="text-xs text-muted-foreground">Checking Gmail status…</span>
+              </>
+            ) : gmailConnected?.connected ? (
               <>
                 <CheckCircle2 size={16} className="text-green-500 shrink-0" />
                 <span className="text-xs text-foreground truncate sm:text-sm">
                   Connected{gmailConnected?.email ? ` (${gmailConnected.email})` : ""}
                 </span>
+              </>
+            ) : gmailConnected?.hasToken ? (
+              <>
+                <AlertTriangle size={16} className="text-amber-500 shrink-0" />
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs text-amber-500 sm:text-sm font-medium">
+                    Reconnect needed{gmailConnected?.email ? ` (${gmailConnected.email})` : ""}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground sm:text-[11px]">
+                    {gmailConnected?.reason === "token_revoked"
+                      ? "Google revoked the refresh token. Emails will not send until you reconnect."
+                      : `Gmail probe failed (${gmailConnected?.reason ?? "unknown"}). Reconnect to restore email sending.`}
+                  </span>
+                </div>
               </>
             ) : (
               <>
@@ -150,11 +198,17 @@ const AdminSettingsPage = () => {
             >
               {connectingGmail ? (
                 <><Loader2 size={14} className="animate-spin" /> Connecting...</>
-              ) : gmailConnected?.connected ? "Reconnect" : "Connect Gmail"}
+              ) : gmailConnected?.connected ? "Reconnect" : gmailConnected?.hasToken ? "Reconnect Gmail" : "Connect Gmail"}
             </Button>
-            {gmailConnected?.connected && (
-              <Button variant="ghost" size="sm" className="min-h-[40px] text-xs" onClick={() => disconnectMutation.mutate()}>
-                Disconnect
+            {gmailConnected?.hasToken && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="min-h-[40px] text-xs"
+                onClick={() => disconnectMutation.mutate()}
+                disabled={disconnectMutation.isPending}
+              >
+                {disconnectMutation.isPending ? "Disconnecting…" : "Disconnect"}
               </Button>
             )}
           </div>
