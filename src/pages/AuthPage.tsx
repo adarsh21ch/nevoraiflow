@@ -273,6 +273,16 @@ const AuthPage = () => {
           By continuing, you agree to our <Link to="/terms" className="text-primary hover:underline">Terms</Link> and <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
         </p>
       </div>
+      <NevoraiMemberAccessModal
+        open={memberModalOpen}
+        onOpenChange={(o) => {
+          setMemberModalOpen(o);
+          if (!o) navigate("/dashboard");
+        }}
+        initialEmail={memberInfo?.email}
+        fullName={memberInfo?.fullName}
+        onSuccess={() => navigate("/dashboard")}
+      />
     </div>
   );
 };
