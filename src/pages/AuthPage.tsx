@@ -37,6 +37,101 @@ const AuthPage = () => {
   const [failCount, setFailCount] = useState(0);
   const [lockUntil, setLockUntil] = useState(0);
 
+  // Auto-detect state
+  const [autoCheckStatus, setAutoCheckStatus] = useState<"idle" | "checking" | "match" | "none">("idle");
+  const [autoCheckInfo, setAutoCheckInfo] = useState<NevoraiInfo | null>(null);
+  const lookupCacheRef = useRef<Map<string, { exists: boolean; isPro: boolean; fullName: string | null }>>(new Map());
+  const abortRef = useRef<AbortController | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const checkStartRef = useRef<number>(0);
+
+  const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+
+  // Debounced auto-lookup as the user types (only on email stage)
+  useEffect(() => {
+    if (stage !== "email") return;
+    const email = form.email.trim().toLowerCase();
+
+    // Reset visual state when email changes
+    if (!isValidEmail(email)) {
+      setAutoCheckStatus("idle");
+      setAutoCheckInfo(null);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (abortRef.current) abortRef.current.abort();
+      return;
+    }
+
+    // Cache hit — instant
+    const cached = lookupCacheRef.current.get(email);
+    if (cached) {
+      if (cached.exists) {
+        setAutoCheckStatus("match");
+        setAutoCheckInfo({ fullName: cached.fullName, isPro: cached.isPro });
+      } else {
+        setAutoCheckStatus("none");
+        setAutoCheckInfo(null);
+      }
+      return;
+    }
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      if (abortRef.current) abortRef.current.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      setAutoCheckStatus("checking");
+      checkStartRef.current = Date.now();
+
+      try {
+        const { data, error } = await supabase.functions.invoke("verify-nevorai-member", {
+          body: { email, mode: "lookup" },
+        });
+        if (controller.signal.aborted) return;
+        if (error) throw error;
+
+        const result = {
+          exists: !!data?.exists,
+          isPro: !!data?.isPro,
+          fullName: data?.fullName ?? null,
+        };
+        lookupCacheRef.current.set(email, result);
+
+        // Min display time for "checking" to avoid flicker
+        const elapsed = Date.now() - checkStartRef.current;
+        const wait = Math.max(0, 300 - elapsed);
+        setTimeout(() => {
+          if (controller.signal.aborted) return;
+          if (result.exists) {
+            setAutoCheckStatus("match");
+            setAutoCheckInfo({ fullName: result.fullName, isPro: result.isPro });
+          } else {
+            setAutoCheckStatus("none");
+            setAutoCheckInfo(null);
+          }
+        }, wait);
+      } catch (e) {
+        if (!controller.signal.aborted) {
+          // Fail silently — manual Continue still works
+          setAutoCheckStatus("idle");
+          setAutoCheckInfo(null);
+        }
+      }
+    }, 700);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [form.email, stage]);
+
+  // Move user into the OTP stage when they confirm a detected match
+  const enterOtpFromAutoDetect = () => {
+    if (!autoCheckInfo) return;
+    setNevoraiInfo(autoCheckInfo);
+    setStage("nevorai-otp");
+    // Auto-send the OTP so they don't need an extra click
+    handleSendOtp();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
