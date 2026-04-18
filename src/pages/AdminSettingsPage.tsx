@@ -83,18 +83,16 @@ const AdminSettingsPage = () => {
     refetchOnWindowFocus: true,
   });
 
-  // Detect ?gmail=connected on return from OAuth callback and force-refresh status
+  // Detect ?gmail=connected on return from OAuth callback (popup-blocked fallback)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("gmail") === "connected") {
-      // Strip the param from the URL so a refresh doesn't retrigger
       params.delete("gmail");
       const newSearch = params.toString();
       const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ""}${window.location.hash}`;
       window.history.replaceState({}, "", newUrl);
 
       queryClient.invalidateQueries({ queryKey: ["gmail-connection-status"] });
-      // Small delay to let the freshly-written token settle, then refetch
       setTimeout(() => {
         refetchGmail();
       }, 500);
@@ -106,22 +104,82 @@ const AdminSettingsPage = () => {
 
   const handleConnectGmail = useCallback(async () => {
     setConnectingGmail(true);
+
+    // 1) Open a blank popup synchronously to avoid popup blockers
+    const width = 500;
+    const height = 650;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    const popup = window.open(
+      "about:blank",
+      "gmail_oauth",
+      `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no`
+    );
+
     try {
       const returnTo = `${window.location.origin}/admin/settings?gmail=connected`;
       const { data, error } = await supabase.functions.invoke("gmail-oauth-init", {
         body: { return_to: returnTo },
       });
+
       if (error || !data?.auth_url) {
+        try { popup?.close(); } catch {}
         toast.error(data?.error || "Failed to start Gmail connection");
         setConnectingGmail(false);
         return;
       }
-      window.location.href = data.auth_url;
+
+      // 2) Redirect popup to Google OAuth, or fall back to full-page if popup blocked
+      if (!popup || popup.closed) {
+        window.location.href = data.auth_url;
+        return;
+      }
+      popup.location.href = data.auth_url;
+
+      // 3) Listen for postMessage from callback page
+      const allowedOrigins = new Set<string>([
+        "https://atwnmovdnblcqyvhaxls.supabase.co",
+        window.location.origin,
+      ]);
+
+      const cleanup = () => {
+        window.removeEventListener("message", onMessage);
+        clearInterval(closedPoll);
+        setConnectingGmail(false);
+      };
+
+      const onMessage = (event: MessageEvent) => {
+        if (!allowedOrigins.has(event.origin)) return;
+        const data = event.data as { type?: string; email?: string; message?: string } | null;
+        if (!data?.type) return;
+
+        if (data.type === "GMAIL_OAUTH_SUCCESS") {
+          try { popup.close(); } catch {}
+          cleanup();
+          queryClient.invalidateQueries({ queryKey: ["gmail-connection-status"] });
+          setTimeout(() => refetchGmail(), 400);
+          toast.success(`Gmail connected${data.email ? ` (${data.email})` : ""}`);
+        } else if (data.type === "GMAIL_OAUTH_ERROR") {
+          try { popup.close(); } catch {}
+          cleanup();
+          toast.error(data.message || "Gmail connection failed");
+        }
+      };
+
+      window.addEventListener("message", onMessage);
+
+      // 4) Detect manual popup close
+      const closedPoll = setInterval(() => {
+        if (popup.closed) {
+          cleanup();
+        }
+      }, 500);
     } catch {
+      try { popup?.close(); } catch {}
       toast.error("Failed to connect Gmail");
       setConnectingGmail(false);
     }
-  }, [refetchGmail]);
+  }, [queryClient, refetchGmail]);
 
   const disconnectMutation = useMutation({
     mutationFn: async () => {
