@@ -348,14 +348,62 @@ const AuthPage = () => {
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                   />
                 </div>
+
+                {/* Auto-detect status */}
+                {autoCheckStatus === "checking" && (
+                  <div className="flex items-center gap-2 text-xs px-1" style={{ color: "#8899AA" }}>
+                    <Loader2 size={12} className="animate-spin" /> Checking your email…
+                  </div>
+                )}
+                {autoCheckStatus === "match" && autoCheckInfo && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg border border-primary/30 bg-primary/5">
+                    <CheckCircle2 size={16} className="text-primary mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-foreground">
+                        {autoCheckInfo.fullName
+                          ? `Welcome back, ${autoCheckInfo.fullName.split(" ")[0]}!`
+                          : "Welcome back!"}{" "}
+                        <span className="text-primary">You're part of the Nevorai family.</span>
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: "#8899AA" }}>
+                        {autoCheckInfo.isPro
+                          ? "Verify your email to unlock the Individual plan — free."
+                          : "We'll send a code to securely sign you in."}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
-              <Button variant="hero" className="w-full" size="lg" disabled={submitting} style={{ borderRadius: "12px" }}>
-                {submitting ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 size={16} className="animate-spin" /> Checking…
-                  </span>
-                ) : "Continue"}
-              </Button>
+
+              {autoCheckStatus === "match" ? (
+                <Button
+                  type="button"
+                  variant="hero"
+                  className="w-full"
+                  size="lg"
+                  disabled={submitting}
+                  onClick={enterOtpFromAutoDetect}
+                  style={{ borderRadius: "12px" }}
+                >
+                  {submitting ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 size={16} className="animate-spin" /> Sending code…
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <ShieldCheck size={16} /> Send verification code
+                    </span>
+                  )}
+                </Button>
+              ) : (
+                <Button variant="hero" className="w-full" size="lg" disabled={submitting || autoCheckStatus === "checking"} style={{ borderRadius: "12px" }}>
+                  {submitting ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 size={16} className="animate-spin" /> Checking…
+                    </span>
+                  ) : "Continue"}
+                </Button>
+              )}
 
               <div className="text-center">
                 <button
