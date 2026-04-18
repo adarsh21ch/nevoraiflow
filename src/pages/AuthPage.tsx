@@ -496,42 +496,61 @@ const AuthPage = () => {
 
           {/* STAGE: SIGNUP (brand new) */}
           {stage === "signup" && (
-            <form onSubmit={handleSignup} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm">Full Name <span className="text-destructive">*</span></Label>
-                <div className="relative">
-                  <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8899AA" }} />
-                  <Input id="name" placeholder="Your full name" className="auth-input pl-9" required
-                    value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            !form.email.trim() ? (
+              // Safety net: never show signup without an email — bounce back
+              <div className="space-y-4 text-center py-6">
+                <p className="text-sm" style={{ color: "#8899AA" }}>
+                  Please enter your email first so we can set up your account.
+                </p>
+                <Button variant="hero" size="lg" className="w-full" onClick={resetToEmail} style={{ borderRadius: "12px" }}>
+                  Enter your email
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleSignup} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm">Full Name <span className="text-destructive">*</span></Label>
+                  <div className="relative">
+                    <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8899AA" }} />
+                    <Input id="name" placeholder="Your full name" className="auth-input pl-9" required
+                      value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm">Email</Label>
-                <div className="relative">
-                  <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8899AA" }} />
-                  <Input className="auth-input pl-9" value={form.email} disabled />
+                <div className="space-y-2">
+                  <Label className="text-sm">Email</Label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8899AA" }} />
+                    <Input className="auth-input pl-9 pr-16 opacity-90" value={form.email} readOnly />
+                    <button
+                      type="button"
+                      onClick={resetToEmail}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-primary hover:underline"
+                    >
+                      Change
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm">Phone <span style={{ color: "#8899AA" }} className="text-xs">(optional)</span></Label>
-                <div className="relative">
-                  <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8899AA" }} />
-                  <Input id="phone" placeholder="+91 9876543210" className="auth-input pl-9"
-                    value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm">Phone <span style={{ color: "#8899AA" }} className="text-xs">(optional)</span></Label>
+                  <div className="relative">
+                    <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8899AA" }} />
+                    <Input id="phone" placeholder="+91 9876543210" className="auth-input pl-9"
+                      value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                  </div>
                 </div>
-              </div>
-              <PasswordField form={form} setForm={setForm} showPassword={showPassword} setShowPassword={setShowPassword} />
-              <Button variant="hero" className="w-full" size="lg" disabled={submitting} style={{ borderRadius: "12px" }}>
-                {submitting ? (
-                  <span className="flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Creating account…</span>
-                ) : "Create Account"}
-              </Button>
-              <div className="text-center">
-                <button type="button" onClick={() => setStage("login")} className="text-xs hover:underline" style={{ color: "#8899AA" }}>
-                  Already have an account? <span className="text-primary">Log in</span>
-                </button>
-              </div>
-            </form>
+                <PasswordField form={form} setForm={setForm} showPassword={showPassword} setShowPassword={setShowPassword} />
+                <Button variant="hero" className="w-full" size="lg" disabled={submitting} style={{ borderRadius: "12px" }}>
+                  {submitting ? (
+                    <span className="flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Creating account…</span>
+                  ) : "Create Account"}
+                </Button>
+                <div className="text-center">
+                  <button type="button" onClick={() => setStage("login")} className="text-xs hover:underline" style={{ color: "#8899AA" }}>
+                    Already have an account? <span className="text-primary">Log in</span>
+                  </button>
+                </div>
+              </form>
+            )
           )}
 
           {/* STAGE: LOGIN (existing nFlow user) */}
