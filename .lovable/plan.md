@@ -1,57 +1,97 @@
 
+## Exact problem
 
-## Diagnosis (why every previous attempt looked broken)
+This is primarily on our side, not Google’s side.
 
-Looking at the code I just read:
+I checked the actual code and the backend logs. There are 3 separate bugs causing the “connected but no emails arrive” problem:
 
-1. **Frontend** uses `window.location.href` → full-page redirect. On a custom domain you lose the React Query cache and the listener that would refresh status.
-2. **Callback HTML** has `Content-Type: text/html` (no `charset=utf-8`). On some browsers/configurations the HTML gets shown as raw source — exactly what your screenshot showed.
-3. **Auto-redirect** uses `setTimeout(... window.location.href = returnTo, 1200)` — if the script never runs (e.g. raw-source rendering, popup blocker, browser policy on cross-origin auto-nav), the user is stuck.
-4. **No popup → parent communication.** Even when redirect works, the parent only knows via `?gmail=connected` URL detection, which is fragile.
+1. **Backend-to-backend Gmail sends are being rejected before Gmail is even called**
+   - `process-email-queue` and `send-landing-page-confirmation` call `send-gmail-email` using the backend secret in the `Authorization` header.
+   - `send-gmail-email` only works if that header parses like a JWT with `role = service_role`, otherwise it falls back to “admin user” auth and returns `401 Unauthorized`.
+   - Your logs show exactly that: `{"error":"Unauthorized"}` from `send-gmail-email`.
+   - If Google were the problem, the logs would show a Gmail API error message, not this internal 401.
 
-The OAuth params are actually already correct (`access_type=offline`, `prompt=consent`, `gmail.send` scope). Tokens ARE being stored. The breakage is purely in the **post-callback handoff to the UI**.
+2. **OTP emails are queued in the wrong format**
+   - `verify-nevorai-member` enqueues:
+     - `template`
+     - `data`
+     - `to`
+     - `subject`
+   - But `process-email-queue` only knows how to send messages that already contain **final `html` content**.
+   - So even after fixing the auth bug, OTP emails still will not send correctly until that payload is rendered properly.
 
-## The fix — popup + postMessage (3 files)
+3. **Landing page registration pretends the email was sent even when it failed**
+   - `submit-landing-page-registration` triggers email sending in a fire-and-forget way and ignores the result.
+   - So the UI can say “email sent” even when the backend later fails.
 
-### 1. `supabase/functions/gmail-oauth-callback/index.ts` (rewrite the response layer)
+## Conclusion
 
-- Add explicit `Content-Type: text/html; charset=utf-8` header (kills raw-HTML bug).
-- On success, the page does THREE things in order, so it works no matter how it was opened:
-  1. `window.opener.postMessage({ type: 'GMAIL_OAUTH_SUCCESS', email }, '*')` then `window.close()` (popup case).
-  2. If `!window.opener` (full-page fallback or popup blocked) → redirect to `returnTo` after 800ms.
-  3. Always render a visible "Return to Settings" button as a final fallback so the user is never stranded.
-- On error, same pattern with `GMAIL_OAUTH_ERROR`.
-- **Keep using the existing `gmail_oauth_tokens` table** — do NOT switch to `platform_settings`. That table is already wired into `send-gmail-email` and `process-email-queue`; switching would break live email sending and orphan the existing token row.
-- OAuth scopes/params are already correct — no changes needed in `gmail-oauth-init`.
+- **Current delivery failure is app-side.**
+- **Google Console is not the main blocker for the mail-not-sending issue you are seeing right now.**
+- Your Gmail connection can appear “connected”, but actual sending still fails because the internal send pipeline is broken.
 
-### 2. `src/pages/AdminSettingsPage.tsx` (popup flow)
+## What I will change after approval
 
-Replace `handleConnectGmail`:
-- Open a centered 500×650 popup pointing at `about:blank` first (so popup blockers don't fire), then set `popup.location.href = data.auth_url` after the init call returns.
-- Register a `message` listener that:
-  - Checks `event.data?.type === 'GMAIL_OAUTH_SUCCESS'` → close popup, invalidate + refetch `gmail-connection-status`, success toast.
-  - Checks `'GMAIL_OAUTH_ERROR'` → error toast.
-  - **Origin check**: accept messages from the Supabase functions origin (`https://atwnmovdnblcqyvhaxls.supabase.co`) since that's where the callback page is served.
-- Poll `popup.closed` every 500ms; if user closes popup manually without finishing, clean up listener and re-enable button.
-- Keep the existing `?gmail=connected` URL detection as a backup path (covers popup-blocked → full-page fallback).
-- Keep `staleTime: 0`, `refetchOnMount: 'always'`, `refetchOnWindowFocus: true` (already in place).
+### 1. Fix internal authentication for `send-gmail-email`
+Update `supabase/functions/send-gmail-email/index.ts` so backend callers are accepted reliably.
 
-### 3. (No backend change for `send-gmail-email`)
+Plan:
+- Keep admin-only access for browser status/disconnect actions.
+- Add a safe internal backend path for other edge functions using the project backend secret.
+- Do not depend only on JWT claim parsing for internal calls.
 
-Token refresh logic in `send-gmail-email` already does the right thing (refreshes 5 min before expiry, falls back to retry on 401). No changes needed.
+This will fix:
+- queue dispatcher → Gmail send
+- landing page confirmation → Gmail send
 
-## After the fix — what you'll see
+### 2. Fix the OTP email payload
+Update `supabase/functions/verify-nevorai-member/index.ts` so OTP emails are queued with a complete sendable payload:
+- `to`
+- `subject`
+- `html`
+- `label`
+- `message_id`
+- `queued_at`
 
-1. Click **Connect Gmail** → small centered popup opens with Google's consent screen.
-2. Approve → popup shows green "Gmail Connected!" for ~1 second → popup closes itself automatically.
-3. Settings page (still open behind the popup) immediately flips to green **Connected (teamnevorai@gmail.com)** and shows toast "Gmail connected successfully".
-4. If the popup is blocked: it falls back to full-page redirect, and on return the existing `?gmail=connected` handler still works.
-5. Queued OTPs in `process-email-queue` deliver on the next 5-second cron tick.
+That way `process-email-queue` can actually deliver the OTP.
 
-## Files changed
+### 3. Fix misleading “email sent” behavior
+Update the landing page flow so it does not falsely imply success when delivery failed.
 
-- `supabase/functions/gmail-oauth-callback/index.ts` — new HTML with postMessage + charset + manual fallback button.
-- `src/pages/AdminSettingsPage.tsx` — popup-based `handleConnectGmail` + message listener.
+Plan:
+- Improve backend handling around `send-landing-page-confirmation`
+- Make the registration email path log/send in a way that reflects real delivery state
+- Keep the registration submission successful, but make email state accurate
 
-That's it. No DB schema changes. No new tables. Existing tokens remain valid.
+### 4. Add a real test-send path in admin settings
+Update the settings page so you can verify Gmail with an actual send, not just connection status.
 
+Plan:
+- Add “Send Test Email”
+- Send to the connected Gmail address
+- Show the real backend result
+- This confirms end-to-end delivery, not just OAuth connection
+
+### 5. Re-test the full email chain
+After implementation, verify all 3 flows:
+1. Admin Gmail test email
+2. Landing page confirmation email
+3. Nevorai OTP email
+
+## Files to update
+
+- `supabase/functions/send-gmail-email/index.ts`
+- `supabase/functions/process-email-queue/index.ts`
+- `supabase/functions/send-landing-page-confirmation/index.ts`
+- `supabase/functions/verify-nevorai-member/index.ts`
+- `src/pages/AdminSettingsPage.tsx`
+
+## What you may need to check manually
+
+Only as a secondary check, not the main issue:
+- Google OAuth redirect URI still correct
+- Gmail API enabled
+- OAuth consent screen valid
+- Gmail account not manually revoked
+
+But again: **the current “connected but mail not sending” bug is from our backend flow, not mainly from Google settings.**
