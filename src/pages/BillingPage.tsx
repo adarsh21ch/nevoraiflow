@@ -49,9 +49,12 @@ const BillingPage = () => {
             <div className="page-header-accent" />
           </div>
           {plan.isPaid && (
-            <Badge variant="outline" className="gap-1.5 border-primary/30 text-primary">
-              <Crown size={12} /> {plan.tier === "pro" ? "Pro" : "Basic"} Plan
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="gap-1.5 border-primary/30 text-primary">
+                <Crown size={12} /> {plan.tier === "pro" ? "Individual" : "Basic"} Plan
+              </Badge>
+              <NevoraiMemberBadgeWrapper />
+            </div>
           )}
         </div>
 
