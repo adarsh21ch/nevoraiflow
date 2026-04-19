@@ -212,6 +212,51 @@ export type Database = {
         }
         Relationships: []
       }
+      enterprise_plan_config: {
+        Row: {
+          badge_text: string
+          cta_text: string
+          features: Json
+          id: number
+          is_visible: boolean
+          monthly_price: number
+          price_note: string
+          setup_fee_note: string
+          show_setup_fee_note: boolean
+          subheading: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          badge_text?: string
+          cta_text?: string
+          features?: Json
+          id?: number
+          is_visible?: boolean
+          monthly_price?: number
+          price_note?: string
+          setup_fee_note?: string
+          show_setup_fee_note?: boolean
+          subheading?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          badge_text?: string
+          cta_text?: string
+          features?: Json
+          id?: number
+          is_visible?: boolean
+          monthly_price?: number
+          price_note?: string
+          setup_fee_note?: string
+          show_setup_fee_note?: boolean
+          subheading?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       funnel_access_logs: {
         Row: {
           attempted_at: string | null
