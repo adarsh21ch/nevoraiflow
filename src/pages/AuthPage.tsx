@@ -263,22 +263,7 @@ const AuthPage = () => {
     }
   };
 
-  // Resend countdown ticker
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendCooldown]);
 
-  // Reset resend tracking when leaving OTP stage
-  useEffect(() => {
-    if (stage !== "nevorai-otp") {
-      setResendCount(0);
-      setResendCooldown(0);
-      setOtpSendStatus("idle");
-      lastAutoSubmittedRef.current = "";
-    }
-  }, [stage]);
 
   // Step 2b: Verify OTP and sign in / create account
   const handleVerifyOtp = async (e: React.FormEvent) => {
