@@ -378,12 +378,18 @@ const AuthPage = () => {
                         {autoCheckInfo.fullName
                           ? `Welcome back, ${autoCheckInfo.fullName.split(" ")[0]}!`
                           : "Welcome back!"}{" "}
-                        <span className="text-primary">You're part of the Nevorai family.</span>
+                        <span className="text-primary">
+                          {autoCheckInfo.hasNflowAccount
+                            ? "You already have an nFlow account."
+                            : "You're part of the Nevorai family."}
+                        </span>
                       </p>
                       <p className="text-xs mt-0.5" style={{ color: "#8899AA" }}>
-                        {autoCheckInfo.isPro
-                          ? "Verify your email to unlock the Individual plan — free."
-                          : "We'll send a code to securely sign you in."}
+                        {autoCheckInfo.hasNflowAccount
+                          ? "Enter your password to log in."
+                          : autoCheckInfo.isPro
+                            ? "Verify your email to unlock the Individual plan — free."
+                            : "We'll send a code to securely sign you in."}
                       </p>
                     </div>
                   </div>
@@ -402,7 +408,12 @@ const AuthPage = () => {
                 >
                   {submitting ? (
                     <span className="flex items-center gap-2">
-                      <Loader2 size={16} className="animate-spin" /> Sending code…
+                      <Loader2 size={16} className="animate-spin" />
+                      {autoCheckInfo?.hasNflowAccount ? "Loading…" : "Sending code…"}
+                    </span>
+                  ) : autoCheckInfo?.hasNflowAccount ? (
+                    <span className="flex items-center gap-2">
+                      <Lock size={16} /> Continue to log in
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
