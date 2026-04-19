@@ -212,25 +212,56 @@ const AuthPage = () => {
     }
   };
 
-  // Step 2a: Send OTP for Nevorai users
+  // Step 2a: Send OTP for Nevorai users (instant, no queue)
   const handleSendOtp = async () => {
+    if (resendCount >= 3) {
+      toast.error("Too many attempts. Please wait 10 minutes.");
+      return;
+    }
     setSubmitting(true);
+    setOtpSendStatus("sending");
     try {
       const { data, error } = await supabase.functions.invoke("verify-nevorai-member", {
         body: { email: form.email.trim().toLowerCase(), mode: "send_otp" },
       });
       if (error) throw error;
       if (data?.otpSent) {
-        toast.success("Verification code sent to your email");
+        setOtpSendStatus("sent");
+        setResendCooldown(30);
+        setResendCount((c) => c + 1);
+        setOtp("");
+        lastAutoSubmittedRef.current = "";
+        toast.success(`Code sent to ${form.email}. Check your inbox.`);
+        // Auto-focus the OTP input
+        setTimeout(() => otpInputRef.current?.focus(), 100);
       } else {
-        toast.error(data?.error || "Could not send code");
+        setOtpSendStatus("failed");
+        toast.error(data?.error || "Couldn't send code. Please try again.");
       }
     } catch (e: any) {
-      toast.error(e?.message || "Could not send code");
+      setOtpSendStatus("failed");
+      toast.error(e?.message || "Couldn't send code. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
+
+  // Resend countdown ticker
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  // Reset resend tracking when leaving OTP stage
+  useEffect(() => {
+    if (stage !== "nevorai-otp") {
+      setResendCount(0);
+      setResendCooldown(0);
+      setOtpSendStatus("idle");
+      lastAutoSubmittedRef.current = "";
+    }
+  }, [stage]);
 
   // Step 2b: Verify OTP and sign in / create account
   const handleVerifyOtp = async (e: React.FormEvent) => {
