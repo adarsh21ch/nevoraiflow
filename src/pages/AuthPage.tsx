@@ -405,6 +405,8 @@ const AuthPage = () => {
   const handleSkipPassword = () => {
     navigate("/dashboard");
   };
+
+  return (
     <div className="min-h-screen flex items-center justify-center p-4 gradient-bg-subtle relative">
       <div className="absolute inset-0 animate-grid opacity-30" />
       <div
