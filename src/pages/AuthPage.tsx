@@ -380,7 +380,31 @@ const AuthPage = () => {
     }
   };
 
-  return (
+  // Step 3 (Nevorai OTP only): optionally set a password so the user can log in
+  // with email + password next time. Skippable — OTP login still works.
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (form.password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: form.password });
+      if (error) {
+        toast.error(error.message || "Could not set password. You can do this later from Settings.");
+        return;
+      }
+      toast.success("Password set. You can now log in with email + password.");
+      navigate("/dashboard");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSkipPassword = () => {
+    navigate("/dashboard");
+  };
     <div className="min-h-screen flex items-center justify-center p-4 gradient-bg-subtle relative">
       <div className="absolute inset-0 animate-grid opacity-30" />
       <div
