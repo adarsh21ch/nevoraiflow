@@ -203,6 +203,20 @@ export const PricingSection = () => {
                     <span className={f.included ? "text-foreground" : "text-muted-foreground/60"}>
                       {f.text}
                     </span>
+                    {(f as any).tooltip && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                              <Info size={11} />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[220px] text-xs">
+                            {(f as any).tooltip}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </li>
                 ))}
               </ul>
