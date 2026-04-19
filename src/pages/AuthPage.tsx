@@ -425,12 +425,13 @@ const AuthPage = () => {
             {stage === "nevorai-otp" && (nevoraiInfo?.isPro
               ? "You're a Nevorai Pro member — verify to unlock free."
               : "You're part of the Nevorai family.")}
+            {stage === "set-password" && "One last thing — set a password for next time."}
           </p>
         </div>
 
         <div className="auth-card p-8">
-          {/* Back button on every stage past email */}
-          {stage !== "email" && (
+          {/* Back button on every stage past email — hidden during set-password (user is already signed in) */}
+          {stage !== "email" && stage !== "set-password" && (
             <button
               type="button"
               onClick={resetToEmail}
@@ -710,6 +711,89 @@ const AuthPage = () => {
                 </button>
               </div>
             </form>
+          )}
+
+          {/* STAGE: SET PASSWORD (post-OTP, optional) */}
+          {stage === "set-password" && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl border border-primary/30 bg-primary/5">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="text-primary shrink-0" size={20} />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold">You're signed in 🎉</p>
+                    <p className="text-xs mt-1" style={{ color: "#8899AA" }}>
+                      Set a password so you can log in with your email next time — no code needed.
+                      You can always skip this and request a code later.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <form onSubmit={handleSetPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm">Email</Label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8899AA" }} />
+                    <Input className="auth-input pl-9 opacity-90" value={form.email} readOnly />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="new-password" className="text-sm">
+                    Create a password <span style={{ color: "#8899AA" }} className="text-xs">(optional)</span>
+                  </Label>
+                  <div className="relative">
+                    <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8899AA" }} />
+                    <Input
+                      id="new-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="At least 6 characters"
+                      className="auth-input pl-9 pr-10"
+                      autoFocus
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 hover:text-foreground"
+                      style={{ color: "#8899AA" }}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  <p className="text-xs" style={{ color: "#8899AA" }}>
+                    Minimum 6 characters. You can change it anytime from Settings.
+                  </p>
+                </div>
+
+                <Button
+                  type="submit"
+                  variant="hero"
+                  className="w-full"
+                  size="lg"
+                  disabled={submitting || form.password.length < 6}
+                  style={{ borderRadius: "12px" }}
+                >
+                  {submitting ? (
+                    <span className="flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Saving…</span>
+                  ) : (
+                    <span className="flex items-center gap-2"><ShieldCheck size={16} /> Set password & continue</span>
+                  )}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  size="lg"
+                  disabled={submitting}
+                  onClick={handleSkipPassword}
+                >
+                  Skip for now
+                </Button>
+              </form>
+            </div>
           )}
         </div>
 
