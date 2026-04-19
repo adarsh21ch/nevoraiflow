@@ -2,10 +2,12 @@ export const brand = {
   name: "nFlow",
   nameShort: "nFlow",
   nameAccent: "Flow",
+  fullBrand: "nFlow by Nevorai",
+  parent: "Nevorai",
   tagline: "Never lose your flow",
   description:
-    "Control how prospects watch your videos, track engagement, and follow up at the right moment — all in one place.",
-  domain: "nevorai.com",
+    "Share videos. Track every view. Never lose your flow.",
+  domain: "flow.nevorai.com",
   supportEmail: "support@nevorai.com",
   social: {
     instagram: "https://instagram.com/nevoraiflow",
@@ -14,7 +16,8 @@ export const brand = {
   },
   footer: {
     poweredBy: "nFlow",
+    poweredByFull: "Powered by nFlow",
     madeIn: "Made in India 🇮🇳",
-    copyright: `© ${new Date().getFullYear()} nFlow. All rights reserved.`,
+    copyright: `© ${new Date().getFullYear()} nFlow by Nevorai. All rights reserved.`,
   },
 } as const;

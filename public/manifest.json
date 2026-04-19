@@ -1,11 +1,11 @@
 {
-  "name": "nFlow",
+  "name": "nFlow by Nevorai",
   "short_name": "nFlow",
-  "description": "Never lose your flow — smart video funnels that capture leads, collect payments, and guide your audience.",
+  "description": "Share videos. Track every view. Never lose your flow.",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#FFFFFF",
-  "theme_color": "#FFFFFF",
+  "background_color": "#080C1A",
+  "theme_color": "#080C1A",
   "orientation": "portrait-primary",
   "icons": [
     {
