@@ -266,20 +266,24 @@ const AuthPage = () => {
 
 
   // Step 2b: Verify OTP and sign in / create account
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!/^\d{6}$/.test(otp)) {
+  const verifyOtpCode = async (code: string) => {
+    if (!/^\d{6}$/.test(code)) {
       toast.error("Enter the 6-digit code");
       return;
     }
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("confirm-nevorai-otp", {
-        body: { email: form.email.trim().toLowerCase(), code: otp },
+        body: { email: form.email.trim().toLowerCase(), code },
       });
       if (error) throw error;
       if (!data?.success) {
-        toast.error(data?.error || "Verification failed");
+        setOtpShake(true);
+        setTimeout(() => setOtpShake(false), 500);
+        setOtp("");
+        lastAutoSubmittedRef.current = "";
+        otpInputRef.current?.focus();
+        toast.error(data?.error || "Incorrect code. Try again.");
         return;
       }
       if (data.session?.access_token && data.session?.refresh_token) {
@@ -303,11 +307,27 @@ const AuthPage = () => {
         setStage("login");
       }
     } catch (e: any) {
+      setOtpShake(true);
+      setTimeout(() => setOtpShake(false), 500);
       toast.error(e?.message || "Verification failed");
     } finally {
       setSubmitting(false);
     }
   };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await verifyOtpCode(otp);
+  };
+
+  // Auto-submit when 6 digits are entered (debounced via ref to prevent dup)
+  useEffect(() => {
+    if (stage !== "nevorai-otp") return;
+    if (otp.length === 6 && !submitting && lastAutoSubmittedRef.current !== otp) {
+      lastAutoSubmittedRef.current = otp;
+      verifyOtpCode(otp);
+    }
+  }, [otp, stage, submitting]);
 
   // Step 2c: Brand-new signup
   const handleSignup = async (e: React.FormEvent) => {
