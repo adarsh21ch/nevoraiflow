@@ -39,7 +39,7 @@ function buildEmailHtml(name: string, body: string, loginUrl: string): string {
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#ffffff;color:#1a1a1a;padding:40px 20px;">
   <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;padding:32px;border:1px solid #e5e5e5;">
     <div style="text-align:center;margin-bottom:20px;">
-      <h1 style="color:#22c55e;font-size:20px;margin:0;">Nevorai Flow</h1>
+      <h1 style="color:#22c55e;font-size:20px;margin:0;">nFlow</h1>
     </div>
     <h2 style="font-size:20px;margin:0 0 12px;">🎉 Welcome to nFlow, ${name}!</h2>
     <div style="font-size:15px;line-height:1.6;color:#444;">${safeBody}</div>
@@ -216,7 +216,7 @@ Deno.serve(async (req) => {
                     label: "member_gateway_welcome",
                     message_id: `member-welcome-${crypto.randomUUID()}`,
                     queued_at: new Date().toISOString(),
-                    from: "Nevorai Flow",
+                    from: "nFlow",
                   },
                 });
                 await supabase.from("member_access_logs").insert({
@@ -290,7 +290,7 @@ Deno.serve(async (req) => {
                     label: "member_gateway_expiry_warning",
                     message_id: `member-warn-${crypto.randomUUID()}`,
                     queued_at: new Date().toISOString(),
-                    from: "Nevorai Flow",
+                    from: "nFlow",
                   },
                 });
                 await supabase.from("member_access_logs").insert({

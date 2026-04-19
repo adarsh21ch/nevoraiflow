@@ -9,7 +9,7 @@ const sections = [
   },
   {
     title: "How We Use Your Information",
-    content: "We use your information to provide and improve Nevorai Flow, communicate with you, process transactions, and personalize your experience. We do not sell your personal data to third parties.",
+    content: "We use your information to provide and improve nFlow, communicate with you, process transactions, and personalize your experience. We do not sell your personal data to third parties.",
   },
   {
     title: "Cookies and Analytics",

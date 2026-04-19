@@ -290,10 +290,10 @@ Deno.serve(async (req) => {
     <p style="font-size:40px;font-weight:700;letter-spacing:10px;margin:16px 0 24px;color:#111;">${code}</p>
     <p style="font-size:13px;color:#888;margin:0 0 4px;">This code expires in 10 minutes.</p>
     <p style="font-size:13px;color:#888;margin:0 0 24px;">If you didn't request this, ignore this email.</p>
-    <p style="font-size:13px;color:#aaa;margin:0;">— Team Nevorai Flow</p>
+    <p style="font-size:13px;color:#aaa;margin:0;">— Team nFlow</p>
   </div>
 </body></html>`;
-    const text = `Your verification code: ${code}\n\nThis code expires in 10 minutes.\nIf you didn't request this, ignore this email.\n\n— Team Nevorai Flow`;
+    const text = `Your verification code: ${code}\n\nThis code expires in 10 minutes.\nIf you didn't request this, ignore this email.\n\n— Team nFlow`;
 
     async function sendOnce(): Promise<boolean> {
       const ctrl = new AbortController();
@@ -312,7 +312,7 @@ Deno.serve(async (req) => {
               subject,
               html,
               text,
-              sender_name: "Nevorai Flow",
+              sender_name: "nFlow",
             }),
             signal: ctrl.signal,
           },

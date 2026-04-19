@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/landing/Logo";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Eye, EyeOff, Mail, Lock, User, Phone, Sparkles, ArrowLeft, ShieldCheck, Loader2, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { lovable } from "@/integrations/lovable/index";
@@ -24,6 +25,7 @@ const AuthPage = () => {
   const { signIn, signUp, user, loading } = useAuth();
 
   const [stage, setStage] = useState<Stage>("email");
+  useDocumentTitle(stage === "signup" ? "Get Started" : "Sign In");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
@@ -417,7 +419,7 @@ const AuthPage = () => {
       />
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-block"><Logo size="lg" /></Link>
+          <Link to="/" className="inline-block"><Logo size="lg" showByline /></Link>
           <p className="text-sm mt-3" style={{ color: "#8899AA" }}>
             {stage === "email" && "Welcome — let's get you in."}
             {stage === "login" && "Welcome back! Enter your password."}

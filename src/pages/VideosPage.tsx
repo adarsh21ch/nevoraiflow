@@ -1,4 +1,5 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const VideosPage = () => {
+  useDocumentTitle("Video Gallery");
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();

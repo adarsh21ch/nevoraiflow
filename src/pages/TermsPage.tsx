@@ -5,11 +5,11 @@ import { motion } from "framer-motion";
 const sections = [
   {
     title: "Acceptance of Terms",
-    content: "By accessing or using Nevorai Flow, you agree to be bound by these Terms of Service. If you do not agree, please do not use the platform.",
+    content: "By accessing or using nFlow, you agree to be bound by these Terms of Service. If you do not agree, please do not use the platform.",
   },
   {
     title: "Use of the Platform",
-    content: "Nevorai Flow provides video funnel creation, lead capture, and viewer tracking tools. You may use the platform for lawful business purposes in accordance with these terms.",
+    content: "nFlow provides video funnel creation, lead capture, and viewer tracking tools. You may use the platform for lawful business purposes in accordance with these terms.",
   },
   {
     title: "User Responsibilities",
@@ -21,7 +21,7 @@ const sections = [
   },
   {
     title: "Content and Ownership",
-    content: "You retain ownership of all content you upload to Nevorai Flow. By uploading content, you grant us a limited license to host and display it as part of the service.",
+    content: "You retain ownership of all content you upload to nFlow. By uploading content, you grant us a limited license to host and display it as part of the service.",
   },
   {
     title: "Payments and Billing",
@@ -29,7 +29,7 @@ const sections = [
   },
   {
     title: "Limitation of Liability",
-    content: "Nevorai Flow is provided \"as is\" without warranties. We are not liable for any indirect, incidental, or consequential damages arising from your use of the platform.",
+    content: "nFlow is provided \"as is\" without warranties. We are not liable for any indirect, incidental, or consequential damages arising from your use of the platform.",
   },
   {
     title: "Changes to Terms",

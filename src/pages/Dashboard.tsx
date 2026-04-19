@@ -1,4 +1,5 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { UpgradeBanner } from "@/components/UpgradeBanner";
 import { DailyViewsCard } from "@/components/DailyViewsCard";
 import { Layers, Users, Eye, IndianRupee, TrendingUp, Radio, Plus, ArrowRight } from "lucide-react";
@@ -9,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
+  useDocumentTitle("Dashboard");
   const { user, profile } = useAuth();
 
   const { data: funnels = [] } = useQuery({
@@ -49,10 +51,10 @@ const Dashboard = () => {
       <div className="space-y-8 overflow-x-hidden">
         <UpgradeBanner />
         <div>
-          <h1 className="text-2xl font-heading font-bold">Dashboard</h1>
+          <h1 className="text-2xl font-heading font-bold">nFlow Dashboard</h1>
           <div className="page-header-accent" />
           <p className="text-sm text-muted-foreground mt-2">
-            Welcome back{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}! Here's your overview.
+            Welcome back{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}! Here's your nFlow overview.
           </p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">

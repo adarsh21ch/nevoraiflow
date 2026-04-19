@@ -48,9 +48,9 @@ Deno.serve(async (req) => {
     }
 
     // Use sender_display_name from landing page settings; fall back to platform name
-    const senderDisplayName = (page as any).sender_display_name || 'Nevorai Flow'
-    const isPlatformSender = senderDisplayName === 'Nevorai Flow'
-    const trustBadgeText = isPlatformSender ? 'Verified by Nevorai Flow' : 'Sent via Nevorai Flow'
+    const senderDisplayName = (page as any).sender_display_name || 'nFlow'
+    const isPlatformSender = senderDisplayName === 'nFlow'
+    const trustBadgeText = isPlatformSender ? 'Verified by nFlow' : 'Sent via nFlow'
     const trustBadgeIcon = isPlatformSender
       ? '&#10003;'  // checkmark
       : '&#9656;'   // arrow
@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #ffffff; color: #1a1a1a; padding: 40px 20px;">
   <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; border: 1px solid #e5e5e5;">
     <div style="text-align: center; margin-bottom: 24px;">
-      <h1 style="color: #22c55e; font-size: 20px; margin: 0;">Nevorai Flow</h1>
+      <h1 style="color: #22c55e; font-size: 20px; margin: 0;">nFlow</h1>
     </div>
     <h2 style="font-size: 22px; margin: 0 0 16px; color: #1a1a1a;">${page.email_heading || 'You are registered!'}</h2>
     <div style="font-size: 15px; line-height: 1.7; color: #555555; white-space: pre-line;">${emailBody}</div>

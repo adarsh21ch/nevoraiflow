@@ -137,7 +137,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
         >
           <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #7EE83A, #00D4C8, #00AAFF, #1A4FD6)", marginTop: 'env(safe-area-inset-top)' }} />
           <div className="flex h-16 items-center justify-between border-b border-border px-4 shrink-0">
-            {!collapsed && <Logo size="sm" />}
+            {!collapsed && <Logo size="sm" showByline />}
             <div className="flex items-center gap-1">
               <button
                 onClick={toggleTheme}
@@ -192,7 +192,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
           <div className="sticky top-0 z-40 border-b border-border bg-card/85 backdrop-blur-sm md:hidden">
             <div className="flex items-center justify-between gap-3 px-3 py-2.5">
               <div className="min-w-0 flex-1">
-                <Logo size="sm" />
+                <Logo size="sm" showByline />
               </div>
               <div className="ml-2 flex shrink-0 items-center gap-1.5">
                 <button
@@ -220,7 +220,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
                   </SheetTrigger>
                   <SheetContent side="right" className="w-[85vw] max-w-72 p-0">
                     <div className="border-b border-border p-4">
-                      <Logo size="sm" />
+                      <Logo size="sm" showByline />
                     </div>
                     <nav className="max-h-[calc(100vh-160px)] space-y-0.5 overflow-y-auto px-2 py-2">
                       <p className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Main</p>
