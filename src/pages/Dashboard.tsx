@@ -1,4 +1,5 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { UpgradeBanner } from "@/components/UpgradeBanner";
 import { DailyViewsCard } from "@/components/DailyViewsCard";
 import { Layers, Users, Eye, IndianRupee, TrendingUp, Radio, Plus, ArrowRight } from "lucide-react";
@@ -9,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
+  useDocumentTitle("Dashboard");
   const { user, profile } = useAuth();
 
   const { data: funnels = [] } = useQuery({

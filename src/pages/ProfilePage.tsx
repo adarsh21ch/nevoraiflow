@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ import { format } from "date-fns";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const ProfilePage = () => {
+  useDocumentTitle("Profile");
   const { user, profile, refreshProfile } = useAuth();
   const { plan } = usePlan();
   const { isFree, config, counts, tier, canUseMultilevel } = usePlanLimits();

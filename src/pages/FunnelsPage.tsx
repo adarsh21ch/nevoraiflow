@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Link, useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { UpgradeModal } from "@/components/UpgradeModal";
 
 const FunnelsPage = () => {
+  useDocumentTitle("Funnels");
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();

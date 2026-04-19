@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/landing/Navbar";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Footer } from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
 import { Check, X, Crown, Shield, Loader2, Users, User, Lock } from "lucide-react";
@@ -109,6 +110,7 @@ const ComparisonCell = ({ value }: { value: boolean | string }) => {
 };
 
 const PricingFullPage = () => {
+  useDocumentTitle("Pricing");
   const { user, profile } = useAuth();
   const { plan, refreshPlan } = usePlan();
   const { openSupport } = useWhatsAppSupport();
