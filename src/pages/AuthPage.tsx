@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/landing/Logo";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Eye, EyeOff, Mail, Lock, User, Phone, Sparkles, ArrowLeft, ShieldCheck, Loader2, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { lovable } from "@/integrations/lovable/index";
@@ -24,6 +25,7 @@ const AuthPage = () => {
   const { signIn, signUp, user, loading } = useAuth();
 
   const [stage, setStage] = useState<Stage>("email");
+  useDocumentTitle(stage === "signup" ? "Get Started" : "Sign In");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
