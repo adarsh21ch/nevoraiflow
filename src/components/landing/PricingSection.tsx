@@ -22,23 +22,60 @@ const freePlan = {
   variant: "outline" as const,
 };
 
-const buildFeatures = (config: any) => {
-  const features: { text: string; included: boolean }[] = [];
+const formatStorage = (mb: number | null | undefined): string | null => {
+  if (mb == null) return null;
+  if (mb === -1) return "Unlimited storage";
+  if (mb <= 0) return null;
+  if (mb >= 1024) {
+    const gb = mb / 1024;
+    return `${gb % 1 === 0 ? gb : gb.toFixed(1)} GB storage`;
+  }
+  return `${mb} MB storage`;
+};
 
+const formatDailyViews = (limit: number | null | undefined): { text: string; tooltip: string } | null => {
+  if (limit == null) return null;
+  if (limit === -1) return { text: "Unlimited daily views", tooltip: VIEWS_TOOLTIP };
+  if (limit <= 0) return null;
+  return { text: `${limit.toLocaleString("en-IN")} views/day total`, tooltip: VIEWS_TOOLTIP };
+};
+
+const buildFeatures = (config: any) => {
+  const features: { text: string; included: boolean; tooltip?: string }[] = [];
+
+  // Funnels
   if (config.max_funnels === -1) features.push({ text: "Unlimited funnels", included: true });
   else if (config.max_funnels > 0) features.push({ text: `Up to ${config.max_funnels} funnels`, included: true });
 
+  // Landing pages
   if (config.feature_landing_pages) {
     if (config.max_landing_pages === -1) features.push({ text: "Unlimited landing pages", included: true });
     else if (config.max_landing_pages > 0) features.push({ text: `Up to ${config.max_landing_pages} landing pages`, included: true });
   }
 
+  // Live sessions
+  if (config.feature_go_live) {
+    if (config.max_live_sessions === -1) features.push({ text: "Unlimited live sessions", included: true });
+    else if (config.max_live_sessions > 0) features.push({ text: `Up to ${config.max_live_sessions} live sessions`, included: true });
+  }
+
+  // Videos
+  if (config.max_videos === -1) features.push({ text: "Unlimited video uploads", included: true });
+  else if (config.max_videos > 0) features.push({ text: `Up to ${config.max_videos} video uploads`, included: true });
+
+  // Storage
+  const storageText = formatStorage(config.max_storage_mb);
+  if (storageText) features.push({ text: storageText, included: true });
+
+  // Daily views — always show with tooltip
+  const dv = formatDailyViews(config.daily_view_limit);
+  if (dv) features.push({ text: dv.text, included: true, tooltip: dv.tooltip });
+
+  // Feature toggles
   features.push({ text: "Lead capture", included: !!config.feature_lead_capture });
   features.push({ text: "Analytics", included: !!config.feature_analytics });
   features.push({ text: "WhatsApp auto-message", included: !!config.feature_whatsapp_automation });
-
-  if (config.feature_go_live) features.push({ text: "Live broadcast", included: true });
-  else features.push({ text: "Live broadcast", included: false });
+  features.push({ text: "Live broadcast", included: !!config.feature_go_live });
 
   if (config.feature_video_sharing) features.push({ text: "Video sharing", included: true });
   if (config.feature_advanced_analytics) features.push({ text: "Advanced analytics", included: true });
