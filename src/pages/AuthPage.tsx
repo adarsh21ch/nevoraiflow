@@ -169,7 +169,11 @@ const AuthPage = () => {
     const cached = lookupCacheRef.current.get(email);
     if (cached) {
       if (cached.exists) {
-        setNevoraiInfo({ fullName: cached.fullName, isPro: cached.isPro });
+        setNevoraiInfo({ fullName: cached.fullName, isPro: cached.isPro, hasNflowAccount: cached.hasNflowAccount });
+        if (cached.hasNflowAccount) {
+          setStage("login");
+          return;
+        }
         setStage("nevorai-otp");
         handleSendOtp();
         return;
@@ -185,7 +189,11 @@ const AuthPage = () => {
       if (error) throw error;
 
       if (data?.exists) {
-        setNevoraiInfo({ fullName: data.fullName, isPro: !!data.isPro });
+        setNevoraiInfo({ fullName: data.fullName, isPro: !!data.isPro, hasNflowAccount: !!data.hasNflowAccount });
+        if (data.hasNflowAccount) {
+          setStage("login");
+          return;
+        }
         setStage("nevorai-otp");
         return;
       }
