@@ -67,7 +67,7 @@ const AuthPage = () => {
     if (cached) {
       if (cached.exists) {
         setAutoCheckStatus("match");
-        setAutoCheckInfo({ fullName: cached.fullName, isPro: cached.isPro });
+        setAutoCheckInfo({ fullName: cached.fullName, isPro: cached.isPro, hasNflowAccount: cached.hasNflowAccount });
       } else {
         setAutoCheckStatus("none");
         setAutoCheckInfo(null);
