@@ -542,15 +542,23 @@ const AuthPage = () => {
                   <Label htmlFor="otp" className="text-sm">Verification code</Label>
                   <Input
                     id="otp"
+                    ref={otpInputRef}
                     inputMode="numeric"
+                    autoComplete="one-time-code"
                     maxLength={6}
                     placeholder="••••••"
-                    className="auth-input text-center tracking-[0.5em] text-lg"
+                    autoFocus
+                    className={`auth-input text-center tracking-[0.5em] text-lg ${otpShake ? "animate-shake border-destructive" : ""}`}
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    disabled={submitting}
                   />
                   <p className="text-xs" style={{ color: "#8899AA" }}>
-                    Sent to <span className="text-foreground">{form.email}</span>. Expires in 10 min.
+                    {otpSendStatus === "sending" ? (
+                      <span className="flex items-center gap-1.5"><Loader2 size={11} className="animate-spin" /> Sending your code…</span>
+                    ) : (
+                      <>Sent to <span className="text-foreground">{form.email}</span>. Check your inbox or spam folder. Expires in 10 min.</>
+                    )}
                   </p>
                 </div>
 
@@ -574,10 +582,14 @@ const AuthPage = () => {
                   variant="outline"
                   className="w-full"
                   size="lg"
-                  disabled={submitting}
+                  disabled={submitting || resendCooldown > 0 || resendCount >= 3}
                   onClick={handleSendOtp}
                 >
-                  Send code
+                  {resendCount >= 3
+                    ? "Too many attempts — wait 10 min"
+                    : resendCooldown > 0
+                      ? `Resend in ${resendCooldown}s`
+                      : "Resend code"}
                 </Button>
               </form>
             </div>
