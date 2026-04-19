@@ -15,6 +15,7 @@ type Stage = "email" | "login" | "signup" | "nevorai-otp";
 interface NevoraiInfo {
   fullName?: string | null;
   isPro: boolean;
+  hasNflowAccount?: boolean;
 }
 
 const AuthPage = () => {
@@ -40,7 +41,7 @@ const AuthPage = () => {
   // Auto-detect state
   const [autoCheckStatus, setAutoCheckStatus] = useState<"idle" | "checking" | "match" | "none">("idle");
   const [autoCheckInfo, setAutoCheckInfo] = useState<NevoraiInfo | null>(null);
-  const lookupCacheRef = useRef<Map<string, { exists: boolean; isPro: boolean; fullName: string | null }>>(new Map());
+  const lookupCacheRef = useRef<Map<string, { exists: boolean; isPro: boolean; fullName: string | null; hasNflowAccount: boolean }>>(new Map());
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const checkStartRef = useRef<number>(0);
@@ -66,7 +67,7 @@ const AuthPage = () => {
     if (cached) {
       if (cached.exists) {
         setAutoCheckStatus("match");
-        setAutoCheckInfo({ fullName: cached.fullName, isPro: cached.isPro });
+        setAutoCheckInfo({ fullName: cached.fullName, isPro: cached.isPro, hasNflowAccount: cached.hasNflowAccount });
       } else {
         setAutoCheckStatus("none");
         setAutoCheckInfo(null);
@@ -93,6 +94,7 @@ const AuthPage = () => {
           exists: !!data?.exists,
           isPro: !!data?.isPro,
           fullName: data?.fullName ?? null,
+          hasNflowAccount: !!data?.hasNflowAccount,
         };
         lookupCacheRef.current.set(email, result);
 
@@ -103,7 +105,7 @@ const AuthPage = () => {
           if (controller.signal.aborted) return;
           if (result.exists) {
             setAutoCheckStatus("match");
-            setAutoCheckInfo({ fullName: result.fullName, isPro: result.isPro });
+            setAutoCheckInfo({ fullName: result.fullName, isPro: result.isPro, hasNflowAccount: result.hasNflowAccount });
           } else {
             setAutoCheckStatus("none");
             setAutoCheckInfo(null);
@@ -127,6 +129,11 @@ const AuthPage = () => {
   const enterOtpFromAutoDetect = () => {
     if (!autoCheckInfo) return;
     setNevoraiInfo(autoCheckInfo);
+    // If the user already has an nFlow account, skip OTP and go to password login
+    if (autoCheckInfo.hasNflowAccount) {
+      setStage("login");
+      return;
+    }
     setStage("nevorai-otp");
     // Auto-send the OTP so they don't need an extra click
     handleSendOtp();
@@ -162,7 +169,11 @@ const AuthPage = () => {
     const cached = lookupCacheRef.current.get(email);
     if (cached) {
       if (cached.exists) {
-        setNevoraiInfo({ fullName: cached.fullName, isPro: cached.isPro });
+        setNevoraiInfo({ fullName: cached.fullName, isPro: cached.isPro, hasNflowAccount: cached.hasNflowAccount });
+        if (cached.hasNflowAccount) {
+          setStage("login");
+          return;
+        }
         setStage("nevorai-otp");
         handleSendOtp();
         return;
@@ -178,7 +189,11 @@ const AuthPage = () => {
       if (error) throw error;
 
       if (data?.exists) {
-        setNevoraiInfo({ fullName: data.fullName, isPro: !!data.isPro });
+        setNevoraiInfo({ fullName: data.fullName, isPro: !!data.isPro, hasNflowAccount: !!data.hasNflowAccount });
+        if (data.hasNflowAccount) {
+          setStage("login");
+          return;
+        }
         setStage("nevorai-otp");
         return;
       }
@@ -363,12 +378,18 @@ const AuthPage = () => {
                         {autoCheckInfo.fullName
                           ? `Welcome back, ${autoCheckInfo.fullName.split(" ")[0]}!`
                           : "Welcome back!"}{" "}
-                        <span className="text-primary">You're part of the Nevorai family.</span>
+                        <span className="text-primary">
+                          {autoCheckInfo.hasNflowAccount
+                            ? "You already have an nFlow account."
+                            : "You're part of the Nevorai family."}
+                        </span>
                       </p>
                       <p className="text-xs mt-0.5" style={{ color: "#8899AA" }}>
-                        {autoCheckInfo.isPro
-                          ? "Verify your email to unlock the Individual plan — free."
-                          : "We'll send a code to securely sign you in."}
+                        {autoCheckInfo.hasNflowAccount
+                          ? "Enter your password to log in."
+                          : autoCheckInfo.isPro
+                            ? "Verify your email to unlock the Individual plan — free."
+                            : "We'll send a code to securely sign you in."}
                       </p>
                     </div>
                   </div>
@@ -387,7 +408,12 @@ const AuthPage = () => {
                 >
                   {submitting ? (
                     <span className="flex items-center gap-2">
-                      <Loader2 size={16} className="animate-spin" /> Sending code…
+                      <Loader2 size={16} className="animate-spin" />
+                      {autoCheckInfo?.hasNflowAccount ? "Loading…" : "Sending code…"}
+                    </span>
+                  ) : autoCheckInfo?.hasNflowAccount ? (
+                    <span className="flex items-center gap-2">
+                      <Lock size={16} /> Continue to log in
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
