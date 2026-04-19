@@ -313,7 +313,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     // Build MIME message
-    const fromName = sender_name || 'Nevorai Flow'
+    const fromName = sender_name || 'nFlow'
     const fromEmail = tokenRow.gmail_email
     const mimeMessage = [
       `From: ${fromName} <${fromEmail}>`,

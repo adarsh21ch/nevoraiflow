@@ -9,7 +9,7 @@ export const Logo = ({ size = "default" }: { size?: "sm" | "default" | "lg" }) =
 
   return (
     <div className="flex items-center gap-2">
-      <img src={logoImg} alt="Nevorai Flow" className={`${sizes[size].img} object-contain`} />
+      <img src={logoImg} alt="nFlow" className={`${sizes[size].img} object-contain`} />
       <div className={`flex items-baseline ${sizes[size].text}`} style={{ lineHeight: 1 }}>
         <span
           style={{

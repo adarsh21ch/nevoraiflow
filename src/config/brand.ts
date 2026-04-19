@@ -1,6 +1,6 @@
 export const brand = {
-  name: "Nevorai Flow",
-  nameShort: "Nevorai Flow",
+  name: "nFlow",
+  nameShort: "nFlow",
   nameAccent: "Flow",
   tagline: "Never lose your flow",
   description:
@@ -13,8 +13,8 @@ export const brand = {
     whatsapp: "https://wa.me/919999999999",
   },
   footer: {
-    poweredBy: "Nevorai Flow",
+    poweredBy: "nFlow",
     madeIn: "Made in India 🇮🇳",
-    copyright: `© ${new Date().getFullYear()} Nevorai Flow. All rights reserved.`,
+    copyright: `© ${new Date().getFullYear()} nFlow. All rights reserved.`,
   },
 } as const;

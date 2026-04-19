@@ -125,7 +125,7 @@ const BillingPage = () => {
               </Button>
             </Link>
           )}
-          <Button variant="outline" className="gap-2" onClick={() => openSupport("Hi, I have a billing question about my Nevorai Flow account.")}>
+          <Button variant="outline" className="gap-2" onClick={() => openSupport("Hi, I have a billing question about my nFlow account.")}>
             <MessageCircle size={16} /> Contact Support
           </Button>
         </div>
@@ -140,7 +140,7 @@ const BillingPage = () => {
             <p className="text-sm text-muted-foreground">Your last payment didn't go through. Please try again or contact support.</p>
             <div className="flex gap-3">
               <Link to="/upgrade"><Button size="sm">Retry Payment</Button></Link>
-              <Button size="sm" variant="outline" onClick={() => openSupport("Hi, my payment failed on Nevorai Flow. Can you help?")}>
+              <Button size="sm" variant="outline" onClick={() => openSupport("Hi, my payment failed on nFlow. Can you help?")}>
                 <MessageCircle size={14} className="mr-1.5" /> Get Help
               </Button>
             </div>
@@ -150,7 +150,7 @@ const BillingPage = () => {
         {plan.isPaid && !plan.isExpired && plan.status === "active" && (
           <div className="glass-card p-5 bg-primary/5 border-primary/10">
             <p className="text-sm text-muted-foreground">
-              Need to change or cancel your plan? <button className="text-primary underline" onClick={() => openSupport("Hi, I'd like to change/cancel my Nevorai Flow plan.")}>Contact support</button> and we'll help you right away.
+              Need to change or cancel your plan? <button className="text-primary underline" onClick={() => openSupport("Hi, I'd like to change/cancel my nFlow plan.")}>Contact support</button> and we'll help you right away.
             </p>
           </div>
         )}

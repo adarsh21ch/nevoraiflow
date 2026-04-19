@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
             label: "member_gateway_resend",
             message_id: `member-resend-${crypto.randomUUID()}`,
             queued_at: now,
-            from: "Nevorai Flow",
+            from: "nFlow",
           },
         });
 

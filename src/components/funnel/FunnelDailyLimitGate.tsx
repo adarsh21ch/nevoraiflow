@@ -24,7 +24,7 @@ export const FunnelDailyLimitGate = () => {
           In the meantime, feel free to reach out to the person who shared this with you.
         </p>
       </div>
-      <p className="text-[11px] text-muted-foreground/40 mt-6">Powered by Nevorai Flow</p>
+      <p className="text-[11px] text-muted-foreground/40 mt-6">Powered by nFlow</p>
     </div>
   );
 };
