@@ -94,6 +94,7 @@ export const PricingSection = () => {
     staleTime: 60_000,
   });
 
+  const freeConfig = planConfigs.find((c: any) => c.plan_name === "free");
   const basicConfig = planConfigs.find((c: any) => c.plan_name === "basic");
   const proConfig = planConfigs.find((c: any) => c.plan_name === "pro");
   const basicEnabled = basicConfig?.is_enabled !== false && !!basicConfig;
@@ -105,20 +106,26 @@ export const PricingSection = () => {
     period: string;
     daily: string;
     badge: string | null;
-    features: { text: string; included: boolean }[];
+    features: { text: string; included: boolean; tooltip?: string }[];
     cta: string;
     variant: "outline" | "default" | "hero";
     highlight: boolean;
   }[] = [];
 
-  // Free card always shown
+  // Free card — merge static "explore" features with DB-driven daily views
+  const freeFeatures: { text: string; included: boolean; tooltip?: string }[] = [...freePlan.features];
+  const freeDv = formatDailyViews(freeConfig?.daily_view_limit);
+  if (freeDv) {
+    freeFeatures.splice(3, 0, { text: freeDv.text, included: true, tooltip: freeDv.tooltip });
+  }
+
   cards.push({
     name: freePlan.name,
     price: "₹0",
     period: "",
     daily: "",
     badge: null,
-    features: freePlan.features,
+    features: freeFeatures,
     cta: freePlan.cta,
     variant: freePlan.variant,
     highlight: false,
