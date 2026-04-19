@@ -41,7 +41,7 @@ const AuthPage = () => {
   // Auto-detect state
   const [autoCheckStatus, setAutoCheckStatus] = useState<"idle" | "checking" | "match" | "none">("idle");
   const [autoCheckInfo, setAutoCheckInfo] = useState<NevoraiInfo | null>(null);
-  const lookupCacheRef = useRef<Map<string, { exists: boolean; isPro: boolean; fullName: string | null }>>(new Map());
+  const lookupCacheRef = useRef<Map<string, { exists: boolean; isPro: boolean; fullName: string | null; hasNflowAccount: boolean }>>(new Map());
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const checkStartRef = useRef<number>(0);
