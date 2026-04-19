@@ -196,6 +196,23 @@ Deno.serve(async (req) => {
     const exists = inferExists(memberData, { email, phone });
     const isPro = memberData?.isPro === true;
 
+    // Check if an nFlow account already exists for this email — if so, the
+    // user should log in with their password instead of OTP.
+    let hasNflowAccount = false;
+    const checkEmail = (memberData?.email || email)?.toLowerCase();
+    if (checkEmail) {
+      try {
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", checkEmail)
+          .maybeSingle();
+        hasNflowAccount = !!existingProfile;
+      } catch (e) {
+        console.warn("[verify-nevorai-member] profile lookup failed:", e);
+      }
+    }
+
     // Lookup-only OR not found at all
     if (mode === "lookup" || !exists) {
       return new Response(
@@ -205,10 +222,27 @@ Deno.serve(async (req) => {
           // New explicit fields
           exists,
           isPro,
+          hasNflowAccount,
           fullName: memberData?.fullName ?? null,
           email: memberData?.email ?? null,
           phone: memberData?.phone ?? null,
           plan: memberData?.plan ?? null,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Recognized Nevorai user but already has an nFlow account → don't send OTP
+    if (hasNflowAccount) {
+      return new Response(
+        JSON.stringify({
+          isMember: isPro,
+          exists: true,
+          isPro,
+          hasNflowAccount: true,
+          otpSent: false,
+          fullName: memberData?.fullName ?? null,
+          email: checkEmail,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
