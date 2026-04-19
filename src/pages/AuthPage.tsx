@@ -417,7 +417,7 @@ const AuthPage = () => {
       />
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-block"><Logo size="lg" /></Link>
+          <Link to="/" className="inline-block"><Logo size="lg" showByline /></Link>
           <p className="text-sm mt-3" style={{ color: "#8899AA" }}>
             {stage === "email" && "Welcome — let's get you in."}
             {stage === "login" && "Welcome back! Enter your password."}
