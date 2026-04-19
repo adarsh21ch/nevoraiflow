@@ -292,7 +292,7 @@ export type Database = {
           },
         ]
       }
-      funnel_daily_views: {
+      funnel_daily_views_old: {
         Row: {
           created_at: string
           funnel_id: string
@@ -1937,6 +1937,7 @@ export type Database = {
           city: string | null
           company: string | null
           created_at: string | null
+          custom_daily_views_limit: number | null
           email: string
           full_name: string
           id: string
@@ -1967,6 +1968,7 @@ export type Database = {
           city?: string | null
           company?: string | null
           created_at?: string | null
+          custom_daily_views_limit?: number | null
           email: string
           full_name: string
           id: string
@@ -1997,6 +1999,7 @@ export type Database = {
           city?: string | null
           company?: string | null
           created_at?: string | null
+          custom_daily_views_limit?: number | null
           email?: string
           full_name?: string
           id?: string
@@ -2143,6 +2146,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_daily_views: {
+        Row: {
+          created_at: string
+          id: string
+          notified_100: boolean
+          notified_80: boolean
+          total_views: number
+          updated_at: string
+          user_id: string
+          view_date: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notified_100?: boolean
+          notified_80?: boolean
+          total_views?: number
+          updated_at?: string
+          user_id: string
+          view_date?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notified_100?: boolean
+          notified_80?: boolean
+          total_views?: number
+          updated_at?: string
+          user_id?: string
+          view_date?: string
+        }
+        Relationships: []
       }
       user_kyc_submissions: {
         Row: {
@@ -2307,6 +2343,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_view_sessions: {
+        Row: {
+          counted: boolean
+          first_seen_at: string
+          funnel_id: string
+          id: string
+          session_id: string
+          user_id: string
+          view_date: string
+        }
+        Insert: {
+          counted?: boolean
+          first_seen_at?: string
+          funnel_id: string
+          id?: string
+          session_id: string
+          user_id: string
+          view_date?: string
+        }
+        Update: {
+          counted?: boolean
+          first_seen_at?: string
+          funnel_id?: string
+          id?: string
+          session_id?: string
+          user_id?: string
+          view_date?: string
+        }
+        Relationships: []
       }
       video_asset_access: {
         Row: {
@@ -2491,10 +2557,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      increment_funnel_daily_view: {
-        Args: { _funnel_id: string }
-        Returns: number
-      }
       increment_funnel_views: {
         Args: { _funnel_id: string }
         Returns: undefined
@@ -2502,6 +2564,10 @@ export type Database = {
       increment_landing_page_views: {
         Args: { _landing_page_id: string }
         Returns: undefined
+      }
+      increment_user_daily_view: {
+        Args: { _funnel_id: string; _session_id: string }
+        Returns: Json
       }
       is_nevorai_member: { Args: { _user_id: string }; Returns: boolean }
       move_to_dlq: {

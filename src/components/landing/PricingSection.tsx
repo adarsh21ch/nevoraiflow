@@ -1,9 +1,12 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Check, X, Crown } from "lucide-react";
+import { Check, X, Crown, Info } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+const VIEWS_TOOLTIP = "Total unique viewers across all your funnels per day. Resets at midnight IST.";
 
 const freePlan = {
   name: "Free",
@@ -203,6 +206,20 @@ export const PricingSection = () => {
                     <span className={f.included ? "text-foreground" : "text-muted-foreground/60"}>
                       {f.text}
                     </span>
+                    {(f as any).tooltip && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                              <Info size={11} />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[220px] text-xs">
+                            {(f as any).tooltip}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -1,9 +1,60 @@
 import { AdminLayout } from "@/components/layout/AdminLayout";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Save } from "lucide-react";
+import { toast } from "sonner";
+
+const DailyViewsOverrideField = ({
+  userId,
+  initial,
+}: {
+  userId: string;
+  initial: number | null;
+}) => {
+  const qc = useQueryClient();
+  const [value, setValue] = useState<string>(initial == null ? "" : String(initial));
+  const [saving, setSaving] = useState(false);
+  const dirty = (initial == null ? "" : String(initial)) !== value;
+
+  const save = async () => {
+    setSaving(true);
+    const parsed = value === "" ? null : parseInt(value, 10);
+    if (value !== "" && Number.isNaN(parsed)) {
+      toast.error("Enter a number or leave empty");
+      setSaving(false);
+      return;
+    }
+    const { error } = await supabase
+      .from("profiles")
+      .update({ custom_daily_views_limit: parsed } as any)
+      .eq("id", userId);
+    setSaving(false);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Override saved");
+      qc.invalidateQueries({ queryKey: ["admin-all-profiles"] });
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1.5 justify-end">
+      <Input
+        value={value}
+        onChange={(e) => setValue(e.target.value.replace(/[^0-9-]/g, ""))}
+        placeholder="plan"
+        className="h-7 w-16 text-[11px]"
+      />
+      {dirty && (
+        <Button size="sm" variant="ghost" className="h-7 px-2" onClick={save} disabled={saving}>
+          <Save size={12} />
+        </Button>
+      )}
+    </div>
+  );
+};
 
 const AdminUsersPage = () => {
   const [search, setSearch] = useState("");
@@ -50,6 +101,10 @@ const AdminUsersPage = () => {
                   <th className="p-4 text-xs text-muted-foreground font-medium">Plan</th>
                   <th className="p-4 text-xs text-muted-foreground font-medium">KYC</th>
                   <th className="p-4 text-xs text-muted-foreground font-medium">Joined</th>
+                  <th className="p-4 text-xs text-muted-foreground font-medium text-right">
+                    Daily views override
+                    <p className="text-[10px] font-normal normal-case opacity-70">empty = use plan · -1 = unlimited</p>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -60,10 +115,11 @@ const AdminUsersPage = () => {
                       <td className="p-4"><div className="h-4 bg-muted rounded w-16 animate-pulse" /></td>
                       <td className="p-4"><div className="h-4 bg-muted rounded w-16 animate-pulse" /></td>
                       <td className="p-4"><div className="h-4 bg-muted rounded w-20 animate-pulse" /></td>
+                      <td className="p-4"><div className="h-4 bg-muted rounded w-20 animate-pulse ml-auto" /></td>
                     </tr>
                   ))
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No users found</td></tr>
+                  <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No users found</td></tr>
                 ) : (
                   filtered.map((p) => {
                     const sub = subMap[p.id];
@@ -88,6 +144,9 @@ const AdminUsersPage = () => {
                         <td className="p-4 text-xs text-muted-foreground">
                           {p.created_at ? new Date(p.created_at).toLocaleDateString("en-IN") : "—"}
                         </td>
+                        <td className="p-4">
+                          <DailyViewsOverrideField userId={p.id} initial={(p as any).custom_daily_views_limit ?? null} />
+                        </td>
                       </tr>
                     );
                   })
@@ -107,7 +166,7 @@ const AdminUsersPage = () => {
             filtered.map((p) => {
               const sub = subMap[p.id];
               return (
-                <div key={p.id} className="glass-card p-3">
+                <div key={p.id} className="glass-card p-3 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">{p.full_name || "—"}</p>
@@ -122,7 +181,11 @@ const AdminUsersPage = () => {
                       </span>
                     </div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-1">
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/40">
+                    <span className="text-[10px] text-muted-foreground">Daily views override</span>
+                    <DailyViewsOverrideField userId={p.id} initial={(p as any).custom_daily_views_limit ?? null} />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
                     Joined {p.created_at ? new Date(p.created_at).toLocaleDateString("en-IN") : "—"}
                   </p>
                 </div>

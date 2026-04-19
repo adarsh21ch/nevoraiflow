@@ -1,37 +1,30 @@
-import { Lock, Clock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
-interface FunnelDailyLimitGateProps {
-  limit?: number;
-  currentCount?: number;
-}
+import { CalendarClock } from "lucide-react";
 
 /**
- * Shown to public viewers when a funnel has hit its daily view cap.
- * The limit is applied based on the funnel owner's plan — viewers don't
- * see the underlying number unless we choose to show it.
+ * Shown to public viewers when the creator has hit today's view pool.
+ * Calm, professional — never mentions limits, plans, or pricing.
  */
-export const FunnelDailyLimitGate = ({ limit, currentCount }: FunnelDailyLimitGateProps) => {
+export const FunnelDailyLimitGate = () => {
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center p-6 bg-background">
-      <div className="max-w-md w-full text-center space-y-5">
-        <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center">
-          <Lock className="text-muted-foreground" size={28} />
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center p-6 bg-background">
+      <div className="w-full max-w-md mx-auto rounded-2xl border border-border/60 bg-card/60 backdrop-blur p-8 text-center space-y-5">
+        <div className="w-12 h-12 mx-auto rounded-full bg-muted/40 flex items-center justify-center">
+          <CalendarClock className="text-muted-foreground" size={24} strokeWidth={1.5} />
         </div>
-        <div className="space-y-2">
-          <h1 className="text-xl font-heading font-semibold">Content unavailable right now</h1>
-          <p className="text-sm text-muted-foreground">
-            This page has reached its daily view limit. Please come back tomorrow.
-          </p>
-        </div>
-        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <Clock size={12} />
-          Resets at midnight IST
-        </div>
-        <Button variant="outline" onClick={() => window.location.reload()}>
-          Try again
-        </Button>
+        <h1 className="text-[20px] font-heading font-medium text-foreground leading-snug">
+          Today's viewing slots are fully booked.
+        </h1>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          This content is currently at full capacity for today.
+          <br />
+          New slots open tomorrow.
+        </p>
+        <div className="h-px bg-border/60 mx-auto w-2/3" />
+        <p className="text-[13px] text-muted-foreground leading-relaxed">
+          In the meantime, feel free to reach out to the person who shared this with you.
+        </p>
       </div>
+      <p className="text-[11px] text-muted-foreground/40 mt-6">Powered by Nevorai Flow</p>
     </div>
   );
 };
