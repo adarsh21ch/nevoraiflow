@@ -326,7 +326,7 @@ const CustomVideoPlayer = ({
       {/* Watermark — bottom-right, subtle */}
       {started && (
         <div className="absolute bottom-14 right-4 text-[11px] text-white/50 font-medium pointer-events-none select-none z-10 tracking-wide">
-          nFlow
+          Powered by nFlow
         </div>
       )}
 
@@ -785,9 +785,9 @@ const PublicFunnel = () => {
       >
         <div className="flex items-center gap-2">
           <img src={logoImg} alt="nFlow" className="h-6 w-6" />
-          <div className="flex items-baseline text-[15px]" style={{ lineHeight: 1 }}>
-            <span style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 600, color: tc.text, letterSpacing: "-0.02em" }}>Nevorai</span>
-            <span style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 800, color: tc.text, letterSpacing: "-0.03em", marginLeft: "4px" }}>Flow</span>
+          <div className="flex items-baseline text-[16px]" style={{ lineHeight: 1 }}>
+            <span style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontStyle: "italic", fontWeight: 300, color: tc.text, letterSpacing: "-0.02em" }}>n</span>
+            <span style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 800, color: tc.text, letterSpacing: "-0.03em" }}>Flow</span>
           </div>
         </div>
         <div className="flex items-center gap-1">
