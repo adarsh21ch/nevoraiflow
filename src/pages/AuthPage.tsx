@@ -129,6 +129,11 @@ const AuthPage = () => {
   const enterOtpFromAutoDetect = () => {
     if (!autoCheckInfo) return;
     setNevoraiInfo(autoCheckInfo);
+    // If the user already has an nFlow account, skip OTP and go to password login
+    if (autoCheckInfo.hasNflowAccount) {
+      setStage("login");
+      return;
+    }
     setStage("nevorai-otp");
     // Auto-send the OTP so they don't need an extra click
     handleSendOtp();
