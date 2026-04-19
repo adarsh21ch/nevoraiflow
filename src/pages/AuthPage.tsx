@@ -37,6 +37,12 @@ const AuthPage = () => {
   const [nevoraiInfo, setNevoraiInfo] = useState<NevoraiInfo | null>(null);
   const [failCount, setFailCount] = useState(0);
   const [lockUntil, setLockUntil] = useState(0);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendCount, setResendCount] = useState(0);
+  const [otpSendStatus, setOtpSendStatus] = useState<"idle" | "sending" | "sent" | "failed">("idle");
+  const [otpShake, setOtpShake] = useState(false);
+  const otpInputRef = useRef<HTMLInputElement>(null);
+  const lastAutoSubmittedRef = useRef<string>("");
 
   // Auto-detect state
   const [autoCheckStatus, setAutoCheckStatus] = useState<"idle" | "checking" | "match" | "none">("idle");
