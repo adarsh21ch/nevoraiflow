@@ -43,6 +43,7 @@ const AuthPage = () => {
   const [otpShake, setOtpShake] = useState(false);
   const otpInputRef = useRef<HTMLInputElement>(null);
   const lastAutoSubmittedRef = useRef<string>("");
+  const verifyOtpCodeRef = useRef<((code: string) => Promise<void>) | null>(null);
 
   // Auto-detect state
   const [autoCheckStatus, setAutoCheckStatus] = useState<"idle" | "checking" | "match" | "none">("idle");
@@ -329,14 +330,8 @@ const AuthPage = () => {
     await verifyOtpCode(otp);
   };
 
-  // Auto-submit when 6 digits are entered (debounced via ref to prevent dup)
-  useEffect(() => {
-    if (stage !== "nevorai-otp") return;
-    if (otp.length === 6 && !submitting && lastAutoSubmittedRef.current !== otp) {
-      lastAutoSubmittedRef.current = otp;
-      verifyOtpCode(otp);
-    }
-  }, [otp, stage, submitting]);
+  // Keep ref in sync so the auto-submit effect (declared above early return) can call it
+  verifyOtpCodeRef.current = verifyOtpCode;
 
   // Step 2c: Brand-new signup
   const handleSignup = async (e: React.FormEvent) => {
