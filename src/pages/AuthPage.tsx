@@ -10,7 +10,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type Stage = "email" | "login" | "signup" | "nevorai-otp";
+type Stage = "email" | "login" | "signup" | "nevorai-otp" | "set-password";
 
 interface NevoraiInfo {
   fullName?: string | null;
@@ -311,7 +311,10 @@ const AuthPage = () => {
             ? "Welcome! Individual plan unlocked."
             : "Welcome to the Nevorai family!",
         );
-        navigate("/dashboard");
+        // Offer one-time password setup so they can log in with email+password later.
+        // Skippable — OTP login still works as a fallback.
+        setForm((f) => ({ ...f, password: "" }));
+        setStage("set-password");
       } else {
         toast.error("Verified, but session could not be created. Try signing in.");
         setStage("login");
