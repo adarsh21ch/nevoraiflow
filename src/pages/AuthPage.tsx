@@ -131,6 +131,23 @@ const AuthPage = () => {
     };
   }, [form.email, stage]);
 
+  // Resend countdown ticker
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  // Reset resend tracking when leaving OTP stage
+  useEffect(() => {
+    if (stage !== "nevorai-otp") {
+      setResendCount(0);
+      setResendCooldown(0);
+      setOtpSendStatus("idle");
+      lastAutoSubmittedRef.current = "";
+    }
+  }, [stage]);
+
   // Move user into the OTP stage when they confirm a detected match
   const enterOtpFromAutoDetect = () => {
     if (!autoCheckInfo) return;
