@@ -94,6 +94,7 @@ const AuthPage = () => {
           exists: !!data?.exists,
           isPro: !!data?.isPro,
           fullName: data?.fullName ?? null,
+          hasNflowAccount: !!data?.hasNflowAccount,
         };
         lookupCacheRef.current.set(email, result);
 
@@ -104,7 +105,7 @@ const AuthPage = () => {
           if (controller.signal.aborted) return;
           if (result.exists) {
             setAutoCheckStatus("match");
-            setAutoCheckInfo({ fullName: result.fullName, isPro: result.isPro });
+            setAutoCheckInfo({ fullName: result.fullName, isPro: result.isPro, hasNflowAccount: result.hasNflowAccount });
           } else {
             setAutoCheckStatus("none");
             setAutoCheckInfo(null);
