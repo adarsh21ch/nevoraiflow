@@ -324,7 +324,7 @@ const AdminSubscriptionsPage = () => {
             <PlanField planName={planName} field="max_landing_pages" label="Max Landing Pages" hint="-1 = unlimited" value={config?.max_landing_pages} onSave={saveField} disabled={isDisabled} />
             <PlanField planName={planName} field="max_live_sessions" label="Max Live Sessions" hint="-1 = unlimited" value={config?.max_live_sessions} onSave={saveField} disabled={isDisabled} />
             <PlanField planName={planName} field="max_videos" label="Max Videos" hint="-1 = unlimited" value={config?.max_videos} onSave={saveField} disabled={isDisabled} />
-            <PlanField planName={planName} field="max_storage_mb" label="Max Storage (MB)" hint="-1 = unlimited" value={config?.max_storage_mb} onSave={saveField} disabled={isDisabled} />
+            <StorageFieldGB planName={planName} mbValue={config?.max_storage_mb} disabled={isDisabled} onSave={saveField} />
             <PlanField planName={planName} field="daily_view_limit" label="Total daily views (all funnels combined)" hint="Max total views per day across ALL funnels for users on this plan. -1 = unlimited." value={config?.daily_view_limit} onSave={saveField} disabled={isDisabled} />
             {!isFree && !isBasic && (
               <PlanField planName={planName} field="max_team_members" label="Max Team Members" hint="-1 = unlimited" value={config?.max_team_members} onSave={saveField} disabled={isDisabled} />
