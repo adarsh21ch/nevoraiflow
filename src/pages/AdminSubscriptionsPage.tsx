@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import type { PlanConfig } from "@/hooks/usePlanLimits";
 import { MemberGatewayTab } from "@/components/admin/MemberGatewayTab";
 import { EnterpriseInquiriesTab } from "@/components/admin/EnterpriseInquiriesTab";
+import { EnterpriseCardSettings } from "@/components/admin/EnterpriseCardSettings";
 
 const PlanField = ({ planName, field, label, type = "number", disabled = false, hint, value: initialValue, onSave }: {
   planName: string; field: string; label: string; type?: string; disabled?: boolean; hint?: string;
@@ -453,7 +454,18 @@ const AdminSubscriptionsPage = () => {
           </TabsContent>
 
           <TabsContent value="enterprise" className="space-y-3 pt-1">
-            <EnterpriseInquiriesTab />
+            <Tabs defaultValue="inquiries" className="space-y-3">
+              <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-flex">
+                <TabsTrigger value="inquiries" className="text-xs sm:text-sm">Inquiries</TabsTrigger>
+                <TabsTrigger value="card" className="text-xs sm:text-sm">Card Settings</TabsTrigger>
+              </TabsList>
+              <TabsContent value="inquiries" className="space-y-3 pt-1">
+                <EnterpriseInquiriesTab />
+              </TabsContent>
+              <TabsContent value="card" className="space-y-3 pt-1">
+                <EnterpriseCardSettings />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           <TabsContent value="audit" className="space-y-3 pt-1">
