@@ -22,23 +22,60 @@ const freePlan = {
   variant: "outline" as const,
 };
 
-const buildFeatures = (config: any) => {
-  const features: { text: string; included: boolean }[] = [];
+const formatStorage = (mb: number | null | undefined): string | null => {
+  if (mb == null) return null;
+  if (mb === -1) return "Unlimited storage";
+  if (mb <= 0) return null;
+  if (mb >= 1024) {
+    const gb = mb / 1024;
+    return `${gb % 1 === 0 ? gb : gb.toFixed(1)} GB storage`;
+  }
+  return `${mb} MB storage`;
+};
 
+const formatDailyViews = (limit: number | null | undefined): { text: string; tooltip: string } | null => {
+  if (limit == null) return null;
+  if (limit === -1) return { text: "Unlimited daily views", tooltip: VIEWS_TOOLTIP };
+  if (limit <= 0) return null;
+  return { text: `${limit.toLocaleString("en-IN")} views/day total`, tooltip: VIEWS_TOOLTIP };
+};
+
+const buildFeatures = (config: any) => {
+  const features: { text: string; included: boolean; tooltip?: string }[] = [];
+
+  // Funnels
   if (config.max_funnels === -1) features.push({ text: "Unlimited funnels", included: true });
   else if (config.max_funnels > 0) features.push({ text: `Up to ${config.max_funnels} funnels`, included: true });
 
+  // Landing pages
   if (config.feature_landing_pages) {
     if (config.max_landing_pages === -1) features.push({ text: "Unlimited landing pages", included: true });
     else if (config.max_landing_pages > 0) features.push({ text: `Up to ${config.max_landing_pages} landing pages`, included: true });
   }
 
+  // Live sessions
+  if (config.feature_go_live) {
+    if (config.max_live_sessions === -1) features.push({ text: "Unlimited live sessions", included: true });
+    else if (config.max_live_sessions > 0) features.push({ text: `Up to ${config.max_live_sessions} live sessions`, included: true });
+  }
+
+  // Videos
+  if (config.max_videos === -1) features.push({ text: "Unlimited video uploads", included: true });
+  else if (config.max_videos > 0) features.push({ text: `Up to ${config.max_videos} video uploads`, included: true });
+
+  // Storage
+  const storageText = formatStorage(config.max_storage_mb);
+  if (storageText) features.push({ text: storageText, included: true });
+
+  // Daily views — always show with tooltip
+  const dv = formatDailyViews(config.daily_view_limit);
+  if (dv) features.push({ text: dv.text, included: true, tooltip: dv.tooltip });
+
+  // Feature toggles
   features.push({ text: "Lead capture", included: !!config.feature_lead_capture });
   features.push({ text: "Analytics", included: !!config.feature_analytics });
   features.push({ text: "WhatsApp auto-message", included: !!config.feature_whatsapp_automation });
-
-  if (config.feature_go_live) features.push({ text: "Live broadcast", included: true });
-  else features.push({ text: "Live broadcast", included: false });
+  features.push({ text: "Live broadcast", included: !!config.feature_go_live });
 
   if (config.feature_video_sharing) features.push({ text: "Video sharing", included: true });
   if (config.feature_advanced_analytics) features.push({ text: "Advanced analytics", included: true });
@@ -57,6 +94,7 @@ export const PricingSection = () => {
     staleTime: 60_000,
   });
 
+  const freeConfig = planConfigs.find((c: any) => c.plan_name === "free");
   const basicConfig = planConfigs.find((c: any) => c.plan_name === "basic");
   const proConfig = planConfigs.find((c: any) => c.plan_name === "pro");
   const basicEnabled = basicConfig?.is_enabled !== false && !!basicConfig;
@@ -68,20 +106,26 @@ export const PricingSection = () => {
     period: string;
     daily: string;
     badge: string | null;
-    features: { text: string; included: boolean }[];
+    features: { text: string; included: boolean; tooltip?: string }[];
     cta: string;
     variant: "outline" | "default" | "hero";
     highlight: boolean;
   }[] = [];
 
-  // Free card always shown
+  // Free card — merge static "explore" features with DB-driven daily views
+  const freeFeatures: { text: string; included: boolean; tooltip?: string }[] = [...freePlan.features];
+  const freeDv = formatDailyViews(freeConfig?.daily_view_limit);
+  if (freeDv) {
+    freeFeatures.splice(3, 0, { text: freeDv.text, included: true, tooltip: freeDv.tooltip });
+  }
+
   cards.push({
     name: freePlan.name,
     price: "₹0",
     period: "",
     daily: "",
     badge: null,
-    features: freePlan.features,
+    features: freeFeatures,
     cta: freePlan.cta,
     variant: freePlan.variant,
     highlight: false,
