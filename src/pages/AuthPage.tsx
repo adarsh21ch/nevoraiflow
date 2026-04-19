@@ -162,6 +162,15 @@ const AuthPage = () => {
     handleSendOtp();
   };
 
+  // Auto-submit when 6 digits are entered (uses ref to prevent dup invocation)
+  useEffect(() => {
+    if (stage !== "nevorai-otp") return;
+    if (otp.length === 6 && !submitting && lastAutoSubmittedRef.current !== otp) {
+      lastAutoSubmittedRef.current = otp;
+      verifyOtpCodeRef.current?.(otp);
+    }
+  }, [otp, stage, submitting]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
