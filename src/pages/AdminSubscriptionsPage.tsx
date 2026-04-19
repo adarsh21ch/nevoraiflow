@@ -69,6 +69,71 @@ const PlanField = ({ planName, field, label, type = "number", disabled = false, 
   );
 };
 
+/**
+ * Storage field shown in GB to admins. Internally stored as MB in DB.
+ * 0.5 GB = 512 MB, 1 GB = 1024 MB, -1 = unlimited.
+ */
+const StorageFieldGB = ({ planName, mbValue, disabled, onSave }: {
+  planName: string; mbValue: number | null | undefined; disabled?: boolean;
+  onSave: (planName: string, field: string, value: any) => Promise<void>;
+}) => {
+  const mbToGb = (mb: number | null | undefined): string => {
+    if (mb == null) return "";
+    if (mb === -1) return "-1";
+    if (mb === 0) return "0";
+    return String(mb / 1024);
+  };
+
+  const [localValue, setLocalValue] = useState<string>(mbToGb(mbValue));
+  const [isDirty, setIsDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isDirty) setLocalValue(mbToGb(mbValue));
+  }, [mbValue, isDirty]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    let mb: number | null;
+    if (localValue === "") mb = null;
+    else {
+      const gb = parseFloat(localValue);
+      if (isNaN(gb)) mb = null;
+      else if (gb === -1) mb = -1;
+      else mb = Math.round(gb * 1024);
+    }
+    await onSave(planName, "max_storage_mb", mb);
+    setIsDirty(false);
+    setSaving(false);
+  };
+
+  return (
+    <div className="flex items-center gap-2 py-2">
+      <div className="flex-1 min-w-0">
+        <Label className="text-xs font-medium">Max Storage (GB)</Label>
+        <p className="text-[10px] text-muted-foreground">e.g. 0.5 = 500 MB · -1 = unlimited</p>
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <Input
+          type="number"
+          step="0.1"
+          value={localValue}
+          disabled={disabled}
+          className="w-16 sm:w-24 h-8 text-xs"
+          placeholder="-1=∞"
+          onChange={(e) => { setLocalValue(e.target.value); setIsDirty(true); }}
+          onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
+        />
+        {isDirty && (
+          <Button size="sm" className="h-8 gap-1 text-xs px-2" onClick={handleSave} disabled={saving}>
+            <Save size={12} />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const FEATURE_TOGGLES = [
   { field: "feature_funnel_creation", label: "Funnel Creation", desc: "Create video funnels", icon: Layers },
   { field: "feature_lead_capture", label: "Lead Capture", desc: "Collect leads via funnel forms", icon: Target },
