@@ -37,6 +37,13 @@ const AuthPage = () => {
   const [nevoraiInfo, setNevoraiInfo] = useState<NevoraiInfo | null>(null);
   const [failCount, setFailCount] = useState(0);
   const [lockUntil, setLockUntil] = useState(0);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendCount, setResendCount] = useState(0);
+  const [otpSendStatus, setOtpSendStatus] = useState<"idle" | "sending" | "sent" | "failed">("idle");
+  const [otpShake, setOtpShake] = useState(false);
+  const otpInputRef = useRef<HTMLInputElement>(null);
+  const lastAutoSubmittedRef = useRef<string>("");
+  const verifyOtpCodeRef = useRef<((code: string) => Promise<void>) | null>(null);
 
   // Auto-detect state
   const [autoCheckStatus, setAutoCheckStatus] = useState<"idle" | "checking" | "match" | "none">("idle");
@@ -125,6 +132,23 @@ const AuthPage = () => {
     };
   }, [form.email, stage]);
 
+  // Resend countdown ticker
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  // Reset resend tracking when leaving OTP stage
+  useEffect(() => {
+    if (stage !== "nevorai-otp") {
+      setResendCount(0);
+      setResendCooldown(0);
+      setOtpSendStatus("idle");
+      lastAutoSubmittedRef.current = "";
+    }
+  }, [stage]);
+
   // Move user into the OTP stage when they confirm a detected match
   const enterOtpFromAutoDetect = () => {
     if (!autoCheckInfo) return;
@@ -138,6 +162,15 @@ const AuthPage = () => {
     // Auto-send the OTP so they don't need an extra click
     handleSendOtp();
   };
+
+  // Auto-submit when 6 digits are entered (uses ref to prevent dup invocation)
+  useEffect(() => {
+    if (stage !== "nevorai-otp") return;
+    if (otp.length === 6 && !submitting && lastAutoSubmittedRef.current !== otp) {
+      lastAutoSubmittedRef.current = otp;
+      verifyOtpCodeRef.current?.(otp);
+    }
+  }, [otp, stage, submitting]);
 
   if (loading) {
     return (
@@ -206,41 +239,61 @@ const AuthPage = () => {
     }
   };
 
-  // Step 2a: Send OTP for Nevorai users
+  // Step 2a: Send OTP for Nevorai users (instant, no queue)
   const handleSendOtp = async () => {
+    if (resendCount >= 3) {
+      toast.error("Too many attempts. Please wait 10 minutes.");
+      return;
+    }
     setSubmitting(true);
+    setOtpSendStatus("sending");
     try {
       const { data, error } = await supabase.functions.invoke("verify-nevorai-member", {
         body: { email: form.email.trim().toLowerCase(), mode: "send_otp" },
       });
       if (error) throw error;
       if (data?.otpSent) {
-        toast.success("Verification code sent to your email");
+        setOtpSendStatus("sent");
+        setResendCooldown(30);
+        setResendCount((c) => c + 1);
+        setOtp("");
+        lastAutoSubmittedRef.current = "";
+        toast.success(`Code sent to ${form.email}. Check your inbox.`);
+        // Auto-focus the OTP input
+        setTimeout(() => otpInputRef.current?.focus(), 100);
       } else {
-        toast.error(data?.error || "Could not send code");
+        setOtpSendStatus("failed");
+        toast.error(data?.error || "Couldn't send code. Please try again.");
       }
     } catch (e: any) {
-      toast.error(e?.message || "Could not send code");
+      setOtpSendStatus("failed");
+      toast.error(e?.message || "Couldn't send code. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
+
+
   // Step 2b: Verify OTP and sign in / create account
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!/^\d{6}$/.test(otp)) {
+  const verifyOtpCode = async (code: string) => {
+    if (!/^\d{6}$/.test(code)) {
       toast.error("Enter the 6-digit code");
       return;
     }
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("confirm-nevorai-otp", {
-        body: { email: form.email.trim().toLowerCase(), code: otp },
+        body: { email: form.email.trim().toLowerCase(), code },
       });
       if (error) throw error;
       if (!data?.success) {
-        toast.error(data?.error || "Verification failed");
+        setOtpShake(true);
+        setTimeout(() => setOtpShake(false), 500);
+        setOtp("");
+        lastAutoSubmittedRef.current = "";
+        otpInputRef.current?.focus();
+        toast.error(data?.error || "Incorrect code. Try again.");
         return;
       }
       if (data.session?.access_token && data.session?.refresh_token) {
@@ -264,11 +317,21 @@ const AuthPage = () => {
         setStage("login");
       }
     } catch (e: any) {
+      setOtpShake(true);
+      setTimeout(() => setOtpShake(false), 500);
       toast.error(e?.message || "Verification failed");
     } finally {
       setSubmitting(false);
     }
   };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await verifyOtpCode(otp);
+  };
+
+  // Keep ref in sync so the auto-submit effect (declared above early return) can call it
+  verifyOtpCodeRef.current = verifyOtpCode;
 
   // Step 2c: Brand-new signup
   const handleSignup = async (e: React.FormEvent) => {
@@ -479,15 +542,23 @@ const AuthPage = () => {
                   <Label htmlFor="otp" className="text-sm">Verification code</Label>
                   <Input
                     id="otp"
+                    ref={otpInputRef}
                     inputMode="numeric"
+                    autoComplete="one-time-code"
                     maxLength={6}
                     placeholder="••••••"
-                    className="auth-input text-center tracking-[0.5em] text-lg"
+                    autoFocus
+                    className={`auth-input text-center tracking-[0.5em] text-lg ${otpShake ? "animate-shake border-destructive" : ""}`}
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    disabled={submitting}
                   />
                   <p className="text-xs" style={{ color: "#8899AA" }}>
-                    Sent to <span className="text-foreground">{form.email}</span>. Expires in 10 min.
+                    {otpSendStatus === "sending" ? (
+                      <span className="flex items-center gap-1.5"><Loader2 size={11} className="animate-spin" /> Sending your code…</span>
+                    ) : (
+                      <>Sent to <span className="text-foreground">{form.email}</span>. Check your inbox or spam folder. Expires in 10 min.</>
+                    )}
                   </p>
                 </div>
 
@@ -511,10 +582,14 @@ const AuthPage = () => {
                   variant="outline"
                   className="w-full"
                   size="lg"
-                  disabled={submitting}
+                  disabled={submitting || resendCooldown > 0 || resendCount >= 3}
                   onClick={handleSendOtp}
                 >
-                  Send code
+                  {resendCount >= 3
+                    ? "Too many attempts — wait 10 min"
+                    : resendCooldown > 0
+                      ? `Resend in ${resendCooldown}s`
+                      : "Resend code"}
                 </Button>
               </form>
             </div>

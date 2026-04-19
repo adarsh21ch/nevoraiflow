@@ -139,7 +139,11 @@ const AdminSubscriptionsPage = () => {
       s.plan_key.toLowerCase().includes(search.toLowerCase());
   });
 
-  const totalRevenue = subscriptions.reduce((a, s) => a + (s.amount_paid || 0), 0);
+  // Revenue: only count actually paid subs (active or cancelled but had a paid period),
+  // exclude free/manual/replaced rows that have amount_paid = 0 or null.
+  const totalRevenue = subscriptions
+    .filter((s) => s.billing_type !== "free" && s.billing_type !== "manual" && s.billing_type !== "nevorai_member")
+    .reduce((a, s) => a + (s.amount_paid || 0), 0);
   const activeCount = subscriptions.filter((s) => s.status === "active" && s.tier !== "free").length;
   const basicCount = subscriptions.filter((s) => s.status === "active" && s.tier === "basic").length;
   const proCount = subscriptions.filter((s) => s.status === "active" && s.tier === "pro").length;

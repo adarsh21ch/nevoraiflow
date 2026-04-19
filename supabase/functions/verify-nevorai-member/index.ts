@@ -280,47 +280,70 @@ Deno.serve(async (req) => {
       ip_address: req.headers.get("x-forwarded-for") || null,
     });
 
-    try {
-      const displayName = memberData?.fullName || "there";
-      const subject = "Your nFlow access code";
-      const html = `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#ffffff;color:#1a1a1a;padding:40px 20px;">
-  <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:12px;padding:32px;border:1px solid #e5e5e5;">
-    <div style="text-align:center;margin-bottom:20px;">
-      <h1 style="color:#22c55e;font-size:20px;margin:0;">Nevorai Flow</h1>
-    </div>
-    <h2 style="font-size:20px;margin:0 0 12px;color:#1a1a1a;">Hi ${displayName},</h2>
-    <p style="font-size:15px;line-height:1.6;color:#555;margin:0 0 20px;">
-      Use the access code below to ${isPro ? "activate your nFlow Individual plan" : "sign in to your nFlow account"}.
-    </p>
-    <div style="text-align:center;margin:24px 0;">
-      <div style="display:inline-block;font-size:32px;letter-spacing:10px;font-weight:700;background:#f5f5f5;padding:16px 24px;border-radius:10px;color:#111;">
-        ${code}
-      </div>
-    </div>
-    <p style="font-size:13px;color:#888;margin:0;text-align:center;">
-      This code expires in 10 minutes. If you didn't request it, you can ignore this email.
-    </p>
+    // INSTANT SEND — bypass queue. OTP must arrive in seconds, not minutes.
+    const subject = `Your nFlow verification code: ${code}`;
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:32px 16px;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#1a1a1a;">
+  <div style="max-width:480px;margin:0 auto;text-align:center;">
+    <p style="font-size:15px;color:#555;margin:0 0 8px;">Your verification code</p>
+    <p style="font-size:40px;font-weight:700;letter-spacing:10px;margin:16px 0 24px;color:#111;">${code}</p>
+    <p style="font-size:13px;color:#888;margin:0 0 4px;">This code expires in 10 minutes.</p>
+    <p style="font-size:13px;color:#888;margin:0 0 24px;">If you didn't request this, ignore this email.</p>
+    <p style="font-size:13px;color:#aaa;margin:0;">— Team Nevorai Flow</p>
   </div>
-</body>
-</html>`;
+</body></html>`;
+    const text = `Your verification code: ${code}\n\nThis code expires in 10 minutes.\nIf you didn't request this, ignore this email.\n\n— Team Nevorai Flow`;
 
-      await supabase.rpc("enqueue_email", {
-        queue_name: "transactional_emails",
-        payload: {
-          to: targetEmail,
-          subject,
-          html,
-          label: "nevorai_member_otp",
-          message_id: `nevorai-otp-${crypto.randomUUID()}`,
-          queued_at: new Date().toISOString(),
-          from: "Nevorai Flow",
-        },
-      });
-    } catch (e) {
-      console.error("[verify-nevorai-member] Failed to enqueue OTP email:", e);
+    async function sendOnce(): Promise<boolean> {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      try {
+        const res = await fetch(
+          `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-gmail-email`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            },
+            body: JSON.stringify({
+              to: targetEmail,
+              subject,
+              html,
+              text,
+              sender_name: "Nevorai Flow",
+            }),
+            signal: ctrl.signal,
+          },
+        );
+        clearTimeout(timer);
+        if (!res.ok) {
+          console.error(`[verify-nevorai-member] OTP send ${res.status}: ${await res.text()}`);
+          return false;
+        }
+        return true;
+      } catch (e) {
+        clearTimeout(timer);
+        console.error("[verify-nevorai-member] OTP send error:", e);
+        return false;
+      }
+    }
+
+    let sent = await sendOnce();
+    if (!sent) {
+      console.warn("[verify-nevorai-member] First send failed, retrying once");
+      sent = await sendOnce();
+    }
+    if (!sent) {
+      // Roll back the OTP row so the user can retry without burning rate limit
+      await supabase.from("member_otps").delete().eq("email", targetEmail).eq("code_hash", hash);
+      return new Response(
+        JSON.stringify({
+          error: "Could not send OTP email. Please check your email address or try again in a few seconds.",
+        }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     return new Response(
