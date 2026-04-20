@@ -431,8 +431,8 @@ const PricingFullPage = () => {
 
           <GuaranteeBanner />
 
+          <div className="max-w-lg mx-auto text-center space-y-4">
 
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <Shield size={16} /> Secure payments via Razorpay
             </div>
             <p className="text-sm text-muted-foreground">
