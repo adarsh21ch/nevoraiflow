@@ -348,10 +348,16 @@ const PricingFullPage = () => {
                 {isCurrentTier("basic") ? (
                   <Button disabled className="w-full">Current Plan</Button>
                 ) : (
-                  <Button className="w-full gap-2" onClick={() => handlePayment("basic")} disabled={loading === `basic_${billing}`}>
-                    {loading === `basic_${billing}` ? <Loader2 size={16} className="animate-spin" /> : null}
-                    Subscribe — ₹{getPrice(basicConfig).toLocaleString("en-IN")}/{billing === "monthly" ? "mo" : "yr"}
-                  </Button>
+                  <>
+                    <GuaranteePill />
+                    <Button className="w-full gap-2" onClick={() => handlePayment("basic")} disabled={loading === `basic_${billing}`}>
+                      {loading === `basic_${billing}` ? <Loader2 size={16} className="animate-spin" /> : null}
+                      Subscribe — ₹{getPrice(basicConfig).toLocaleString("en-IN")}/{billing === "monthly" ? "mo" : "yr"}
+                    </Button>
+                    <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
+                      <Shield size={10} className="text-emerald-500" /> Secure payment via Razorpay · UPI · Cards · NetBanking
+                    </p>
+                  </>
                 )}
               </motion.div>
             )}
@@ -382,10 +388,16 @@ const PricingFullPage = () => {
                 {isCurrentTier("pro") ? (
                   <Button disabled className="w-full">Current Plan</Button>
                 ) : (
-                  <Button className="w-full gap-2" onClick={() => handlePayment("pro")} disabled={loading === `pro_${billing}`}>
-                    {loading === `pro_${billing}` ? <Loader2 size={16} className="animate-spin" /> : <Crown size={16} />}
-                    Subscribe — ₹{getPrice(proConfig).toLocaleString("en-IN")}/{billing === "monthly" ? "mo" : "yr"}
-                  </Button>
+                  <>
+                    <GuaranteePill />
+                    <Button className="w-full gap-2" onClick={() => handlePayment("pro")} disabled={loading === `pro_${billing}`}>
+                      {loading === `pro_${billing}` ? <Loader2 size={16} className="animate-spin" /> : <Crown size={16} />}
+                      Subscribe — ₹{getPrice(proConfig).toLocaleString("en-IN")}/{billing === "monthly" ? "mo" : "yr"}
+                    </Button>
+                    <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
+                      <Shield size={10} className="text-emerald-500" /> Secure payment via Razorpay · UPI · Cards · NetBanking
+                    </p>
+                  </>
                 )}
               </motion.div>
             )}
