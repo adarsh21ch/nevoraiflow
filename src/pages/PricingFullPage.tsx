@@ -3,6 +3,7 @@ import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Footer } from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
 import { Check, X, Crown, Shield, Loader2, Users, User, Lock } from "lucide-react";
+import { GuaranteeBanner, GuaranteePill } from "@/components/GuaranteeBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
 import { useWhatsAppSupport } from "@/hooks/useWhatsAppSupport";
@@ -257,7 +258,7 @@ const PricingFullPage = () => {
               Choose Your <span className="gradient-text">Growth Plan</span>
             </h1>
             <p className="text-muted-foreground max-w-lg mx-auto mb-6">
-              Start free, scale as you grow.{basicEnabled && " Basic for individuals."}{proEnabled && " Pro for your whole team."}
+              Start risk-free. 7-day money-back guarantee on all paid plans.
             </p>
             {plan.isExpired && (
               <p className="text-sm text-destructive font-medium">Your plan has expired. Renew to restore access.</p>
