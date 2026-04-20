@@ -7,6 +7,12 @@ import { GuaranteeBanner, GuaranteePill } from "@/components/GuaranteeBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
 import { useWhatsAppSupport } from "@/hooks/useWhatsAppSupport";
+import { useCurrency, formatPrice } from "@/hooks/useCurrency";
+import { CurrencySwitcher } from "@/components/CurrencySwitcher";
+import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -118,6 +124,8 @@ const PricingFullPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
+  const { currency, gateway } = useCurrency();
+  const [stripeCheckout, setStripeCheckout] = useState<{ priceId: string } | null>(null);
 
   const { data: planConfigs = [] } = useQuery({
     queryKey: ["plan-configs"],
@@ -136,11 +144,19 @@ const PricingFullPage = () => {
 
   const getPrice = (config: any) => {
     if (!config) return 0;
+    if (currency === "USD") {
+      return billing === "monthly"
+        ? Number(config.usd_price_monthly || 0)
+        : Number(config.usd_price_yearly || 0);
+    }
     return billing === "monthly" ? config.monthly_price : config.yearly_price;
   };
 
   const getSavings = (config: any) => {
     if (!config) return 0;
+    if (currency === "USD") {
+      return Number(config.usd_price_monthly || 0) * 12 - Number(config.usd_price_yearly || 0);
+    }
     return config.monthly_price * 12 - config.yearly_price;
   };
 
