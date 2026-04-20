@@ -469,7 +469,7 @@ const PricingFullPage = () => {
 
           <div className="max-w-lg mx-auto text-center space-y-4">
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Shield size={16} /> Secure payments via Razorpay
+              <Shield size={16} /> Secure payments via {gateway === "stripe" ? "Stripe" : "Razorpay"}
             </div>
             <p className="text-sm text-muted-foreground">
               Need help choosing a plan?{" "}
@@ -481,6 +481,27 @@ const PricingFullPage = () => {
         </div>
       </div>
       <Footer />
+
+      {/* Stripe Embedded Checkout dialog */}
+      <Dialog open={!!stripeCheckout} onOpenChange={(o) => !o && setStripeCheckout(null)}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle>Complete your subscription</DialogTitle>
+            <DialogDescription>
+              Secure checkout powered by Stripe. 7-day money-back guarantee.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6 pb-6 max-h-[80vh] overflow-y-auto">
+            {stripeCheckout && (
+              <StripeEmbeddedCheckout
+                priceId={stripeCheckout.priceId}
+                customerEmail={user?.email}
+                userId={user?.id}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
