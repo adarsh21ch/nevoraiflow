@@ -247,11 +247,14 @@ Deno.serve(async (req) => {
         .eq("status", "active")
         .maybeSingle();
 
+      // IMPORTANT: plan_key must match a row in admin_subscription_plans
+      // (which is keyed by 'pro_monthly', not 'pro'). Otherwise usePlan
+      // can't resolve plan limits and the user falls back to FREE limits.
       if (existingSub) {
         await supabase
           .from("user_subscriptions")
           .update({
-            plan_key: "pro",
+            plan_key: "pro_monthly",
             tier: "pro",
             status: "active",
             billing_type: "nevorai_member",
@@ -262,7 +265,7 @@ Deno.serve(async (req) => {
       } else {
         await supabase.from("user_subscriptions").insert({
           user_id: userId,
-          plan_key: "pro",
+          plan_key: "pro_monthly",
           tier: "pro",
           status: "active",
           billing_type: "nevorai_member",
