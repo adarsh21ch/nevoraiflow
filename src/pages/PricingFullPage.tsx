@@ -337,7 +337,7 @@ const PricingFullPage = () => {
               <div className="mb-6">
                 <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Free</span>
                 <div className="flex items-baseline gap-1 mt-3">
-                  <span className="text-3xl font-heading font-bold">₹0</span>
+                  <span className="text-3xl font-heading font-bold">{formatPrice(0, currency)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">View-only, forever free</p>
               </div>
@@ -369,12 +369,12 @@ const PricingFullPage = () => {
                 <div className="mb-6">
                   <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium">Basic</span>
                   <div className="flex items-baseline gap-1 mt-3">
-                    <span className="text-3xl font-heading font-bold">₹{getPrice(basicConfig).toLocaleString("en-IN")}</span>
+                    <span className="text-3xl font-heading font-bold">{formatPrice(getPrice(basicConfig), currency)}</span>
                     <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
                   </div>
                   {billing === "monthly" && getSavings(basicConfig) > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      or ₹{basicConfig.yearly_price.toLocaleString("en-IN")}/year — save ₹{getSavings(basicConfig).toLocaleString("en-IN")}
+                      or {formatPrice(currency === "USD" ? Number(basicConfig.usd_price_yearly || 0) : basicConfig.yearly_price, currency)}/year — save {formatPrice(getSavings(basicConfig), currency)}
                     </p>
                   )}
                 </div>
@@ -388,10 +388,10 @@ const PricingFullPage = () => {
                     <GuaranteePill />
                     <Button className="w-full gap-2" onClick={() => handlePayment("basic")} disabled={loading === `basic_${billing}`}>
                       {loading === `basic_${billing}` ? <Loader2 size={16} className="animate-spin" /> : null}
-                      Subscribe — ₹{getPrice(basicConfig).toLocaleString("en-IN")}/{billing === "monthly" ? "mo" : "yr"}
+                      Subscribe — {formatPrice(getPrice(basicConfig), currency)}/{billing === "monthly" ? "mo" : "yr"}
                     </Button>
                     <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
-                      <Shield size={10} className="text-emerald-500" /> Secure payment via Razorpay · UPI · Cards · NetBanking
+                      <Shield size={10} className="text-emerald-500" /> {gateway === "stripe" ? "Secure payment via Stripe · Cards · Apple Pay · Google Pay" : "Secure payment via Razorpay · UPI · Cards · NetBanking"}
                     </p>
                   </>
                 )}
@@ -409,12 +409,12 @@ const PricingFullPage = () => {
                 <div className="mb-6">
                   <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-medium">Pro</span>
                   <div className="flex items-baseline gap-1 mt-3">
-                    <span className="text-3xl font-heading font-bold">₹{getPrice(proConfig).toLocaleString("en-IN")}</span>
+                    <span className="text-3xl font-heading font-bold">{formatPrice(getPrice(proConfig), currency)}</span>
                     <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
                   </div>
                   {billing === "monthly" && getSavings(proConfig) > 0 && (
                     <p className="text-xs text-primary mt-1">
-                      or ₹{proConfig.yearly_price.toLocaleString("en-IN")}/year — save ₹{getSavings(proConfig).toLocaleString("en-IN")}
+                      or {formatPrice(currency === "USD" ? Number(proConfig.usd_price_yearly || 0) : proConfig.yearly_price, currency)}/year — save {formatPrice(getSavings(proConfig), currency)}
                     </p>
                   )}
                 </div>
@@ -428,10 +428,10 @@ const PricingFullPage = () => {
                     <GuaranteePill />
                     <Button className="w-full gap-2" onClick={() => handlePayment("pro")} disabled={loading === `pro_${billing}`}>
                       {loading === `pro_${billing}` ? <Loader2 size={16} className="animate-spin" /> : <Crown size={16} />}
-                      Subscribe — ₹{getPrice(proConfig).toLocaleString("en-IN")}/{billing === "monthly" ? "mo" : "yr"}
+                      Subscribe — {formatPrice(getPrice(proConfig), currency)}/{billing === "monthly" ? "mo" : "yr"}
                     </Button>
                     <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
-                      <Shield size={10} className="text-emerald-500" /> Secure payment via Razorpay · UPI · Cards · NetBanking
+                      <Shield size={10} className="text-emerald-500" /> {gateway === "stripe" ? "Secure payment via Stripe · Cards · Apple Pay · Google Pay" : "Secure payment via Razorpay · UPI · Cards · NetBanking"}
                     </p>
                   </>
                 )}
