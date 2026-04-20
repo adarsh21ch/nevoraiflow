@@ -223,14 +223,17 @@ Deno.serve(async (req) => {
       createdNew = true;
     }
 
-    // Update profile flags + identifying info
+    // Update profile flags + identifying info.
+    // Only set nevorai_member=true for actual Pro members (the flag drives
+    // the "Nevorai Member" badge + welcome popup + free Individual access).
+    // Free Nevorai users get a linked account but no member benefits.
     await supabase
       .from("profiles")
       .update({
-        nevorai_member: true,
+        nevorai_member: isPro,
         nevorai_member_active: isPro,
         nevorai_member_source: "bridge",
-        nevorai_member_granted_at: new Date().toISOString(),
+        nevorai_member_granted_at: isPro ? new Date().toISOString() : null,
         nevorai_member_last_checked_at: new Date().toISOString(),
         ...(safeRegistry.full_name ? { full_name: safeRegistry.full_name } : {}),
         ...(safeRegistry.phone ? { phone: safeRegistry.phone } : {}),
@@ -247,11 +250,14 @@ Deno.serve(async (req) => {
         .eq("status", "active")
         .maybeSingle();
 
+      // IMPORTANT: plan_key must match a row in admin_subscription_plans
+      // (which is keyed by 'pro_monthly', not 'pro'). Otherwise usePlan
+      // can't resolve plan limits and the user falls back to FREE limits.
       if (existingSub) {
         await supabase
           .from("user_subscriptions")
           .update({
-            plan_key: "pro",
+            plan_key: "pro_monthly",
             tier: "pro",
             status: "active",
             billing_type: "nevorai_member",
@@ -262,7 +268,7 @@ Deno.serve(async (req) => {
       } else {
         await supabase.from("user_subscriptions").insert({
           user_id: userId,
-          plan_key: "pro",
+          plan_key: "pro_monthly",
           tier: "pro",
           status: "active",
           billing_type: "nevorai_member",
