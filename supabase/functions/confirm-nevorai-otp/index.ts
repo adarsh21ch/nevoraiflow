@@ -223,14 +223,17 @@ Deno.serve(async (req) => {
       createdNew = true;
     }
 
-    // Update profile flags + identifying info
+    // Update profile flags + identifying info.
+    // Only set nevorai_member=true for actual Pro members (the flag drives
+    // the "Nevorai Member" badge + welcome popup + free Individual access).
+    // Free Nevorai users get a linked account but no member benefits.
     await supabase
       .from("profiles")
       .update({
-        nevorai_member: true,
+        nevorai_member: isPro,
         nevorai_member_active: isPro,
         nevorai_member_source: "bridge",
-        nevorai_member_granted_at: new Date().toISOString(),
+        nevorai_member_granted_at: isPro ? new Date().toISOString() : null,
         nevorai_member_last_checked_at: new Date().toISOString(),
         ...(safeRegistry.full_name ? { full_name: safeRegistry.full_name } : {}),
         ...(safeRegistry.phone ? { phone: safeRegistry.phone } : {}),
