@@ -8,10 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import {
-  CreditCard, Calendar, Crown, ArrowRight, MessageCircle,
-  CheckCircle2, XCircle, Clock, AlertTriangle, RefreshCw,
+  CreditCard, Crown, ArrowRight, MessageCircle,
+  CheckCircle2, XCircle, Clock, AlertTriangle, RefreshCw, Shield,
 } from "lucide-react";
 import { format } from "date-fns";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { RefundRequestModal } from "@/components/RefundRequestModal";
 
 const statusConfig: Record<string, { label: string; icon: any; color: string }> = {
   active: { label: "Active", icon: CheckCircle2, color: "text-green-600" },
@@ -24,11 +28,41 @@ const statusConfig: Record<string, { label: string; icon: any; color: string }> 
 
 const BillingPage = () => {
   const { plan, isLoading } = usePlan();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const { isMember } = useNevoraiMember();
   const { openSupport } = useWhatsAppSupport();
+  const [refundModalOpen, setRefundModalOpen] = useState(false);
   const status = statusConfig[plan.status] || statusConfig.active;
   const StatusIcon = status.icon;
+
+  // Check existing refund request
+  const { data: existingRefund, refetch: refetchRefund } = useQuery({
+    queryKey: ["refund-request", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("refund_requests")
+        .select("id, status, requested_at")
+        .eq("user_id", user.id)
+        .in("status", ["pending", "approved"])
+        .order("requested_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Compute guarantee window from started_at
+  const startedAt = plan.startedAt ? new Date(plan.startedAt) : null;
+  const guaranteeExpiresAt = startedAt ? new Date(startedAt.getTime() + 7 * 86400_000) : null;
+  const now = new Date();
+  const inGuaranteeWindow =
+    plan.isPaid &&
+    plan.status === "active" &&
+    !!guaranteeExpiresAt &&
+    now < guaranteeExpiresAt &&
+    !existingRefund;
 
   if (isLoading) {
     return (
@@ -60,6 +94,47 @@ const BillingPage = () => {
             </div>
           )}
         </div>
+
+        {/* 7-day guarantee window banner */}
+        {inGuaranteeWindow && startedAt && guaranteeExpiresAt && (
+          <div className="rounded-2xl p-5 border border-emerald-500/30 bg-emerald-500/[0.06] space-y-3">
+            <div className="flex items-start gap-3">
+              <Shield className="text-emerald-500 shrink-0 mt-0.5" size={20} />
+              <div className="flex-1 space-y-1">
+                <p className="font-semibold text-foreground">You're within your 7-day guarantee window.</p>
+                <p className="text-xs text-muted-foreground">
+                  Subscribed on {format(startedAt, "dd MMM yyyy")} · Guarantee valid until {format(guaranteeExpiresAt, "dd MMM yyyy")}
+                </p>
+                <p className="text-sm text-muted-foreground pt-1">Not satisfied? Request a refund — no questions asked.</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-600"
+              onClick={() => setRefundModalOpen(true)}
+            >
+              Request Refund
+            </Button>
+          </div>
+        )}
+
+        {/* Existing refund-request status banner */}
+        {existingRefund && (
+          <div className="rounded-2xl p-4 border border-border bg-muted/30 flex items-start gap-3">
+            <Clock className="text-amber-600 shrink-0 mt-0.5" size={18} />
+            <div className="flex-1 text-sm">
+              <p className="font-medium">
+                Refund request {existingRefund.status === "approved" ? "approved" : "pending review"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Submitted on {format(new Date(existingRefund.requested_at), "dd MMM yyyy")}.
+                {existingRefund.status === "pending" && " We'll process it within 24 hours."}
+                {existingRefund.status === "approved" && " Refund will reflect in 5–7 business days."}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Plan Status Card */}
         <div className="glass-card p-6 space-y-5">
@@ -155,6 +230,12 @@ const BillingPage = () => {
           </div>
         )}
       </div>
+
+      <RefundRequestModal
+        open={refundModalOpen}
+        onClose={() => setRefundModalOpen(false)}
+        onSuccess={() => refetchRefund()}
+      />
     </DashboardLayout>
   );
 };

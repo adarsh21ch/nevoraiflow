@@ -3,6 +3,7 @@ import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Footer } from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
 import { Check, X, Crown, Shield, Loader2, Users, User, Lock } from "lucide-react";
+import { GuaranteeBanner, GuaranteePill } from "@/components/GuaranteeBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
 import { useWhatsAppSupport } from "@/hooks/useWhatsAppSupport";
@@ -183,9 +184,11 @@ const PricingFullPage = () => {
               },
             });
             if (verifyError) throw verifyError;
-            toast.success(`Payment successful! Welcome to ${planName.charAt(0).toUpperCase() + planName.slice(1)} 🎉`);
+            toast.success(`Payment successful! Welcome to ${planName.charAt(0).toUpperCase() + planName.slice(1)} 🎉 You're covered by our 7-day money-back guarantee.`, {
+              duration: 7000,
+            });
             refreshPlan();
-            setTimeout(() => navigate("/dashboard"), 1500);
+            setTimeout(() => navigate("/billing"), 1500);
           } catch {
             toast.error("Payment received but verification pending. Contact support.");
             openSupport("Hi, my payment was successful but access not unlocked. Payment ID: " + response.razorpay_payment_id);
@@ -257,7 +260,7 @@ const PricingFullPage = () => {
               Choose Your <span className="gradient-text">Growth Plan</span>
             </h1>
             <p className="text-muted-foreground max-w-lg mx-auto mb-6">
-              Start free, scale as you grow.{basicEnabled && " Basic for individuals."}{proEnabled && " Pro for your whole team."}
+              Start risk-free. 7-day money-back guarantee on all paid plans.
             </p>
             {plan.isExpired && (
               <p className="text-sm text-destructive font-medium">Your plan has expired. Renew to restore access.</p>
@@ -347,10 +350,16 @@ const PricingFullPage = () => {
                 {isCurrentTier("basic") ? (
                   <Button disabled className="w-full">Current Plan</Button>
                 ) : (
-                  <Button className="w-full gap-2" onClick={() => handlePayment("basic")} disabled={loading === `basic_${billing}`}>
-                    {loading === `basic_${billing}` ? <Loader2 size={16} className="animate-spin" /> : null}
-                    Subscribe — ₹{getPrice(basicConfig).toLocaleString("en-IN")}/{billing === "monthly" ? "mo" : "yr"}
-                  </Button>
+                  <>
+                    <GuaranteePill />
+                    <Button className="w-full gap-2" onClick={() => handlePayment("basic")} disabled={loading === `basic_${billing}`}>
+                      {loading === `basic_${billing}` ? <Loader2 size={16} className="animate-spin" /> : null}
+                      Subscribe — ₹{getPrice(basicConfig).toLocaleString("en-IN")}/{billing === "monthly" ? "mo" : "yr"}
+                    </Button>
+                    <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
+                      <Shield size={10} className="text-emerald-500" /> Secure payment via Razorpay · UPI · Cards · NetBanking
+                    </p>
+                  </>
                 )}
               </motion.div>
             )}
@@ -381,10 +390,16 @@ const PricingFullPage = () => {
                 {isCurrentTier("pro") ? (
                   <Button disabled className="w-full">Current Plan</Button>
                 ) : (
-                  <Button className="w-full gap-2" onClick={() => handlePayment("pro")} disabled={loading === `pro_${billing}`}>
-                    {loading === `pro_${billing}` ? <Loader2 size={16} className="animate-spin" /> : <Crown size={16} />}
-                    Subscribe — ₹{getPrice(proConfig).toLocaleString("en-IN")}/{billing === "monthly" ? "mo" : "yr"}
-                  </Button>
+                  <>
+                    <GuaranteePill />
+                    <Button className="w-full gap-2" onClick={() => handlePayment("pro")} disabled={loading === `pro_${billing}`}>
+                      {loading === `pro_${billing}` ? <Loader2 size={16} className="animate-spin" /> : <Crown size={16} />}
+                      Subscribe — ₹{getPrice(proConfig).toLocaleString("en-IN")}/{billing === "monthly" ? "mo" : "yr"}
+                    </Button>
+                    <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
+                      <Shield size={10} className="text-emerald-500" /> Secure payment via Razorpay · UPI · Cards · NetBanking
+                    </p>
+                  </>
                 )}
               </motion.div>
             )}
@@ -415,6 +430,8 @@ const PricingFullPage = () => {
               </table>
             </div>
           </div>
+
+          <GuaranteeBanner />
 
           <div className="max-w-lg mx-auto text-center space-y-4">
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
