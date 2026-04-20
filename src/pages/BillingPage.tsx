@@ -53,13 +53,16 @@ const BillingPage = () => {
     enabled: !!user,
   });
 
-  // Compute guarantee window from started_at
+  // Compute guarantee window from started_at.
+  // Nevorai Members didn't pay — guarantee does not apply to them.
   const startedAt = plan.startedAt ? new Date(plan.startedAt) : null;
   const guaranteeExpiresAt = startedAt ? new Date(startedAt.getTime() + 7 * 86400_000) : null;
   const now = new Date();
   const inGuaranteeWindow =
     plan.isPaid &&
     plan.status === "active" &&
+    !isMember &&
+    plan.billingType !== "nevorai_member" &&
     !!guaranteeExpiresAt &&
     now < guaranteeExpiresAt &&
     !existingRefund;
