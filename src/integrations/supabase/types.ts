@@ -1844,6 +1844,8 @@ export type Database = {
           plan_badge_text: string | null
           plan_name: string
           updated_at: string | null
+          usd_price_monthly: number
+          usd_price_yearly: number
           yearly_price: number
           yearly_validity_days: number
         }
@@ -1874,6 +1876,8 @@ export type Database = {
           plan_badge_text?: string | null
           plan_name: string
           updated_at?: string | null
+          usd_price_monthly?: number
+          usd_price_yearly?: number
           yearly_price?: number
           yearly_validity_days?: number
         }
@@ -1904,6 +1908,8 @@ export type Database = {
           plan_badge_text?: string | null
           plan_name?: string
           updated_at?: string | null
+          usd_price_monthly?: number
+          usd_price_yearly?: number
           yearly_price?: number
           yearly_validity_days?: number
         }
@@ -2343,45 +2349,66 @@ export type Database = {
         Row: {
           amount_paid: number | null
           billing_type: string | null
+          cancel_at_period_end: boolean
           created_at: string | null
+          current_period_end: string | null
+          environment: string | null
           expires_at: string | null
           id: string
+          payment_gateway: string
           plan_key: string
           razorpay_order_id: string | null
           razorpay_payment_id: string | null
           razorpay_subscription_id: string | null
           started_at: string | null
           status: string | null
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
+          stripe_subscription_id: string | null
           tier: string
           user_id: string
         }
         Insert: {
           amount_paid?: number | null
           billing_type?: string | null
+          cancel_at_period_end?: boolean
           created_at?: string | null
+          current_period_end?: string | null
+          environment?: string | null
           expires_at?: string | null
           id?: string
+          payment_gateway?: string
           plan_key: string
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           razorpay_subscription_id?: string | null
           started_at?: string | null
           status?: string | null
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
           tier: string
           user_id: string
         }
         Update: {
           amount_paid?: number | null
           billing_type?: string | null
+          cancel_at_period_end?: boolean
           created_at?: string | null
+          current_period_end?: string | null
+          environment?: string | null
           expires_at?: string | null
           id?: string
+          payment_gateway?: string
           plan_key?: string
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           razorpay_subscription_id?: string | null
           started_at?: string | null
           status?: string | null
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
           tier?: string
           user_id?: string
         }
