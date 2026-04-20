@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Check, X, Crown, Info } from "lucide-react";
+import { Check, X, Crown, Info, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -208,8 +208,28 @@ export const PricingSection = () => {
             Simple, Transparent <span className="gradient-text">Pricing</span>
           </h2>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            Start free. Upgrade when you need more control, more funnels, and better follow-up tools.
+            Start risk-free. 7-day money-back guarantee on all paid plans.
           </p>
+        </motion.div>
+
+        {/* Guarantee strip — sits above pricing cards so users see the safety net first */}
+        <motion.div
+          className="max-w-2xl mx-auto mb-10 flex items-center gap-3 sm:gap-4 rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/[0.08] via-emerald-500/[0.04] to-transparent px-4 sm:px-5 py-3.5"
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
+            <Shield className="text-emerald-500" size={18} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground leading-tight">
+              7-Day Money-Back Guarantee
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
+              Not happy within 7 days? We'll refund every rupee — no questions asked.
+            </p>
+          </div>
         </motion.div>
 
         <div className={`grid gap-6 ${gridCols}`}>
