@@ -154,9 +154,14 @@ const BillingPage = () => {
                 </div>
               </div>
             </div>
-            {plan.amountPaid && plan.amountPaid > 0 && (
+            {isMember ? (
+              <div className="text-right">
+                <p className="text-xl font-heading font-bold">₹0</p>
+                <p className="text-[11px] text-muted-foreground">Included with Nevorai Pro</p>
+              </div>
+            ) : plan.amountPaid && plan.amountPaid > 0 ? (
               <p className="text-xl font-heading font-bold">₹{plan.amountPaid}</p>
-            )}
+            ) : null}
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-sm">
@@ -186,7 +191,7 @@ const BillingPage = () => {
             )}
           </div>
 
-          {plan.razorpayPaymentId && (
+          {plan.razorpayPaymentId && !isMember && (
             <div className="text-xs text-muted-foreground border-t border-border pt-3">
               Payment ID: {plan.razorpayPaymentId}
             </div>
@@ -195,7 +200,9 @@ const BillingPage = () => {
 
         {/* Actions */}
         <div className="flex flex-wrap gap-3">
-          {(!plan.isPaid || plan.isExpired || plan.isExpiringSoon) && (
+          {/* Members already have Individual; show only the Leaders upsell (future plan).
+              Non-members see standard Upgrade/Renew CTA. */}
+          {!isMember && (!plan.isPaid || plan.isExpired || plan.isExpiringSoon) && (
             <Link to="/upgrade">
               <Button className="gap-2">
                 {plan.isExpired ? "Renew Plan" : plan.isExpiringSoon ? "Renew Now" : "Upgrade"}
