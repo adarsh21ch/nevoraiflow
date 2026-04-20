@@ -4,6 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { CurrencyProvider } from "@/hooks/useCurrency";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "@/components/auth/AdminRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -52,14 +54,17 @@ import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
 import InstallApp from "./pages/InstallApp";
+import CheckoutReturn from "./pages/CheckoutReturn";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
+    <CurrencyProvider>
     <TooltipProvider>
       <Sonner />
+      <PaymentTestModeBanner />
       <BrowserRouter>
         <AuthProvider>
           <ErrorBoundary>
@@ -79,6 +84,7 @@ const App = () => (
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/refund-policy" element={<RefundPolicyPage />} />
               <Route path="/install" element={<InstallApp />} />
+              <Route path="/checkout/return" element={<CheckoutReturn />} />
               <Route path="/f/:slug" element={<PublicFunnel />} />
               <Route path="/l/:slug" element={<PublicLandingPage />} />
               <Route path="/video/:id" element={<PublicVideoPage />} />
@@ -123,6 +129,7 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
+    </CurrencyProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

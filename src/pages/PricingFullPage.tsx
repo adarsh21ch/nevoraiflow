@@ -7,6 +7,12 @@ import { GuaranteeBanner, GuaranteePill } from "@/components/GuaranteeBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
 import { useWhatsAppSupport } from "@/hooks/useWhatsAppSupport";
+import { useCurrency, formatPrice } from "@/hooks/useCurrency";
+import { CurrencySwitcher } from "@/components/CurrencySwitcher";
+import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -118,6 +124,8 @@ const PricingFullPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
+  const { currency, gateway } = useCurrency();
+  const [stripeCheckout, setStripeCheckout] = useState<{ priceId: string } | null>(null);
 
   const { data: planConfigs = [] } = useQuery({
     queryKey: ["plan-configs"],
@@ -136,11 +144,19 @@ const PricingFullPage = () => {
 
   const getPrice = (config: any) => {
     if (!config) return 0;
+    if (currency === "USD") {
+      return billing === "monthly"
+        ? Number(config.usd_price_monthly || 0)
+        : Number(config.usd_price_yearly || 0);
+    }
     return billing === "monthly" ? config.monthly_price : config.yearly_price;
   };
 
   const getSavings = (config: any) => {
     if (!config) return 0;
+    if (currency === "USD") {
+      return Number(config.usd_price_monthly || 0) * 12 - Number(config.usd_price_yearly || 0);
+    }
     return config.monthly_price * 12 - config.yearly_price;
   };
 
@@ -152,9 +168,23 @@ const PricingFullPage = () => {
     const config = planConfigs.find((c: any) => c.plan_name === planName);
     if (!config) return;
 
-    const amount = billing === "monthly" ? config.monthly_price : config.yearly_price;
     const planKey = `${planName}_${billing}`;
 
+    // International users → Stripe (USD)
+    if (gateway === "stripe") {
+      const usdAmount = billing === "monthly"
+        ? Number(config.usd_price_monthly || 0)
+        : Number(config.usd_price_yearly || 0);
+      if (usdAmount <= 0) {
+        toast.error("USD pricing not configured for this plan. Contact support.");
+        return;
+      }
+      setStripeCheckout({ priceId: planKey });
+      return;
+    }
+
+    // Indian users → Razorpay (INR) — existing flow unchanged
+    const amount = billing === "monthly" ? config.monthly_price : config.yearly_price;
     setLoading(planKey);
     try {
       const scriptLoaded = await loadRazorpayScript();
@@ -214,7 +244,7 @@ const PricingFullPage = () => {
     } finally {
       setLoading(null);
     }
-  }, [user, profile, navigate, openSupport, refreshPlan, billing, planConfigs]);
+  }, [user, profile, navigate, openSupport, refreshPlan, billing, planConfigs, gateway]);
 
   const isCurrentTier = (t: string) => plan.isPaid && plan.tier === t && !plan.isExpired;
 
@@ -267,6 +297,10 @@ const PricingFullPage = () => {
             )}
           </motion.div>
 
+          {/* Currency switcher */}
+          <div className="flex justify-center mb-6">
+            <CurrencySwitcher />
+          </div>
           {/* Billing toggle */}
           {(basicEnabled || proEnabled) && (
             <div className="flex items-center justify-center gap-3 mb-10">
@@ -303,7 +337,7 @@ const PricingFullPage = () => {
               <div className="mb-6">
                 <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Free</span>
                 <div className="flex items-baseline gap-1 mt-3">
-                  <span className="text-3xl font-heading font-bold">₹0</span>
+                  <span className="text-3xl font-heading font-bold">{formatPrice(0, currency)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">View-only, forever free</p>
               </div>
@@ -335,12 +369,12 @@ const PricingFullPage = () => {
                 <div className="mb-6">
                   <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium">Basic</span>
                   <div className="flex items-baseline gap-1 mt-3">
-                    <span className="text-3xl font-heading font-bold">₹{getPrice(basicConfig).toLocaleString("en-IN")}</span>
+                    <span className="text-3xl font-heading font-bold">{formatPrice(getPrice(basicConfig), currency)}</span>
                     <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
                   </div>
                   {billing === "monthly" && getSavings(basicConfig) > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      or ₹{basicConfig.yearly_price.toLocaleString("en-IN")}/year — save ₹{getSavings(basicConfig).toLocaleString("en-IN")}
+                      or {formatPrice(currency === "USD" ? Number(basicConfig.usd_price_yearly || 0) : basicConfig.yearly_price, currency)}/year — save {formatPrice(getSavings(basicConfig), currency)}
                     </p>
                   )}
                 </div>
@@ -354,10 +388,10 @@ const PricingFullPage = () => {
                     <GuaranteePill />
                     <Button className="w-full gap-2" onClick={() => handlePayment("basic")} disabled={loading === `basic_${billing}`}>
                       {loading === `basic_${billing}` ? <Loader2 size={16} className="animate-spin" /> : null}
-                      Subscribe — ₹{getPrice(basicConfig).toLocaleString("en-IN")}/{billing === "monthly" ? "mo" : "yr"}
+                      Subscribe — {formatPrice(getPrice(basicConfig), currency)}/{billing === "monthly" ? "mo" : "yr"}
                     </Button>
                     <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
-                      <Shield size={10} className="text-emerald-500" /> Secure payment via Razorpay · UPI · Cards · NetBanking
+                      <Shield size={10} className="text-emerald-500" /> {gateway === "stripe" ? "Secure payment via Stripe · Cards · Apple Pay · Google Pay" : "Secure payment via Razorpay · UPI · Cards · NetBanking"}
                     </p>
                   </>
                 )}
@@ -375,12 +409,12 @@ const PricingFullPage = () => {
                 <div className="mb-6">
                   <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-medium">Pro</span>
                   <div className="flex items-baseline gap-1 mt-3">
-                    <span className="text-3xl font-heading font-bold">₹{getPrice(proConfig).toLocaleString("en-IN")}</span>
+                    <span className="text-3xl font-heading font-bold">{formatPrice(getPrice(proConfig), currency)}</span>
                     <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
                   </div>
                   {billing === "monthly" && getSavings(proConfig) > 0 && (
                     <p className="text-xs text-primary mt-1">
-                      or ₹{proConfig.yearly_price.toLocaleString("en-IN")}/year — save ₹{getSavings(proConfig).toLocaleString("en-IN")}
+                      or {formatPrice(currency === "USD" ? Number(proConfig.usd_price_yearly || 0) : proConfig.yearly_price, currency)}/year — save {formatPrice(getSavings(proConfig), currency)}
                     </p>
                   )}
                 </div>
@@ -394,10 +428,10 @@ const PricingFullPage = () => {
                     <GuaranteePill />
                     <Button className="w-full gap-2" onClick={() => handlePayment("pro")} disabled={loading === `pro_${billing}`}>
                       {loading === `pro_${billing}` ? <Loader2 size={16} className="animate-spin" /> : <Crown size={16} />}
-                      Subscribe — ₹{getPrice(proConfig).toLocaleString("en-IN")}/{billing === "monthly" ? "mo" : "yr"}
+                      Subscribe — {formatPrice(getPrice(proConfig), currency)}/{billing === "monthly" ? "mo" : "yr"}
                     </Button>
                     <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
-                      <Shield size={10} className="text-emerald-500" /> Secure payment via Razorpay · UPI · Cards · NetBanking
+                      <Shield size={10} className="text-emerald-500" /> {gateway === "stripe" ? "Secure payment via Stripe · Cards · Apple Pay · Google Pay" : "Secure payment via Razorpay · UPI · Cards · NetBanking"}
                     </p>
                   </>
                 )}
@@ -435,7 +469,7 @@ const PricingFullPage = () => {
 
           <div className="max-w-lg mx-auto text-center space-y-4">
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Shield size={16} /> Secure payments via Razorpay
+              <Shield size={16} /> Secure payments via {gateway === "stripe" ? "Stripe" : "Razorpay"}
             </div>
             <p className="text-sm text-muted-foreground">
               Need help choosing a plan?{" "}
@@ -447,6 +481,27 @@ const PricingFullPage = () => {
         </div>
       </div>
       <Footer />
+
+      {/* Stripe Embedded Checkout dialog */}
+      <Dialog open={!!stripeCheckout} onOpenChange={(o) => !o && setStripeCheckout(null)}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle>Complete your subscription</DialogTitle>
+            <DialogDescription>
+              Secure checkout powered by Stripe. 7-day money-back guarantee.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6 pb-6 max-h-[80vh] overflow-y-auto">
+            {stripeCheckout && (
+              <StripeEmbeddedCheckout
+                priceId={stripeCheckout.priceId}
+                customerEmail={user?.email}
+                userId={user?.id}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
