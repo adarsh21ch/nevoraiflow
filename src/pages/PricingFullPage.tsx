@@ -168,9 +168,23 @@ const PricingFullPage = () => {
     const config = planConfigs.find((c: any) => c.plan_name === planName);
     if (!config) return;
 
-    const amount = billing === "monthly" ? config.monthly_price : config.yearly_price;
     const planKey = `${planName}_${billing}`;
 
+    // International users → Stripe (USD)
+    if (gateway === "stripe") {
+      const usdAmount = billing === "monthly"
+        ? Number(config.usd_price_monthly || 0)
+        : Number(config.usd_price_yearly || 0);
+      if (usdAmount <= 0) {
+        toast.error("USD pricing not configured for this plan. Contact support.");
+        return;
+      }
+      setStripeCheckout({ priceId: planKey });
+      return;
+    }
+
+    // Indian users → Razorpay (INR) — existing flow unchanged
+    const amount = billing === "monthly" ? config.monthly_price : config.yearly_price;
     setLoading(planKey);
     try {
       const scriptLoaded = await loadRazorpayScript();
@@ -230,7 +244,7 @@ const PricingFullPage = () => {
     } finally {
       setLoading(null);
     }
-  }, [user, profile, navigate, openSupport, refreshPlan, billing, planConfigs]);
+  }, [user, profile, navigate, openSupport, refreshPlan, billing, planConfigs, gateway]);
 
   const isCurrentTier = (t: string) => plan.isPaid && plan.tier === t && !plan.isExpired;
 
