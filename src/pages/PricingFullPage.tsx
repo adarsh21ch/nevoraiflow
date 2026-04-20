@@ -184,9 +184,11 @@ const PricingFullPage = () => {
               },
             });
             if (verifyError) throw verifyError;
-            toast.success(`Payment successful! Welcome to ${planName.charAt(0).toUpperCase() + planName.slice(1)} 🎉`);
+            toast.success(`Payment successful! Welcome to ${planName.charAt(0).toUpperCase() + planName.slice(1)} 🎉 You're covered by our 7-day money-back guarantee.`, {
+              duration: 7000,
+            });
             refreshPlan();
-            setTimeout(() => navigate("/dashboard"), 1500);
+            setTimeout(() => navigate("/billing"), 1500);
           } catch {
             toast.error("Payment received but verification pending. Contact support.");
             openSupport("Hi, my payment was successful but access not unlocked. Payment ID: " + response.razorpay_payment_id);
