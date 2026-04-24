@@ -135,13 +135,12 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
         },
       });
 
-      // Persist the "allow copy link" preference on the new video asset
-      const newVideoId = (result as any)?.videoId || (result as any)?.id;
-      if (newVideoId) {
+      // Persist the "allow copy link" preference + description on the new video asset
+      if (result?.videoId) {
         await supabase
           .from("video_assets")
           .update({ allow_copy_link: allowCopyLink, description: description.trim() || null })
-          .eq("id", newVideoId);
+          .eq("id", result.videoId);
       }
 
       toast.success("Video uploaded successfully!");
