@@ -7,6 +7,7 @@ import { Video, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { VideoUploadModal } from "@/components/VideoUploadModal";
+import { CopyNflowLinkButton } from "@/components/CopyNflowLinkButton";
 
 const PublicVideoPage = () => {
   const { id } = useParams();
@@ -19,7 +20,7 @@ const PublicVideoPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("video_assets")
-        .select("id, title, description, public_url, thumbnail_url, duration_seconds, is_shared, owner_id")
+        .select("id, title, description, public_url, thumbnail_url, duration_seconds, is_shared, owner_id, allow_copy_link")
         .eq("id", id!)
         .eq("is_shared", true)
         .single();
@@ -96,6 +97,19 @@ const PublicVideoPage = () => {
           <p className="text-xs text-muted-foreground">
             Duration: {Math.floor(video.duration_seconds / 60)}:{(video.duration_seconds % 60).toString().padStart(2, "0")}
           </p>
+        )}
+
+        {/* Copy nFlow Link — viewer-facing reuse button */}
+        {video.allow_copy_link !== false && (
+          <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl bg-muted/40 border border-border">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium">Want to use this video in your own funnel?</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Copy the nFlow link, then go to nFlow → Videos → Add by nFlow Link.
+              </p>
+            </div>
+            <CopyNflowLinkButton videoId={video.id} />
+          </div>
         )}
 
         <div className="mt-8 text-center">
