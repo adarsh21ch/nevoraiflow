@@ -543,16 +543,20 @@ const MobilePricingCarousel = ({ items }: { items: { key: string; node: ReactNod
 
   return (
     <div className="md:hidden">
+      {/* py-4 on the carousel gives breathing room so the absolute -top-3 badges
+          aren't clipped by Embla's overflow-hidden viewport. items-stretch is
+          removed by passing no extra classes — children size to their own
+          content (md:h-full only kicks in on desktop). */}
       <Carousel setApi={setApi} opts={{ align: "center", loop: false }} className="w-full">
-        <CarouselContent className="-ml-4">
+        <CarouselContent className="-ml-4 py-4">
           {items.map((it) => (
             <CarouselItem key={it.key} className="pl-4 basis-[88%] sm:basis-[70%]">
-              <div className="h-full">{it.node}</div>
+              {it.node}
             </CarouselItem>
           ))}
         </CarouselContent>
       </Carousel>
-      <div className="flex items-center justify-center gap-2 mt-5">
+      <div className="flex items-center justify-center gap-2 mt-3">
         {items.map((it, i) => (
           <button
             key={it.key}
@@ -566,7 +570,7 @@ const MobilePricingCarousel = ({ items }: { items: { key: string; node: ReactNod
           />
         ))}
       </div>
-      <p className="text-center text-xs text-muted-foreground mt-3">Swipe to compare plans</p>
+      <p className="text-center text-xs text-muted-foreground mt-2">Swipe to compare plans</p>
     </div>
   );
 };
