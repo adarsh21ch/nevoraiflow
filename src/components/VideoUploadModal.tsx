@@ -9,8 +9,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/hooks/useAuth";
 import { uploadVideoToR2 } from "@/lib/r2VideoUpload";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, X, FileVideo, Loader2, Info, AlertCircle, RotateCcw, ChevronDown, AlertTriangle } from "lucide-react";
+import { Upload, X, FileVideo, Loader2, Info, AlertCircle, RotateCcw, ChevronDown, AlertTriangle, Copy } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface Props {
   open: boolean;
@@ -63,6 +65,7 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
   const [error, setError] = useState<string | null>(null);
   const [formatWarning, setFormatWarning] = useState<string | null>(null);
   const [tipOpen, setTipOpen] = useState(false);
+  const [allowCopyLink, setAllowCopyLink] = useState(true);
 
   const reset = () => {
     setFile(null);
@@ -74,6 +77,7 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
     setEta("");
     setError(null);
     setFormatWarning(null);
+    setAllowCopyLink(true);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,7 +114,7 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
     startTimeRef.current = Date.now();
 
     try {
-      await uploadVideoToR2({
+      const result = await uploadVideoToR2({
         file,
         title: title.trim(),
         onProgress: (percent, meta) => {
@@ -130,6 +134,15 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
           }
         },
       });
+
+      // Persist the "allow copy link" preference on the new video asset
+      const newVideoId = (result as any)?.videoId || (result as any)?.id;
+      if (newVideoId) {
+        await supabase
+          .from("video_assets")
+          .update({ allow_copy_link: allowCopyLink, description: description.trim() || null })
+          .eq("id", newVideoId);
+      }
 
       toast.success("Video uploaded successfully!");
       reset();
