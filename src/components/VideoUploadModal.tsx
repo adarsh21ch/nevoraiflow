@@ -6,10 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/hooks/useAuth";
 import { uploadVideoToR2 } from "@/lib/r2VideoUpload";
 import { toast } from "sonner";
-import { Upload, X, FileVideo, Loader2, Info, AlertCircle, RotateCcw } from "lucide-react";
+import { Upload, X, FileVideo, Loader2, Info, AlertCircle, RotateCcw, ChevronDown, AlertTriangle } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -21,11 +22,17 @@ const ALLOWED_EXTENSIONS = [".mp4", ".mov", ".webm"];
 const ALLOWED_MIME_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 const MAX_SIZE_BYTES = 500 * 1024 * 1024;
 
-const isAcceptedVideo = (file: File): boolean => {
+type AcceptResult = "ok" | "warn" | "reject";
+
+const checkVideoAcceptance = (file: File): AcceptResult => {
   const name = file.name.toLowerCase();
+  const isMp4 = name.endsWith(".mp4") || file.type === "video/mp4";
+  if (isMp4) return "ok";
+
   const extOk = ALLOWED_EXTENSIONS.some((ext) => name.endsWith(ext));
   const mimeOk = file.type ? ALLOWED_MIME_TYPES.includes(file.type) : true;
-  return extOk && mimeOk;
+  if (extOk && mimeOk) return "warn";
+  return "reject";
 };
 
 const formatEta = (seconds: number): string => {
@@ -36,6 +43,11 @@ const formatEta = (seconds: number): string => {
   const m = Math.ceil((seconds % 3600) / 60);
   return `${h}h ${m}m remaining`;
 };
+
+const FORMAT_WARNING_MSG =
+  "This format may not play correctly on all devices. For best results, upload a video downloaded from YouTube, or convert to MP4 using cloudconvert.com";
+const FORMAT_REJECT_MSG =
+  "This format may not play correctly. For best results, upload a video downloaded from YouTube, or convert your video to MP4 using cloudconvert.com";
 
 export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
   const { user } = useAuth();
@@ -49,6 +61,8 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
   const [eta, setEta] = useState("");
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [formatWarning, setFormatWarning] = useState<string | null>(null);
+  const [tipOpen, setTipOpen] = useState(false);
 
   const reset = () => {
     setFile(null);
@@ -59,6 +73,7 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
     setProcessing(false);
     setEta("");
     setError(null);
+    setFormatWarning(null);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,11 +81,10 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
     if (!f) return;
     setError(null);
 
-    if (!isAcceptedVideo(f)) {
-      toast.error(
-        "Please convert your video to MP4 format before uploading. Use any free converter like handbrake.fr or cloudconvert.com",
-        { duration: 7000 }
-      );
+    const result = checkVideoAcceptance(f);
+
+    if (result === "reject") {
+      toast.error(FORMAT_REJECT_MSG, { duration: 7000 });
       if (fileRef.current) fileRef.current.value = "";
       return;
     }
@@ -81,6 +95,7 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
       return;
     }
 
+    setFormatWarning(result === "warn" ? FORMAT_WARNING_MSG : null);
     setFile(f);
     if (!title) setTitle(f.name.replace(/\.[^/.]+$/, ""));
   };
@@ -103,7 +118,7 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
           if (meta && meta.loaded > 0) {
             const elapsedSec = (Date.now() - startTimeRef.current) / 1000;
             if (elapsedSec > 0.5) {
-              const speed = meta.loaded / elapsedSec; // bytes/sec
+              const speed = meta.loaded / elapsedSec;
               const remainingBytes = meta.total - meta.loaded;
               const remainingSec = remainingBytes / Math.max(speed, 1);
               setEta(formatEta(remainingSec));
@@ -145,11 +160,39 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="bg-card border-border max-w-md">
+      <DialogContent className="bg-card border-border max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-heading">Upload Video</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          {/* Pro Tip collapsible */}
+          <Collapsible open={tipOpen} onOpenChange={setTipOpen}>
+            <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/10">
+              <CollapsibleTrigger className="w-full flex items-center gap-2 p-3 text-left">
+                <Info size={16} className="shrink-0 text-indigo-300" />
+                <span className="flex-1 text-sm text-foreground">💡 Best video quality tip</span>
+                <ChevronDown
+                  size={16}
+                  className={`shrink-0 text-muted-foreground transition-transform ${tipOpen ? "rotate-180" : ""}`}
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                <div className="px-3 pb-3 text-sm text-muted-foreground space-y-2">
+                  <p className="font-medium text-foreground">💡 Pro Tip — For Best Playback Quality:</p>
+                  <p>
+                    Videos downloaded from YouTube play the smoothest on nFlow. If your video lags or buffers, try this:
+                  </p>
+                  <ol className="list-decimal list-inside space-y-1 pl-1">
+                    <li>Upload your video to YouTube (can be Unlisted)</li>
+                    <li>Download it using any YouTube downloader app</li>
+                    <li>Upload that downloaded file here</li>
+                  </ol>
+                  <p>This ensures perfect quality for all your viewers.</p>
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+
           <input
             ref={fileRef}
             type="file"
@@ -179,20 +222,35 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
                 <p className="text-xs text-muted-foreground">{formatSize(file.size)}</p>
               </div>
               {!busy && (
-                <button onClick={() => { setFile(null); setTitle(""); setError(null); }} className="text-muted-foreground hover:text-foreground">
+                <button onClick={() => { setFile(null); setTitle(""); setError(null); setFormatWarning(null); }} className="text-muted-foreground hover:text-foreground">
                   <X size={16} />
                 </button>
               )}
             </div>
           )}
 
+          {/* Soft format warning for MOV/WEBM */}
+          {formatWarning && !busy && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-xs text-yellow-300">
+              <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+              <p className="flex-1 leading-relaxed">⚠️ {formatWarning}</p>
+              <button
+                onClick={() => setFormatWarning(null)}
+                className="shrink-0 text-yellow-300/70 hover:text-yellow-300"
+                aria-label="Dismiss warning"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
           {/* Helper text + tooltip */}
           <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-            <span>Supported: MP4, MOV, WEBM | Max: 500MB</span>
+            <span>Supported: MP4, MOV, WEBM | Max: 500MB | YouTube downloads work best ✓</span>
             <TooltipProvider delayDuration={150}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button type="button" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Format help">
+                  <button type="button" className="text-muted-foreground hover:text-foreground transition-colors shrink-0" aria-label="Format help">
                     <Info size={14} />
                   </button>
                 </TooltipTrigger>
