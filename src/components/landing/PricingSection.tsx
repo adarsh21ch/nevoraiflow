@@ -343,7 +343,7 @@ export const PricingSection = () => {
             snap-x snap-mandatory md:snap-none
             -mx-4 px-4 md:mx-0 md:px-0
             pb-4 md:pb-0
-            scrollbar-hide
+            [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]
             ${gridCols}
           `}
         >
