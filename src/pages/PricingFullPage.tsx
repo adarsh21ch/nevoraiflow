@@ -355,7 +355,7 @@ const PricingFullPage = () => {
   );
 
   const basicCard: ReactNode = basicEnabled && basicConfig ? (
-    <motion.div className="glass-card p-6 flex flex-col h-full relative" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+    <motion.div className="glass-card p-6 flex flex-col md:h-full relative" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
       {basicConfig.plan_badge_text && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-card border border-border text-xs font-semibold flex items-center gap-1 whitespace-nowrap">
           <User size={12} /> {basicConfig.plan_badge_text}
