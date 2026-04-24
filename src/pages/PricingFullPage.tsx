@@ -440,7 +440,7 @@ const PricingFullPage = () => {
           </p>
         )}
       </div>
-      <ul className="space-y-2.5 flex-1 mb-6">
+      <ul className="space-y-2.5 mb-6 max-h-[260px] overflow-y-auto pr-1 md:max-h-none md:overflow-visible md:flex-1">
         {proFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
       </ul>
       {effectivePro ? (
