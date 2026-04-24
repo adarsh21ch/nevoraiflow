@@ -1,18 +1,25 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/landing/Logo";
-import { Video } from "lucide-react";
+import { Video, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { VideoUploadModal } from "@/components/VideoUploadModal";
 
 const PublicVideoPage = () => {
   const { id } = useParams();
+  const { user } = useAuth();
+  const [videoError, setVideoError] = useState(false);
+  const [reuploadOpen, setReuploadOpen] = useState(false);
 
-  const { data: video, isLoading, error } = useQuery({
+  const { data: video, isLoading, error, refetch } = useQuery({
     queryKey: ["public-video", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("video_assets")
-        .select("id, title, description, public_url, thumbnail_url, duration_seconds, is_shared")
+        .select("id, title, description, public_url, thumbnail_url, duration_seconds, is_shared, owner_id")
         .eq("id", id!)
         .eq("is_shared", true)
         .single();
@@ -45,6 +52,8 @@ const PublicVideoPage = () => {
     );
   }
 
+  const isOwner = !!user && user.id === video.owner_id;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -53,12 +62,26 @@ const PublicVideoPage = () => {
         </div>
 
         <div className="aspect-video bg-card rounded-xl overflow-hidden mb-6 relative">
-          {video.public_url ? (
+          {videoError ? (
+            <div className="w-full h-full flex flex-col items-center justify-center text-center px-4 gap-3">
+              <AlertTriangle size={36} className="text-destructive" />
+              <p className="text-sm font-medium">Video format not supported.</p>
+              <p className="text-xs text-muted-foreground">Please re-upload as MP4 format.</p>
+              {isOwner && (
+                <Button size="sm" variant="hero" onClick={() => setReuploadOpen(true)}>
+                  Re-upload
+                </Button>
+              )}
+            </div>
+          ) : video.public_url ? (
             <video
               src={video.public_url}
               controls
+              preload="metadata"
+              playsInline
               className="w-full h-full"
               poster={video.thumbnail_url || undefined}
+              onError={() => setVideoError(true)}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -79,6 +102,14 @@ const PublicVideoPage = () => {
           <p className="text-xs text-muted-foreground">Powered by <span className="gradient-text font-heading font-semibold">nFlow</span></p>
         </div>
       </div>
+
+      {isOwner && (
+        <VideoUploadModal
+          open={reuploadOpen}
+          onClose={() => setReuploadOpen(false)}
+          onSuccess={() => { setVideoError(false); setReuploadOpen(false); refetch(); }}
+        />
+      )}
     </div>
   );
 };
