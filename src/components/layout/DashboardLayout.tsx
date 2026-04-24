@@ -19,7 +19,6 @@ import {
   Radio,
   FileText,
   Menu,
-  Home,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -179,14 +178,6 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
 
           <div className="shrink-0 space-y-1 border-t border-border px-2 py-4">
             {bottomItems.map((item) => renderNavItem(item))}
-            <Link
-              to="/"
-              className="flex items-center gap-3 rounded-lg border-l-2 border-transparent px-3 py-2.5 text-sm font-medium text-sidebar-foreground transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              title="Back to nFlow.com"
-            >
-              <Home size={18} />
-              {!collapsed && <span>Back to nFlow.com</span>}
-            </Link>
             <button
               onClick={handleLogout}
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive transition-all hover:bg-destructive/10"
@@ -254,15 +245,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
                         </>
                       )}
                     </nav>
-                    <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-card p-3 space-y-1">
-                      <Link
-                        to="/"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="flex min-h-[46px] items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-foreground transition-all hover:bg-muted"
-                      >
-                        <Home size={18} />
-                        <span>Back to nFlow.com</span>
-                      </Link>
+                    <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-card p-3">
                       <button
                         onClick={() => {
                           setMobileMenuOpen(false);
