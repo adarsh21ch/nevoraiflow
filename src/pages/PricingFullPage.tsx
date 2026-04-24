@@ -2,7 +2,7 @@ import { Navbar } from "@/components/landing/Navbar";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Footer } from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
-import { Check, X, Crown, Shield, Loader2, Users, User, Lock } from "lucide-react";
+import { Check, X, Crown, Shield, Loader2, Users, User, Lock, Tag } from "lucide-react";
 import { GuaranteeBanner, GuaranteePill } from "@/components/GuaranteeBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
