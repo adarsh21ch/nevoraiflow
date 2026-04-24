@@ -535,16 +535,18 @@ const PricingFullPage = () => {
               opts={{ align: "center", loop: false }}
               className="w-full"
             >
-              <CarouselContent className="-ml-4">
+              {/* py-4 prevents the absolute -top-3 badges from being clipped
+                  by Embla's overflow-hidden viewport. */}
+              <CarouselContent className="-ml-4 py-4">
                 {cards.map((c) => (
                   <CarouselItem key={c.key} className="pl-4 basis-[88%] sm:basis-[70%]">
-                    <div className="h-full">{c.node}</div>
+                    {c.node}
                   </CarouselItem>
                 ))}
               </CarouselContent>
             </Carousel>
             {/* Dot indicators */}
-            <div className="flex items-center justify-center gap-2 mt-5">
+            <div className="flex items-center justify-center gap-2 mt-3">
               {cards.map((c, i) => (
                 <button
                   key={c.key}
@@ -558,7 +560,7 @@ const PricingFullPage = () => {
                 />
               ))}
             </div>
-            <p className="text-center text-xs text-muted-foreground mt-3">
+            <p className="text-center text-xs text-muted-foreground mt-2">
               Swipe to compare plans
             </p>
           </div>
