@@ -364,11 +364,17 @@ const PricingFullPage = () => {
                   </div>
                 )}
                 <div className="mb-6">
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium">Basic</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium">Basic</span>
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
+                      <Tag size={10} /> Launch Price
+                    </span>
+                  </div>
                   <div className="flex items-baseline gap-1 mt-3">
                     <span className="text-3xl font-heading font-bold">{formatPrice(getPrice(basicConfig), currency)}</span>
                     <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
                   </div>
+                  <p className="text-[11px] text-muted-foreground italic mt-1">Introductory pricing — limited time</p>
                   {billing === "monthly" && getSavings(basicConfig) > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
                       or {formatPrice(currency === "USD" ? Number(basicConfig.usd_price_yearly || 0) : basicConfig.yearly_price, currency)}/year — save {formatPrice(getSavings(basicConfig), currency)}
