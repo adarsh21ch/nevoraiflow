@@ -379,9 +379,9 @@ export const PricingSection = () => {
                 variant={plan.variant}
                 className="w-full gap-2"
                 onClick={() => handlePlanClick(plan.name)}
-                disabled={loadingPlan === `${plan.name.toLowerCase()}_monthly`}
+                disabled={loadingPlan === `${plan.name.toLowerCase()}_${billing}`}
               >
-                {loadingPlan === `${plan.name.toLowerCase()}_monthly` && <Loader2 size={16} className="animate-spin" />}
+                {loadingPlan === `${plan.name.toLowerCase()}_${billing}` && <Loader2 size={16} className="animate-spin" />}
                 {plan.cta}
               </Button>
             </motion.div>
