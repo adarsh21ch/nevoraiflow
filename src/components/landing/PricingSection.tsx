@@ -121,6 +121,12 @@ export const PricingSection = () => {
   });
 
   const handlePlanClick = useCallback(async (planName: string) => {
+    const lname = planName.toLowerCase();
+    // Guard: don't let users re-purchase the plan they're already on
+    if ((lname === "basic" && onBasic) || (lname === "pro" && onPro)) {
+      toast.info("You're already on this plan.");
+      return;
+    }
     if (planName === "Free") {
       navigate(user ? "/dashboard" : "/auth?tab=signup");
       return;
