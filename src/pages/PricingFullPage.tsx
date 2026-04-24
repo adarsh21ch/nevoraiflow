@@ -122,10 +122,12 @@ const PricingFullPage = () => {
   const { plan, refreshPlan } = usePlan();
   const { openSupport } = useWhatsAppSupport();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState<string | null>(null);
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const { currency, gateway } = useCurrency();
   const [stripeCheckout, setStripeCheckout] = useState<{ priceId: string } | null>(null);
+  const autoTriggeredRef = useRef(false);
 
   const { data: planConfigs = [] } = useQuery({
     queryKey: ["plan-configs"],
