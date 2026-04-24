@@ -477,13 +477,13 @@ const PricingFullPage = () => {
 
             {/* Basic */}
             {basicEnabled && basicConfig && (
-              <motion.div className="glass-card p-6 flex flex-col relative" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+              <motion.div className="glass-card p-5 flex flex-col relative snap-center shrink-0 w-[85%] sm:w-[60%] md:w-auto" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
                 {basicConfig.plan_badge_text && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-card border border-border text-xs font-semibold flex items-center gap-1 whitespace-nowrap">
                     <User size={12} /> {basicConfig.plan_badge_text}
                   </div>
                 )}
-                <div className="mb-6">
+                <div className="mb-4">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium">Basic</span>
                     <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
@@ -495,39 +495,37 @@ const PricingFullPage = () => {
                     <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground italic mt-1">Introductory pricing — limited time</p>
-                  {billing === "monthly" && getSavings(basicConfig) > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      or {formatPrice(currency === "USD" ? Number(basicConfig.usd_price_yearly || 0) : basicConfig.yearly_price, currency)}/year — save {formatPrice(getSavings(basicConfig), currency)}
-                    </p>
-                  )}
                 </div>
-                <ul className="space-y-2.5 flex-1 mb-6">
+                <ul className="space-y-2 flex-1 mb-4">
                   {basicFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
                 </ul>
                 {isCurrentTier("basic") ? (
                   <Button disabled className="w-full">Current Plan</Button>
                 ) : (
                   <>
-                    <GuaranteePill />
                     <Button className="w-full gap-2" onClick={() => handlePayment("basic")} disabled={loading === `basic_${billing}`}>
                       {loading === `basic_${billing}` ? <Loader2 size={16} className="animate-spin" /> : null}
-                      Subscribe — {formatPrice(getPrice(basicConfig), currency)}/{billing === "monthly" ? "mo" : "yr"}
+                      Get Basic
                     </Button>
-                    <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
-                      <Shield size={10} className="text-emerald-500" /> {gateway === "stripe" ? "Secure payment via Stripe · Cards · Apple Pay · Google Pay" : "Secure payment via Razorpay · UPI · Cards · NetBanking"}
-                    </p>
                   </>
                 )}
+                <button
+                  type="button"
+                  onClick={scrollToComparison}
+                  className="mt-3 text-xs text-muted-foreground hover:text-primary transition-colors text-center inline-flex items-center justify-center gap-1"
+                >
+                  See all features <ChevronDown size={12} />
+                </button>
               </motion.div>
             )}
 
             {/* Pro */}
             {proEnabled && proConfig && (
-              <motion.div className="glass-card p-6 flex flex-col relative border-primary/40 glow-primary" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+              <motion.div className="glass-card p-5 flex flex-col relative border-primary/40 glow-primary snap-center shrink-0 w-[85%] sm:w-[60%] md:w-auto" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-xs font-semibold text-white flex items-center gap-1 whitespace-nowrap shadow-lg shadow-emerald-500/30">
                   <Crown size={12} /> Most Popular
                 </div>
-                <div className="mb-6">
+                <div className="mb-4">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-medium">Pro</span>
                     <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
@@ -539,31 +537,40 @@ const PricingFullPage = () => {
                     <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground italic mt-1">Introductory pricing — limited time</p>
-                  {billing === "monthly" && getSavings(proConfig) > 0 && (
-                    <p className="text-xs text-primary mt-1">
-                      or {formatPrice(currency === "USD" ? Number(proConfig.usd_price_yearly || 0) : proConfig.yearly_price, currency)}/year — save {formatPrice(getSavings(proConfig), currency)}
-                    </p>
-                  )}
                 </div>
-                <ul className="space-y-2.5 flex-1 mb-6">
+                <ul className="space-y-2 flex-1 mb-4">
                   {proFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
                 </ul>
                 {isCurrentTier("pro") ? (
                   <Button disabled className="w-full">Current Plan</Button>
                 ) : (
                   <>
-                    <GuaranteePill />
                     <Button className="w-full gap-2" onClick={() => handlePayment("pro")} disabled={loading === `pro_${billing}`}>
                       {loading === `pro_${billing}` ? <Loader2 size={16} className="animate-spin" /> : <Crown size={16} />}
-                      Subscribe — {formatPrice(getPrice(proConfig), currency)}/{billing === "monthly" ? "mo" : "yr"}
+                      Go Pro
                     </Button>
-                    <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
-                      <Shield size={10} className="text-emerald-500" /> {gateway === "stripe" ? "Secure payment via Stripe · Cards · Apple Pay · Google Pay" : "Secure payment via Razorpay · UPI · Cards · NetBanking"}
-                    </p>
                   </>
                 )}
+                <button
+                  type="button"
+                  onClick={scrollToComparison}
+                  className="mt-3 text-xs text-muted-foreground hover:text-primary transition-colors text-center inline-flex items-center justify-center gap-1"
+                >
+                  See all features <ChevronDown size={12} />
+                </button>
               </motion.div>
             )}
+          </div>
+
+          {/* Mobile dot indicators — hint that cards are swipeable */}
+          <div className="flex md:hidden items-center justify-center gap-1.5 mb-8 -mt-4">
+            {Array.from({ length: 1 + (basicEnabled ? 1 : 0) + (proEnabled ? 1 : 0) }).map((_, idx) => (
+              <span
+                key={idx}
+                className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40"
+                aria-hidden
+              />
+            ))}
           </div>
 
           {/* Dynamic comparison table */}
