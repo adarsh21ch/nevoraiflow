@@ -10,6 +10,7 @@ import { useWhatsAppSupport } from "@/hooks/useWhatsAppSupport";
 import { useCurrency, formatPrice } from "@/hooks/useCurrency";
 import { CurrencySwitcher } from "@/components/CurrencySwitcher";
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
+import { AuthModal } from "@/components/auth/AuthModal";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
