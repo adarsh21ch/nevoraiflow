@@ -22,14 +22,26 @@ const freePlan = {
   features: [
     { text: "View shared funnels", included: true },
     { text: "Access public content", included: true },
-    { text: "Browse marketplace", included: true },
-    { text: "No funnel creation", included: false },
+    { text: "100 views/day", included: true },
     { text: "No lead capture", included: false },
-    { text: "No live broadcast", included: false },
   ],
   cta: "Start Free",
   variant: "outline" as const,
 };
+
+// Curated TOP 4 features per plan — keeps cards compact.
+// Full feature comparison still lives in the table on /pricing.
+const TOP_FEATURES: Record<"basic" | "pro", string[]> = {
+  basic: ["Up to 5 funnels", "Lead capture", "Analytics", "Video sharing"],
+  pro: ["Up to 15 funnels", "WhatsApp auto-message", "Advanced analytics", "Team members (up to 50)"],
+};
+
+const TOP_ENTERPRISE_FEATURES = [
+  "Unlimited everything",
+  "White-label branded app",
+  "Custom domain",
+  "Dedicated support",
+];
 
 const formatStorage = (mb: number | null | undefined): string | null => {
   if (mb == null) return null;
