@@ -26,6 +26,8 @@ import { FunnelLivePreview } from "@/components/funnel/FunnelLivePreview";
 import { SpeakerPhotoUpload } from "@/components/funnel/SpeakerPhotoUpload";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { usePlan } from "@/hooks/usePlan";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { StepLockOverlay } from "@/components/funnel/StepLockOverlay";
 import { Crown } from "lucide-react";
 
 interface FlowStep {
