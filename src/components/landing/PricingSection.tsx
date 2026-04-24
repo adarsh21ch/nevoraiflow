@@ -1,11 +1,13 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Check, X, Crown, Info, Shield, Loader2 } from "lucide-react";
+import { Check, X, Crown, Info, Shield, Loader2, Sparkles, ArrowUp } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { usePlan } from "@/hooks/usePlan";
+import { useNevoraiMember } from "@/hooks/useNevoraiMember";
 import { useWhatsAppSupport } from "@/hooks/useWhatsAppSupport";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -91,8 +93,14 @@ const buildFeatures = (config: any) => {
 export const PricingSection = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const { plan: userPlan } = usePlan();
+  const { isMember: isNevoraiMember } = useNevoraiMember();
   const { openSupport } = useWhatsAppSupport();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  const isCurrentTier = (t: string) => userPlan.isPaid && userPlan.tier === t && !userPlan.isExpired;
+  const onBasic = isCurrentTier("basic") || (!userPlan.isPaid && isNevoraiMember);
+  const onPro = isCurrentTier("pro");
 
   const { data: planConfigs = [] } = useQuery({
     queryKey: ["plan-configs-landing"],
@@ -113,6 +121,12 @@ export const PricingSection = () => {
   });
 
   const handlePlanClick = useCallback(async (planName: string) => {
+    const lname = planName.toLowerCase();
+    // Guard: don't let users re-purchase the plan they're already on
+    if ((lname === "basic" && onBasic) || (lname === "pro" && onPro)) {
+      toast.info("You're already on this plan.");
+      return;
+    }
     if (planName === "Free") {
       navigate(user ? "/dashboard" : "/auth?tab=signup");
       return;
@@ -377,15 +391,47 @@ export const PricingSection = () => {
                   </li>
                 ))}
               </ul>
-              <Button
-                variant={plan.variant}
-                className="w-full gap-2"
-                onClick={() => handlePlanClick(plan.name)}
-                disabled={loadingPlan === `${plan.name.toLowerCase()}_monthly`}
-              >
-                {loadingPlan === `${plan.name.toLowerCase()}_monthly` && <Loader2 size={16} className="animate-spin" />}
-                {plan.cta}
-              </Button>
+              {(() => {
+                const lname = plan.name.toLowerCase();
+                // Free card
+                if (lname === "free") {
+                  if (!user || (!userPlan.isPaid && !isNevoraiMember)) {
+                    return (
+                      <Button variant={plan.variant} className="w-full gap-2" onClick={() => handlePlanClick(plan.name)}>
+                        {plan.cta}
+                      </Button>
+                    );
+                  }
+                  return <Button variant="outline" disabled className="w-full">Current Plan</Button>;
+                }
+                // Basic card
+                if (lname === "basic") {
+                  if (onBasic) {
+                    return (
+                      <Button disabled className="w-full gap-2">
+                        {isNevoraiMember && !userPlan.isPaid ? (<><Sparkles size={14} /> Active via Nevorai membership</>) : "Current Plan"}
+                      </Button>
+                    );
+                  }
+                  if (onPro) return <Button disabled variant="outline" className="w-full">Included in Pro</Button>;
+                }
+                // Pro card
+                if (lname === "pro" && onPro) {
+                  return <Button disabled className="w-full">Current Plan</Button>;
+                }
+                const isUpgrade = lname === "pro" && onBasic;
+                return (
+                  <Button
+                    variant={plan.variant}
+                    className="w-full gap-2"
+                    onClick={() => handlePlanClick(plan.name)}
+                    disabled={loadingPlan === `${lname}_monthly`}
+                  >
+                    {loadingPlan === `${lname}_monthly` && <Loader2 size={16} className="animate-spin" />}
+                    {isUpgrade ? <><ArrowUp size={14} /> Upgrade to Pro</> : plan.cta}
+                  </Button>
+                );
+              })()}
             </motion.div>
           ))}
 

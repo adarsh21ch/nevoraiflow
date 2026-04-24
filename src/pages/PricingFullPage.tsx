@@ -2,23 +2,30 @@ import { Navbar } from "@/components/landing/Navbar";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Footer } from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
-import { Check, X, Crown, Shield, Loader2, Users, User, Lock, Tag } from "lucide-react";
+import { Check, X, Crown, Shield, Loader2, User, Lock, Tag, Sparkles, ArrowUp } from "lucide-react";
 import { GuaranteeBanner, GuaranteePill } from "@/components/GuaranteeBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
+import { useNevoraiMember } from "@/hooks/useNevoraiMember";
 import { useWhatsAppSupport } from "@/hooks/useWhatsAppSupport";
 import { useCurrency, formatPrice } from "@/hooks/useCurrency";
-import { CurrencySwitcher } from "@/components/CurrencySwitcher";
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { useState, useCallback, useEffect, useRef } from "react";
+import {
+  Carousel,
+  CarouselApi,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
+import { useState, useCallback, useEffect, useRef, ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 declare global {
   interface Window { Razorpay: any; }
@@ -120,6 +127,7 @@ const PricingFullPage = () => {
   useDocumentTitle("Pricing");
   const { user, profile } = useAuth();
   const { plan, refreshPlan } = usePlan();
+  const { isMember: isNevoraiMember } = useNevoraiMember();
   const { openSupport } = useWhatsAppSupport();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -128,6 +136,22 @@ const PricingFullPage = () => {
   const { currency, gateway } = useCurrency();
   const [stripeCheckout, setStripeCheckout] = useState<{ priceId: string } | null>(null);
   const autoTriggeredRef = useRef(false);
+
+  // Mobile carousel state
+  const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  useEffect(() => {
+    if (!carouselApi) return;
+    setActiveSlide(carouselApi.selectedScrollSnap());
+    const onSelect = () => setActiveSlide(carouselApi.selectedScrollSnap());
+    carouselApi.on("select", onSelect);
+    carouselApi.on("reInit", onSelect);
+    return () => {
+      carouselApi.off("select", onSelect);
+      carouselApi.off("reInit", onSelect);
+    };
+  }, [carouselApi]);
 
   const { data: planConfigs = [] } = useQuery({
     queryKey: ["plan-configs"],
@@ -164,7 +188,7 @@ const PricingFullPage = () => {
 
   const handlePayment = useCallback(async (planName: string) => {
     if (!user) {
-      navigate("/auth?tab=signup&redirect=/pricing");
+      navigate(`/auth?tab=signup&redirect=/pricing&plan=${planName}`);
       return;
     }
     const config = planConfigs.find((c: any) => c.plan_name === planName);
@@ -267,6 +291,11 @@ const PricingFullPage = () => {
   }, [searchParams, user, planConfigs, handlePayment, setSearchParams]);
 
   const isCurrentTier = (t: string) => plan.isPaid && plan.tier === t && !plan.isExpired;
+  // Treat verified Nevorai members as already on Basic for UI purposes only
+  // (their actual plan record is managed by the gateway; they shouldn't pay
+  // for Basic again).
+  const effectiveBasic = isCurrentTier("basic") || (!plan.isPaid && isNevoraiMember);
+  const effectivePro = isCurrentTier("pro");
 
   // Dynamic comparison table
   const buildComparisonRows = () => {
@@ -294,11 +323,158 @@ const PricingFullPage = () => {
     return rows;
   };
 
-  const enabledPlans = [basicEnabled, proEnabled].filter(Boolean).length;
-  const gridCols = enabledPlans === 0 ? "max-w-md mx-auto" : enabledPlans === 1 ? "md:grid-cols-2 max-w-3xl mx-auto" : "md:grid-cols-3 max-w-5xl mx-auto";
-
   const basicFeatures = basicConfig ? buildFeatureList(basicConfig) : [];
   const proFeatures = proConfig ? buildFeatureList(proConfig) : [];
+
+  // ---- Card builders (rendered into both desktop grid + mobile carousel) ----
+  const freeCard: ReactNode = (
+    <motion.div className="glass-card p-6 flex flex-col h-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="mb-6">
+        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Free</span>
+        <div className="flex items-baseline gap-1 mt-3">
+          <span className="text-3xl font-heading font-bold">{formatPrice(0, currency)}</span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">View-only, forever free</p>
+      </div>
+      <ul className="space-y-2.5 flex-1 mb-6">
+        {["View shared funnels", "Access public content", "Browse marketplace"].map(f => (
+          <li key={f} className="flex items-center gap-2 text-sm"><Check size={14} className="text-primary shrink-0" /> {f}</li>
+        ))}
+        {["Create funnels", "Create landing pages", "Go live", "Lead capture"].map(f => (
+          <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground/60"><X size={14} className="shrink-0" /> {f}</li>
+        ))}
+      </ul>
+      {!plan.isPaid && !plan.isExpired && !isNevoraiMember ? (
+        <Button variant="outline" disabled className="w-full">Current Plan</Button>
+      ) : (
+        <Button variant="outline" onClick={() => navigate(user ? "/dashboard" : "/auth?tab=signup")} className="w-full">
+          {user ? "Stay Free" : "Get Started"}
+        </Button>
+      )}
+    </motion.div>
+  );
+
+  const basicCard: ReactNode = basicEnabled && basicConfig ? (
+    <motion.div className="glass-card p-6 flex flex-col h-full relative" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+      {basicConfig.plan_badge_text && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-card border border-border text-xs font-semibold flex items-center gap-1 whitespace-nowrap">
+          <User size={12} /> {basicConfig.plan_badge_text}
+        </div>
+      )}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium">Basic</span>
+          <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
+            <Tag size={10} /> Launch Price
+          </span>
+        </div>
+        <div className="flex items-baseline gap-1 mt-3">
+          <span className="text-3xl font-heading font-bold">{formatPrice(getPrice(basicConfig), currency)}</span>
+          <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
+        </div>
+        <p className="text-[11px] text-muted-foreground italic mt-1">Introductory pricing — limited time</p>
+        {billing === "monthly" && getSavings(basicConfig) > 0 && (
+          <p className="text-xs text-muted-foreground mt-1">
+            or {formatPrice(currency === "USD" ? Number(basicConfig.usd_price_yearly || 0) : basicConfig.yearly_price, currency)}/year — save {formatPrice(getSavings(basicConfig), currency)}
+          </p>
+        )}
+      </div>
+      <ul className="space-y-2.5 flex-1 mb-6">
+        {basicFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
+      </ul>
+      {effectiveBasic ? (
+        <Button disabled className="w-full gap-2">
+          {isNevoraiMember && !plan.isPaid ? (
+            <><Sparkles size={14} /> Active via Nevorai membership</>
+          ) : (
+            "Current Plan"
+          )}
+        </Button>
+      ) : effectivePro ? (
+        <Button disabled variant="outline" className="w-full">Included in Pro</Button>
+      ) : (
+        <>
+          <GuaranteePill />
+          <Button className="w-full gap-2" onClick={() => handlePayment("basic")} disabled={loading === `basic_${billing}`}>
+            {loading === `basic_${billing}` ? <Loader2 size={16} className="animate-spin" /> : null}
+            Subscribe — {formatPrice(getPrice(basicConfig), currency)}/{billing === "monthly" ? "mo" : "yr"}
+          </Button>
+          <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
+            <Shield size={10} className="text-emerald-500" /> {gateway === "stripe" ? "Secure payment via Stripe · Cards · Apple Pay · Google Pay" : "Secure payment via Razorpay · UPI · Cards · NetBanking"}
+          </p>
+        </>
+      )}
+    </motion.div>
+  ) : null;
+
+  // Compute Pro upgrade-difference price (monthly)
+  const upgradeDiffMonthly = (() => {
+    if (!effectiveBasic || effectivePro) return null;
+    if (!basicConfig || !proConfig) return null;
+    const proPrice = getPrice(proConfig);
+    const basicPrice = getPrice(basicConfig);
+    const diff = Math.max(0, proPrice - basicPrice);
+    return diff;
+  })();
+
+  const proCard: ReactNode = proEnabled && proConfig ? (
+    <motion.div className="glass-card p-6 flex flex-col h-full relative border-primary/40 glow-primary" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+      <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-xs font-semibold text-white flex items-center gap-1 whitespace-nowrap shadow-lg shadow-emerald-500/30">
+        <Crown size={12} /> Most Popular
+      </div>
+      <div className="mb-6">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-medium">Pro</span>
+          <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
+            <Tag size={10} /> Launch Price
+          </span>
+        </div>
+        <div className="flex items-baseline gap-1 mt-3">
+          <span className="text-3xl font-heading font-bold">{formatPrice(getPrice(proConfig), currency)}</span>
+          <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
+        </div>
+        <p className="text-[11px] text-muted-foreground italic mt-1">Introductory pricing — limited time</p>
+        {billing === "monthly" && getSavings(proConfig) > 0 && (
+          <p className="text-xs text-primary mt-1">
+            or {formatPrice(currency === "USD" ? Number(proConfig.usd_price_yearly || 0) : proConfig.yearly_price, currency)}/year — save {formatPrice(getSavings(proConfig), currency)}
+          </p>
+        )}
+      </div>
+      <ul className="space-y-2.5 flex-1 mb-6">
+        {proFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
+      </ul>
+      {effectivePro ? (
+        <Button disabled className="w-full">Current Plan</Button>
+      ) : (
+        <>
+          <GuaranteePill />
+          <Button className="w-full gap-2" onClick={() => handlePayment("pro")} disabled={loading === `pro_${billing}`}>
+            {loading === `pro_${billing}` ? <Loader2 size={16} className="animate-spin" /> : effectiveBasic ? <ArrowUp size={16} /> : <Crown size={16} />}
+            {effectiveBasic
+              ? `Upgrade to Pro${upgradeDiffMonthly !== null && billing === "monthly" ? ` — +${formatPrice(upgradeDiffMonthly, currency)}/mo` : ""}`
+              : `Subscribe — ${formatPrice(getPrice(proConfig), currency)}/${billing === "monthly" ? "mo" : "yr"}`}
+          </Button>
+          <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
+            <Shield size={10} className="text-emerald-500" /> {gateway === "stripe" ? "Secure payment via Stripe · Cards · Apple Pay · Google Pay" : "Secure payment via Razorpay · UPI · Cards · NetBanking"}
+          </p>
+        </>
+      )}
+    </motion.div>
+  ) : null;
+
+  const cards: { key: string; node: ReactNode }[] = [
+    { key: "free", node: freeCard },
+    ...(basicCard ? [{ key: "basic", node: basicCard }] : []),
+    ...(proCard ? [{ key: "pro", node: proCard }] : []),
+  ];
+
+  const enabledPaidPlans = [basicEnabled, proEnabled].filter(Boolean).length;
+  const desktopGridCols =
+    enabledPaidPlans === 0
+      ? "md:grid-cols-1 max-w-md mx-auto"
+      : enabledPaidPlans === 1
+      ? "md:grid-cols-2 max-w-3xl mx-auto"
+      : "md:grid-cols-3 max-w-5xl mx-auto";
 
   return (
     <div className="min-h-screen">
@@ -315,9 +491,13 @@ const PricingFullPage = () => {
             {plan.isExpired && (
               <p className="text-sm text-destructive font-medium">Your plan has expired. Renew to restore access.</p>
             )}
+            {isNevoraiMember && !plan.isPaid && (
+              <div className="inline-flex items-center gap-2 mt-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-600 dark:text-emerald-400">
+                <Sparkles size={14} /> You have free Individual access via your Nevorai Pro membership
+              </div>
+            )}
           </motion.div>
 
-          {/* Currency switcher hidden — international payments temporarily disabled */}
           {/* Billing toggle */}
           {(basicEnabled || proEnabled) && (
             <div className="flex items-center justify-center gap-3 mb-10">
@@ -348,122 +528,48 @@ const PricingFullPage = () => {
             </div>
           )}
 
-          <div className={`grid gap-6 mb-16 ${gridCols}`}>
-            {/* Free */}
-            <motion.div className="glass-card p-6 flex flex-col" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <div className="mb-6">
-                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Free</span>
-                <div className="flex items-baseline gap-1 mt-3">
-                  <span className="text-3xl font-heading font-bold">{formatPrice(0, currency)}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">View-only, forever free</p>
+          {/* Mobile: swipeable carousel with dots */}
+          <div className="md:hidden mb-10">
+            <Carousel
+              setApi={setCarouselApi}
+              opts={{ align: "center", loop: false }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-4">
+                {cards.map((c) => (
+                  <CarouselItem key={c.key} className="pl-4 basis-[88%] sm:basis-[70%]">
+                    <div className="h-full">{c.node}</div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+            {/* Dot indicators */}
+            <div className="flex items-center justify-center gap-2 mt-5">
+              {cards.map((c, i) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  aria-label={`Show ${c.key} plan`}
+                  onClick={() => carouselApi?.scrollTo(i)}
+                  className={cn(
+                    "h-2 rounded-full transition-all",
+                    activeSlide === i ? "w-6 bg-primary" : "w-2 bg-muted-foreground/30",
+                  )}
+                />
+              ))}
+            </div>
+            <p className="text-center text-xs text-muted-foreground mt-3">
+              Swipe to compare plans
+            </p>
+          </div>
+
+          {/* Desktop: original grid */}
+          <div className={`hidden md:grid gap-6 mb-16 ${desktopGridCols}`}>
+            {cards.map((c) => (
+              <div key={c.key} className="h-full">
+                {c.node}
               </div>
-              <ul className="space-y-2.5 flex-1 mb-6">
-                {["View shared funnels", "Access public content", "Browse marketplace"].map(f => (
-                  <li key={f} className="flex items-center gap-2 text-sm"><Check size={14} className="text-primary shrink-0" /> {f}</li>
-                ))}
-                {["Create funnels", "Create landing pages", "Go live", "Lead capture"].map(f => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground/60"><X size={14} className="shrink-0" /> {f}</li>
-                ))}
-              </ul>
-              {!plan.isPaid && !plan.isExpired ? (
-                <Button variant="outline" disabled className="w-full">Current Plan</Button>
-              ) : (
-                <Button variant="outline" onClick={() => navigate(user ? "/dashboard" : "/auth?tab=signup")} className="w-full">
-                  {user ? "Stay Free" : "Get Started"}
-                </Button>
-              )}
-            </motion.div>
-
-            {/* Basic */}
-            {basicEnabled && basicConfig && (
-              <motion.div className="glass-card p-6 flex flex-col relative" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-                {basicConfig.plan_badge_text && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-card border border-border text-xs font-semibold flex items-center gap-1 whitespace-nowrap">
-                    <User size={12} /> {basicConfig.plan_badge_text}
-                  </div>
-                )}
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium">Basic</span>
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
-                      <Tag size={10} /> Launch Price
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-1 mt-3">
-                    <span className="text-3xl font-heading font-bold">{formatPrice(getPrice(basicConfig), currency)}</span>
-                    <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground italic mt-1">Introductory pricing — limited time</p>
-                  {billing === "monthly" && getSavings(basicConfig) > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      or {formatPrice(currency === "USD" ? Number(basicConfig.usd_price_yearly || 0) : basicConfig.yearly_price, currency)}/year — save {formatPrice(getSavings(basicConfig), currency)}
-                    </p>
-                  )}
-                </div>
-                <ul className="space-y-2.5 flex-1 mb-6">
-                  {basicFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
-                </ul>
-                {isCurrentTier("basic") ? (
-                  <Button disabled className="w-full">Current Plan</Button>
-                ) : (
-                  <>
-                    <GuaranteePill />
-                    <Button className="w-full gap-2" onClick={() => handlePayment("basic")} disabled={loading === `basic_${billing}`}>
-                      {loading === `basic_${billing}` ? <Loader2 size={16} className="animate-spin" /> : null}
-                      Subscribe — {formatPrice(getPrice(basicConfig), currency)}/{billing === "monthly" ? "mo" : "yr"}
-                    </Button>
-                    <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
-                      <Shield size={10} className="text-emerald-500" /> {gateway === "stripe" ? "Secure payment via Stripe · Cards · Apple Pay · Google Pay" : "Secure payment via Razorpay · UPI · Cards · NetBanking"}
-                    </p>
-                  </>
-                )}
-              </motion.div>
-            )}
-
-            {/* Pro */}
-            {proEnabled && proConfig && (
-              <motion.div className="glass-card p-6 flex flex-col relative border-primary/40 glow-primary" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-xs font-semibold text-white flex items-center gap-1 whitespace-nowrap shadow-lg shadow-emerald-500/30">
-                  <Crown size={12} /> Most Popular
-                </div>
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-medium">Pro</span>
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
-                      <Tag size={10} /> Launch Price
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-1 mt-3">
-                    <span className="text-3xl font-heading font-bold">{formatPrice(getPrice(proConfig), currency)}</span>
-                    <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground italic mt-1">Introductory pricing — limited time</p>
-                  {billing === "monthly" && getSavings(proConfig) > 0 && (
-                    <p className="text-xs text-primary mt-1">
-                      or {formatPrice(currency === "USD" ? Number(proConfig.usd_price_yearly || 0) : proConfig.yearly_price, currency)}/year — save {formatPrice(getSavings(proConfig), currency)}
-                    </p>
-                  )}
-                </div>
-                <ul className="space-y-2.5 flex-1 mb-6">
-                  {proFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
-                </ul>
-                {isCurrentTier("pro") ? (
-                  <Button disabled className="w-full">Current Plan</Button>
-                ) : (
-                  <>
-                    <GuaranteePill />
-                    <Button className="w-full gap-2" onClick={() => handlePayment("pro")} disabled={loading === `pro_${billing}`}>
-                      {loading === `pro_${billing}` ? <Loader2 size={16} className="animate-spin" /> : <Crown size={16} />}
-                      Subscribe — {formatPrice(getPrice(proConfig), currency)}/{billing === "monthly" ? "mo" : "yr"}
-                    </Button>
-                    <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
-                      <Shield size={10} className="text-emerald-500" /> {gateway === "stripe" ? "Secure payment via Stripe · Cards · Apple Pay · Google Pay" : "Secure payment via Razorpay · UPI · Cards · NetBanking"}
-                    </p>
-                  </>
-                )}
-              </motion.div>
-            )}
+            ))}
           </div>
 
           {/* Dynamic comparison table */}
