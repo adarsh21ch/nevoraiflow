@@ -19,10 +19,11 @@ const VIEWS_TOOLTIP = "Total unique viewers across all your funnels per day. Res
 const freePlan = {
   name: "Free",
   features: [
-    { text: "View shared funnels", included: true },
+    { text: "Create up to 2 funnels", included: true },
+    { text: "Upload up to 2 videos", included: true },
+    { text: "Add videos via nFlow Video Link", included: true },
     { text: "Access public content", included: true },
     { text: "Browse marketplace", included: true },
-    { text: "No funnel creation", included: false },
     { text: "No lead capture", included: false },
     { text: "No live broadcast", included: false },
   ],

@@ -17,8 +17,8 @@ export const CopyNflowLinkButton = ({ videoId, className = "", size = "sm" }: Pr
   const handleCopy = () => {
     const url = `${window.location.origin}/video/${videoId}`;
     navigator.clipboard.writeText(url);
-    toast.success("Link copied!", {
-      description: "Paste it into nFlow → Videos → Add by nFlow Link to reuse this video.",
+    toast.success("Video link copied!", {
+      description: "Open nFlow → Funnels → Add by Link and paste it to use this video in your funnel.",
     });
   };
 
@@ -28,10 +28,10 @@ export const CopyNflowLinkButton = ({ videoId, className = "", size = "sm" }: Pr
       size={size}
       onClick={handleCopy}
       className={`gap-2 ${className}`}
-      title="Copy nFlow Link to reuse this video in your funnel"
+      title="Use this video in your funnel"
     >
       <Copy size={14} />
-      <span>Copy nFlow Link</span>
+      <span>Use this video in your funnel</span>
     </Button>
   );
 };
