@@ -3,6 +3,7 @@
   "short_name": "nFlow",
   "description": "Share videos. Track every view. Never lose your flow.",
   "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#080C1A",
   "theme_color": "#080C1A",

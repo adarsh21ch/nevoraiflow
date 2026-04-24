@@ -539,7 +539,7 @@ const AuthPage = () => {
 
               <div className="relative my-2">
                 <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
-                <div className="relative flex justify-center text-xs"><span className="px-2" style={{ background: "#0F1628", color: "#8899AA" }}>or</span></div>
+                <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">or</span></div>
               </div>
               <OAuthButtons
                 oauthLoading={oauthLoading}
