@@ -316,6 +316,20 @@ const PricingFullPage = () => {
     setTimeout(() => handlePayment(pendingName!), 250);
   }, [user, planConfigs, searchParams, setSearchParams, handlePayment]);
 
+  // Scroll to comparison table when arriving with #pricing-comparison hash
+  useEffect(() => {
+    if (location.hash === "#pricing-comparison") {
+      // Defer to allow page to mount + cards to render
+      const t = setTimeout(() => {
+        document.getElementById("pricing-comparison")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 150);
+      return () => clearTimeout(t);
+    }
+  }, [location.hash]);
+
   const isCurrentTier = (t: string) => plan.isPaid && plan.tier === t && !plan.isExpired;
 
   // Dynamic comparison table
