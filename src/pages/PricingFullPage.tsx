@@ -516,7 +516,7 @@ const PricingFullPage = () => {
           </div>
 
           {/* Dynamic comparison table */}
-          <div className="glass-card overflow-hidden max-w-5xl mx-auto mb-12">
+          <div id="pricing-comparison" className="glass-card overflow-hidden max-w-5xl mx-auto mb-12 scroll-mt-24">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
