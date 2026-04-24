@@ -129,6 +129,7 @@ const VideoPlayer = ({ videoUrl, thumbnailUrl, durationSeconds }: {
   const [muted, setMuted] = useState(true);
   const [progress, setProgress] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -180,9 +181,17 @@ const VideoPlayer = ({ videoUrl, thumbnailUrl, durationSeconds }: {
         preload="metadata"
         className="w-full h-full object-cover"
         onEnded={handleEnded}
+        onError={() => setLoadError(true)}
       />
 
-      {!playing && (
+      {loadError && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center bg-black/80 px-3 gap-1">
+          <div className="text-destructive text-xs font-medium">⚠️ Video format not supported.</div>
+          <div className="text-white/70 text-[11px]">Please re-upload as MP4 format.</div>
+        </div>
+      )}
+
+      {!playing && !loadError && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/30">
           <div className="w-14 h-14 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg">
             <Play size={22} className="text-black ml-0.5" />
