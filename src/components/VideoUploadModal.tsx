@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { uploadVideoToR2 } from "@/lib/r2VideoUpload";
 import { toast } from "sonner";
-import { Upload, X, FileVideo, Loader2 } from "lucide-react";
+import { Upload, X, FileVideo, Loader2, Info, AlertCircle, RotateCcw } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -16,14 +17,38 @@ interface Props {
   onSuccess: () => void;
 }
 
+const ALLOWED_EXTENSIONS = [".mp4", ".mov", ".webm"];
+const ALLOWED_MIME_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
+const MAX_SIZE_BYTES = 500 * 1024 * 1024;
+
+const isAcceptedVideo = (file: File): boolean => {
+  const name = file.name.toLowerCase();
+  const extOk = ALLOWED_EXTENSIONS.some((ext) => name.endsWith(ext));
+  const mimeOk = file.type ? ALLOWED_MIME_TYPES.includes(file.type) : true;
+  return extOk && mimeOk;
+};
+
+const formatEta = (seconds: number): string => {
+  if (!isFinite(seconds) || seconds <= 0) return "";
+  if (seconds < 60) return `${Math.ceil(seconds)}s remaining`;
+  if (seconds < 3600) return `${Math.ceil(seconds / 60)} min remaining`;
+  const h = Math.floor(seconds / 3600);
+  const m = Math.ceil((seconds % 3600) / 60);
+  return `${h}h ${m}m remaining`;
+};
+
 export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
   const { user } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
+  const startTimeRef = useRef<number>(0);
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [eta, setEta] = useState("");
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const reset = () => {
     setFile(null);
@@ -31,19 +56,28 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
     setDescription("");
     setProgress(0);
     setUploading(false);
+    setProcessing(false);
+    setEta("");
+    setError(null);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
+    setError(null);
 
-    if (!f.type.startsWith("video/")) {
-      toast.error("Please select a video file");
+    if (!isAcceptedVideo(f)) {
+      toast.error(
+        "Please convert your video to MP4 format before uploading. Use any free converter like handbrake.fr or cloudconvert.com",
+        { duration: 7000 }
+      );
+      if (fileRef.current) fileRef.current.value = "";
       return;
     }
 
-    if (f.size > 500 * 1024 * 1024) {
-      toast.error("Video must be under 500MB");
+    if (f.size > MAX_SIZE_BYTES) {
+      toast.error("Video too large. Maximum size is 500MB. Please compress your video first.", { duration: 6000 });
+      if (fileRef.current) fileRef.current.value = "";
       return;
     }
 
@@ -51,16 +85,35 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
     if (!title) setTitle(f.name.replace(/\.[^/.]+$/, ""));
   };
 
-  const handleUpload = async () => {
+  const runUpload = async () => {
     if (!user || !file || !title.trim()) return;
     setUploading(true);
+    setProcessing(false);
     setProgress(0);
+    setEta("");
+    setError(null);
+    startTimeRef.current = Date.now();
 
     try {
       await uploadVideoToR2({
         file,
         title: title.trim(),
-        onProgress: setProgress,
+        onProgress: (percent, meta) => {
+          setProgress(percent);
+          if (meta && meta.loaded > 0) {
+            const elapsedSec = (Date.now() - startTimeRef.current) / 1000;
+            if (elapsedSec > 0.5) {
+              const speed = meta.loaded / elapsedSec; // bytes/sec
+              const remainingBytes = meta.total - meta.loaded;
+              const remainingSec = remainingBytes / Math.max(speed, 1);
+              setEta(formatEta(remainingSec));
+            }
+          }
+          if (percent >= 100) {
+            setEta("");
+            setProcessing(true);
+          }
+        },
       });
 
       toast.success("Video uploaded successfully!");
@@ -68,9 +121,12 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
       onSuccess();
       onClose();
     } catch (err: any) {
-      toast.error(err.message || "Upload failed. Please try again.");
+      const msg = err?.message || "Upload failed. Please try again.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setUploading(false);
+      setProcessing(false);
     }
   };
 
@@ -80,10 +136,12 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
   };
 
   const handleClose = () => {
-    if (uploading) return;
+    if (uploading || processing) return;
     reset();
     onClose();
   };
+
+  const busy = uploading || processing;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
@@ -95,7 +153,7 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
           <input
             ref={fileRef}
             type="file"
-            accept="video/*"
+            accept=".mp4,.mov,.webm,video/mp4,video/quicktime,video/webm"
             className="hidden"
             onChange={handleFileChange}
           />
@@ -120,13 +178,32 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
                 <p className="text-sm font-medium truncate">{file.name}</p>
                 <p className="text-xs text-muted-foreground">{formatSize(file.size)}</p>
               </div>
-              {!uploading && (
-                <button onClick={() => { setFile(null); setTitle(""); }} className="text-muted-foreground hover:text-foreground">
+              {!busy && (
+                <button onClick={() => { setFile(null); setTitle(""); setError(null); }} className="text-muted-foreground hover:text-foreground">
                   <X size={16} />
                 </button>
               )}
             </div>
           )}
+
+          {/* Helper text + tooltip */}
+          <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+            <span>Supported: MP4, MOV, WEBM | Max: 500MB</span>
+            <TooltipProvider delayDuration={150}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button type="button" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Format help">
+                    <Info size={14} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                  For best results, use MP4 format.<br />
+                  WhatsApp videos: save as MP4 before uploading.<br />
+                  Google Drive: download as MP4 format.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
 
           <div>
             <Label>Video Title *</Label>
@@ -135,7 +212,7 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter video title"
               className="mt-1 bg-muted border-border"
-              disabled={uploading}
+              disabled={busy}
             />
           </div>
 
@@ -147,28 +224,55 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
               placeholder="Brief description..."
               className="mt-1 bg-muted border-border resize-none"
               rows={2}
-              disabled={uploading}
+              disabled={busy}
             />
           </div>
 
-          {uploading && (
+          {(uploading || processing) && (
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Uploading...</span>
-                <span>{progress}%</span>
+                {processing ? (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 size={12} className="animate-spin" />
+                    Upload complete! Processing…
+                  </span>
+                ) : (
+                  <span>Uploading… {progress}%{eta ? ` • ${eta}` : ""}</span>
+                )}
+                {!processing && <span>{progress}%</span>}
               </div>
-              <Progress value={progress} className="h-2" />
+              <Progress value={processing ? 100 : progress} className="h-2" />
+            </div>
+          )}
+
+          {error && !busy && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-xs text-destructive">
+              <AlertCircle size={14} className="shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium">{error}</p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+                onClick={runUpload}
+                disabled={!file || !title.trim()}
+              >
+                <RotateCcw size={12} /> Retry
+              </Button>
             </div>
           )}
 
           <Button
-            onClick={handleUpload}
-            disabled={!file || !title.trim() || uploading}
+            onClick={runUpload}
+            disabled={!file || !title.trim() || busy}
             className="w-full"
             variant="hero"
           >
-            {uploading ? (
-              <><Loader2 size={16} className="animate-spin" /> Uploading... {progress}%</>
+            {processing ? (
+              <><Loader2 size={16} className="animate-spin" /> Processing…</>
+            ) : uploading ? (
+              <><Loader2 size={16} className="animate-spin" /> Uploading… {progress}%</>
             ) : (
               <><Upload size={16} /> Upload Video</>
             )}

@@ -151,7 +151,7 @@ const VideosPage = () => {
                 {/* Thumbnail */}
                 <div className="aspect-video bg-muted rounded-lg mb-3 flex items-center justify-center overflow-hidden w-full max-w-full">
                   {v.thumbnail_url ? <img src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover rounded-lg block" /> :
-                    v.public_url ? <video src={v.public_url} className="w-full h-full object-cover rounded-lg block" /> :
+                    v.public_url ? <video src={v.public_url} preload="metadata" playsInline muted className="w-full h-full object-cover rounded-lg block" /> :
                     <Video size={24} className="text-muted-foreground" />}
                 </div>
 

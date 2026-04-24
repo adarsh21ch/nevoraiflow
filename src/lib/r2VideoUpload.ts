@@ -4,7 +4,10 @@ interface UploadVideoToR2Options {
   file: File;
   title?: string;
   timeoutMs?: number;
-  onProgress?: (progress: number) => void;
+  onProgress?: (
+    percent: number,
+    meta?: { loaded: number; total: number }
+  ) => void;
 }
 
 interface UploadVideoToR2Result {
@@ -18,6 +21,15 @@ const getErrorMessage = (error: unknown) => {
   return "Upload failed";
 };
 
+const resolveContentType = (file: File): string => {
+  if (file.type) return file.type;
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".mp4")) return "video/mp4";
+  if (name.endsWith(".mov")) return "video/quicktime";
+  if (name.endsWith(".webm")) return "video/webm";
+  return "application/octet-stream";
+};
+
 export const uploadVideoToR2 = async ({
   file,
   title,
@@ -27,10 +39,12 @@ export const uploadVideoToR2 = async ({
   let videoId: string | null = null;
 
   try {
+    const contentType = resolveContentType(file);
+
     const { data, error } = await supabase.functions.invoke("get-r2-upload-url", {
       body: {
         filename: file.name,
-        contentType: file.type,
+        contentType,
         title: title || file.name,
       },
     });
@@ -46,16 +60,17 @@ export const uploadVideoToR2 = async ({
 
       xhr.open("PUT", data.uploadUrl);
       xhr.timeout = timeoutMs;
-      xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+      xhr.setRequestHeader("Content-Type", contentType);
 
       xhr.upload.addEventListener("progress", (event) => {
         if (!event.lengthComputable) return;
-        onProgress?.(Math.round((event.loaded / event.total) * 100));
+        const percent = Math.round((event.loaded / event.total) * 100);
+        onProgress?.(percent, { loaded: event.loaded, total: event.total });
       });
 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          onProgress?.(100);
+          onProgress?.(100, { loaded: file.size, total: file.size });
           resolve();
           return;
         }

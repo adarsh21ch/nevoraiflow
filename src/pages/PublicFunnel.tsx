@@ -108,6 +108,7 @@ const CustomVideoPlayer = ({
   const [speed, setSpeed] = useState(1);
   const [autoplayMuted, setAutoplayMuted] = useState(false);
   const [seekToast, setSeekToast] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const seekToastTimer = useRef<ReturnType<typeof setTimeout>>();
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
   const autoplayAttempted = useRef(false);
@@ -312,7 +313,7 @@ const CustomVideoPlayer = ({
         poster={poster}
         className="w-full h-full object-contain"
         playsInline
-        preload="auto"
+        preload="metadata"
         onTimeUpdate={handleTimeUpdate}
         onSeeking={handleSeeking}
         onLoadedMetadata={() => { if (videoRef.current) { setDuration(videoRef.current.duration); if (initialTime > 0) videoRef.current.currentTime = initialTime; } }}
@@ -321,7 +322,15 @@ const CustomVideoPlayer = ({
         onPlaying={() => { setIsBuffering(false); setIsLoading(false); }}
         onWaiting={() => setIsBuffering(true)}
         onCanPlay={() => setIsLoading(false)}
+        onError={() => { setLoadError(true); setIsLoading(false); setIsBuffering(false); }}
       />
+
+      {loadError && (
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center text-center bg-black/80 backdrop-blur-sm px-4 gap-2">
+          <div className="text-destructive text-sm font-medium">⚠️ Video format not supported.</div>
+          <div className="text-white/70 text-xs">Please re-upload as MP4 format.</div>
+        </div>
+      )}
 
       {/* Watermark — bottom-right, subtle */}
       {started && (
