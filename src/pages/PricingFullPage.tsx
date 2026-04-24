@@ -332,6 +332,28 @@ const PricingFullPage = () => {
   const proFeatures = proConfig ? buildFeatureList(proConfig) : [];
 
   // ---- Card builders (rendered into both desktop grid + mobile carousel) ----
+  // Free card features are fully driven by `freeConfig` from admin panel.
+  const freeIncluded: string[] = [];
+  const freeExcluded: string[] = [];
+
+  if (freeConfig?.feature_funnel_creation !== false) {
+    if (freeConfig?.max_funnels === -1) freeIncluded.push("Unlimited funnels");
+    else if ((freeConfig?.max_funnels ?? 0) > 0) freeIncluded.push(`Create up to ${freeConfig.max_funnels} funnel${freeConfig.max_funnels === 1 ? "" : "s"}`);
+  }
+  if (freeConfig?.feature_video_upload) {
+    if (freeConfig?.max_videos === -1) freeIncluded.push("Unlimited video uploads");
+    else if ((freeConfig?.max_videos ?? 0) > 0) freeIncluded.push(`Upload up to ${freeConfig.max_videos} video${freeConfig.max_videos === 1 ? "" : "s"}`);
+  }
+  freeIncluded.push("Add videos via nFlow Video Link");
+  if (freeConfig?.daily_view_limit === -1) freeIncluded.push("Unlimited daily views");
+  else if ((freeConfig?.daily_view_limit ?? 0) > 0) freeIncluded.push(`${freeConfig.daily_view_limit} views/day total`);
+  freeIncluded.push("Access public content");
+  freeIncluded.push("Browse marketplace");
+
+  if (!freeConfig?.feature_landing_pages) freeExcluded.push("Create landing pages");
+  if (!freeConfig?.feature_go_live) freeExcluded.push("Go live");
+  if (!freeConfig?.feature_lead_capture) freeExcluded.push("Lead capture");
+
   const freeCard: ReactNode = (
     <motion.div className="glass-card p-6 flex flex-col h-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       <div className="mb-6">
@@ -339,19 +361,13 @@ const PricingFullPage = () => {
         <div className="flex items-baseline gap-1 mt-3">
           <span className="text-3xl font-heading font-bold">{formatPrice(0, currency)}</span>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">View-only · forever free · no credit card</p>
+        <p className="text-xs text-muted-foreground mt-1">Forever free · no credit card</p>
       </div>
       <ul className="space-y-2.5 mb-6 max-h-[260px] md:max-h-[360px] overflow-y-auto pr-1 md:flex-1">
-        {[
-          "Create up to 2 funnels",
-          "Upload up to 2 videos",
-          "Add videos via nFlow Video Link",
-          "Access public content",
-          "Browse marketplace",
-        ].map(f => (
+        {freeIncluded.map(f => (
           <li key={f} className="flex items-center gap-2 text-sm"><Check size={14} className="text-primary shrink-0" /> {f}</li>
         ))}
-        {["Create landing pages", "Go live", "Lead capture"].map(f => (
+        {freeExcluded.map(f => (
           <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground/60"><X size={14} className="shrink-0" /> {f}</li>
         ))}
       </ul>
