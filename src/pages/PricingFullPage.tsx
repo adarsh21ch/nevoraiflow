@@ -361,8 +361,32 @@ const PricingFullPage = () => {
   const enabledPlans = [basicEnabled, proEnabled].filter(Boolean).length;
   const gridCols = enabledPlans === 0 ? "max-w-md mx-auto" : enabledPlans === 1 ? "md:grid-cols-2 max-w-3xl mx-auto" : "md:grid-cols-3 max-w-5xl mx-auto";
 
-  const basicFeatures = basicConfig ? buildFeatureList(basicConfig) : [];
-  const proFeatures = proConfig ? buildFeatureList(proConfig) : [];
+  // Curated TOP 4 features per card — full list lives in comparison table below
+  const basicFeatures: FeatureItem[] = [
+    { text: "Up to 5 funnels", enabled: true },
+    { text: "Lead capture", enabled: true },
+    { text: "Analytics", enabled: true },
+    { text: "Video sharing", enabled: true },
+  ];
+  const proFeatures: FeatureItem[] = [
+    { text: "Up to 15 funnels", enabled: true },
+    { text: "WhatsApp auto-message", enabled: true },
+    { text: "Advanced analytics", enabled: true },
+    { text: "Team members (up to 50)", enabled: true },
+  ];
+  const freeFeatures: FeatureItem[] = [
+    { text: "View shared funnels", enabled: true },
+    { text: "Access public content", enabled: true },
+    { text: "100 views/day", enabled: true },
+    { text: "No lead capture", enabled: false },
+  ];
+
+  const scrollToComparison = () => {
+    document.getElementById("pricing-comparison")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
 
   return (
     <div className="min-h-screen">
