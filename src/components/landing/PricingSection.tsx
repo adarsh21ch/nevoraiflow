@@ -377,11 +377,15 @@ export const PricingSection = () => {
                   </li>
                 ))}
               </ul>
-              <Link to={plan.name === "Free" ? "/auth?tab=signup" : "/pricing"}>
-                <Button variant={plan.variant} className="w-full">
-                  {plan.cta}
-                </Button>
-              </Link>
+              <Button
+                variant={plan.variant}
+                className="w-full gap-2"
+                onClick={() => handlePlanClick(plan.name)}
+                disabled={loadingPlan === `${plan.name.toLowerCase()}_monthly`}
+              >
+                {loadingPlan === `${plan.name.toLowerCase()}_monthly` && <Loader2 size={16} className="animate-spin" />}
+                {plan.cta}
+              </Button>
             </motion.div>
           ))}
 
