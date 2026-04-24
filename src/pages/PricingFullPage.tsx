@@ -248,6 +248,24 @@ const PricingFullPage = () => {
     }
   }, [user, profile, navigate, openSupport, refreshPlan, billing, planConfigs, gateway]);
 
+  // Auto-trigger checkout after returning from /auth with ?plan=basic|pro
+  useEffect(() => {
+    if (autoTriggeredRef.current) return;
+    const planParam = searchParams.get("plan");
+    if (!planParam || !user || planConfigs.length === 0) return;
+    const target = planParam.toLowerCase();
+    if (target !== "basic" && target !== "pro") return;
+    const config = planConfigs.find((c: any) => c.plan_name === target);
+    if (!config || config.is_enabled === false) return;
+    autoTriggeredRef.current = true;
+    // Clear the param so refreshes don't re-trigger
+    const next = new URLSearchParams(searchParams);
+    next.delete("plan");
+    setSearchParams(next, { replace: true });
+    // Slight delay so the modal opens cleanly after mount
+    setTimeout(() => handlePayment(target), 250);
+  }, [searchParams, user, planConfigs, handlePayment, setSearchParams]);
+
   const isCurrentTier = (t: string) => plan.isPaid && plan.tier === t && !plan.isExpired;
 
   // Dynamic comparison table
