@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Check, X, Crown, Info, Shield, Loader2, ChevronDown } from "lucide-react";
+import { Check, X, Crown, Info, Shield, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,26 +22,14 @@ const freePlan = {
   features: [
     { text: "View shared funnels", included: true },
     { text: "Access public content", included: true },
-    { text: "100 views/day", included: true },
+    { text: "Browse marketplace", included: true },
+    { text: "No funnel creation", included: false },
     { text: "No lead capture", included: false },
+    { text: "No live broadcast", included: false },
   ],
   cta: "Start Free",
   variant: "outline" as const,
 };
-
-// Curated TOP 4 features per plan — keeps cards compact.
-// Full feature comparison still lives in the table on /pricing.
-const TOP_FEATURES: Record<"basic" | "pro", string[]> = {
-  basic: ["Up to 5 funnels", "Lead capture", "Analytics", "Video sharing"],
-  pro: ["Up to 15 funnels", "WhatsApp auto-message", "Advanced analytics", "Team members (up to 50)"],
-};
-
-const TOP_ENTERPRISE_FEATURES = [
-  "Unlimited everything",
-  "White-label branded app",
-  "Custom domain",
-  "Dedicated support",
-];
 
 const formatStorage = (mb: number | null | undefined): string | null => {
   if (mb == null) return null;
@@ -205,7 +193,7 @@ export const PricingSection = () => {
       period: billing === "monthly" ? "/month" : "/year",
       daily,
       badge: basicConfig.plan_badge_text || null,
-      features: TOP_FEATURES.basic.map((text) => ({ text, included: true })),
+      features: buildFeatures(basicConfig),
       cta: "Get Basic",
       variant: "default",
       highlight: false,
@@ -223,7 +211,7 @@ export const PricingSection = () => {
       period: billing === "monthly" ? "/month" : "/year",
       daily,
       badge: proConfig.plan_badge_text || "Most Popular",
-      features: TOP_FEATURES.pro.map((text) => ({ text, included: true })),
+      features: buildFeatures(proConfig),
       cta: "Go Pro",
       variant: "hero",
       highlight: true,
@@ -332,25 +320,11 @@ export const PricingSection = () => {
           </div>
         )}
 
-        {/*
-          Mobile (<md): horizontal snap scroller with peek of next card + dot indicators.
-          Desktop (md+): regular grid as before.
-        */}
-        <div
-          className={`
-            flex md:grid gap-4 md:gap-6
-            overflow-x-auto md:overflow-visible
-            snap-x snap-mandatory md:snap-none
-            -mx-4 px-4 md:mx-0 md:px-0
-            pb-4 md:pb-0
-            [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]
-            ${gridCols}
-          `}
-        >
+        <div className={`grid gap-6 ${gridCols}`}>
           {cards.map((plan, i) => (
             <motion.div
               key={plan.name}
-              className={`glass-card p-5 relative flex flex-col snap-center shrink-0 w-[85%] sm:w-[60%] md:w-auto ${
+              className={`glass-card p-6 relative flex flex-col ${
                 plan.highlight ? "border-primary/40 glow-primary" : ""
               }`}
               initial={{ opacity: 0, y: 20 }}
@@ -359,12 +333,12 @@ export const PricingSection = () => {
               transition={{ delay: i * 0.1 }}
             >
               {plan.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-primary text-xs font-semibold text-primary-foreground whitespace-nowrap">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-primary text-xs font-semibold text-primary-foreground">
                   {plan.badge}
                 </div>
               )}
-              <div className="mb-4">
-                <h3 className="text-base font-heading font-semibold mb-1.5">{plan.name}</h3>
+              <div className="mb-6">
+                <h3 className="text-lg font-heading font-semibold mb-2">{plan.name}</h3>
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-heading font-bold">{plan.price}</span>
                   <span className="text-sm text-muted-foreground">{plan.period}</span>
@@ -373,13 +347,13 @@ export const PricingSection = () => {
                   <p className="text-xs text-primary mt-1">{plan.daily}</p>
                 )}
               </div>
-              <ul className="space-y-2 flex-1 mb-4">
+              <ul className="space-y-3 flex-1 mb-6">
                 {plan.features.map((f) => (
-                  <li key={f.text} className="flex items-center gap-2 text-sm leading-snug">
+                  <li key={f.text} className="flex items-center gap-2 text-sm">
                     {f.included ? (
-                      <Check size={14} className="text-success shrink-0" />
+                      <Check size={16} className="text-success shrink-0" />
                     ) : (
-                      <X size={14} className="text-muted-foreground/40 shrink-0" />
+                      <X size={16} className="text-muted-foreground/40 shrink-0" />
                     )}
                     <span className={f.included ? "text-foreground" : "text-muted-foreground/60"}>
                       {f.text}
@@ -410,19 +384,13 @@ export const PricingSection = () => {
                 {loadingPlan === `${plan.name.toLowerCase()}_${billing}` && <Loader2 size={16} className="animate-spin" />}
                 {plan.cta}
               </Button>
-              <Link
-                to="/pricing#pricing-comparison"
-                className="mt-3 text-xs text-muted-foreground hover:text-primary transition-colors text-center inline-flex items-center justify-center gap-1"
-              >
-                See all features <ChevronDown size={12} />
-              </Link>
             </motion.div>
           ))}
 
           {/* Enterprise card — DB-driven, always last, premium look */}
           {enterpriseVisible && (
             <motion.div
-              className="relative flex flex-col p-5 rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-500/[0.06] via-background to-background shadow-[0_0_40px_-15px_rgba(245,158,11,0.4)] snap-center shrink-0 w-[85%] sm:w-[60%] md:w-auto"
+              className="relative flex flex-col p-6 rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-500/[0.06] via-background to-background shadow-[0_0_40px_-15px_rgba(245,158,11,0.4)]"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -432,8 +400,8 @@ export const PricingSection = () => {
                 <Crown size={12} /> {enterpriseConfig?.badge_text || "For Large Networks"}
               </div>
               <div className="mb-4">
-                <h3 className="text-base font-heading font-semibold mb-1">Enterprise</h3>
-                <p className="text-[11px] text-amber-500 font-medium mb-2">
+                <h3 className="text-lg font-heading font-semibold mb-1">Enterprise</h3>
+                <p className="text-[11px] text-amber-500 font-medium mb-3">
                   {enterpriseConfig?.subheading || "100+ active team members"}
                 </p>
                 <div className="flex items-baseline gap-1">
@@ -445,12 +413,21 @@ export const PricingSection = () => {
                 {enterpriseConfig?.price_note && (
                   <p className="text-xs text-amber-500 mt-1">{enterpriseConfig.price_note}</p>
                 )}
+                {enterpriseConfig?.show_setup_fee_note !== false &&
+                  enterpriseConfig?.setup_fee_note && (
+                    <p className="text-[11px] italic text-muted-foreground mt-1">
+                      {enterpriseConfig.setup_fee_note}
+                    </p>
+                  )}
               </div>
-              <ul className="space-y-2 flex-1 mb-4">
-                {TOP_ENTERPRISE_FEATURES.map((text) => (
-                  <li key={text} className="flex items-center gap-2 text-sm leading-snug">
-                    <Check size={14} className="text-amber-500 shrink-0" />
-                    <span className="text-foreground">{text}</span>
+              <ul className="space-y-2.5 flex-1 mb-6">
+                {(enterpriseFeatures.length > 0
+                  ? enterpriseFeatures
+                  : [{ text: "Loading…", enabled: true }]
+                ).map((f, idx) => (
+                  <li key={`${f.text}-${idx}`} className="flex items-center gap-2 text-sm">
+                    <Check size={16} className="text-amber-500 shrink-0" />
+                    <span className="text-foreground">{f.text}</span>
                   </li>
                 ))}
               </ul>
@@ -462,25 +439,8 @@ export const PricingSection = () => {
                   {enterpriseConfig?.cta_text || "Book a Call"}
                 </Button>
               </Link>
-              <Link
-                to="/pricing#pricing-comparison"
-                className="mt-3 text-xs text-muted-foreground hover:text-amber-500 transition-colors text-center inline-flex items-center justify-center gap-1"
-              >
-                See all features <ChevronDown size={12} />
-              </Link>
             </motion.div>
           )}
-        </div>
-
-        {/* Mobile dot indicators — hint that cards are swipeable */}
-        <div className="flex md:hidden items-center justify-center gap-1.5 mt-4">
-          {Array.from({ length: cards.length + (enterpriseVisible ? 1 : 0) }).map((_, idx) => (
-            <span
-              key={idx}
-              className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40"
-              aria-hidden
-            />
-          ))}
         </div>
       </div>
 

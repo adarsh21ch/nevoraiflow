@@ -2,7 +2,7 @@ import { Navbar } from "@/components/landing/Navbar";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Footer } from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
-import { Check, X, Crown, Shield, Loader2, Users, User, Lock, Tag, ChevronDown } from "lucide-react";
+import { Check, X, Crown, Shield, Loader2, Users, User, Lock, Tag } from "lucide-react";
 import { GuaranteeBanner, GuaranteePill } from "@/components/GuaranteeBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
@@ -123,7 +123,6 @@ const PricingFullPage = () => {
   const { plan, refreshPlan } = usePlan();
   const { openSupport } = useWhatsAppSupport();
   const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState<string | null>(null);
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
@@ -316,20 +315,6 @@ const PricingFullPage = () => {
     setTimeout(() => handlePayment(pendingName!), 250);
   }, [user, planConfigs, searchParams, setSearchParams, handlePayment]);
 
-  // Scroll to comparison table when arriving with #pricing-comparison hash
-  useEffect(() => {
-    if (location.hash === "#pricing-comparison") {
-      // Defer to allow page to mount + cards to render
-      const t = setTimeout(() => {
-        document.getElementById("pricing-comparison")?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }, 150);
-      return () => clearTimeout(t);
-    }
-  }, [location.hash]);
-
   const isCurrentTier = (t: string) => plan.isPaid && plan.tier === t && !plan.isExpired;
 
   // Dynamic comparison table
@@ -361,32 +346,8 @@ const PricingFullPage = () => {
   const enabledPlans = [basicEnabled, proEnabled].filter(Boolean).length;
   const gridCols = enabledPlans === 0 ? "max-w-md mx-auto" : enabledPlans === 1 ? "md:grid-cols-2 max-w-3xl mx-auto" : "md:grid-cols-3 max-w-5xl mx-auto";
 
-  // Curated TOP 4 features per card — full list lives in comparison table below
-  const basicFeatures: FeatureItem[] = [
-    { text: "Up to 5 funnels", enabled: true },
-    { text: "Lead capture", enabled: true },
-    { text: "Analytics", enabled: true },
-    { text: "Video sharing", enabled: true },
-  ];
-  const proFeatures: FeatureItem[] = [
-    { text: "Up to 15 funnels", enabled: true },
-    { text: "WhatsApp auto-message", enabled: true },
-    { text: "Advanced analytics", enabled: true },
-    { text: "Team members (up to 50)", enabled: true },
-  ];
-  const freeFeatures: FeatureItem[] = [
-    { text: "View shared funnels", enabled: true },
-    { text: "Access public content", enabled: true },
-    { text: "100 views/day", enabled: true },
-    { text: "No lead capture", enabled: false },
-  ];
-
-  const scrollToComparison = () => {
-    document.getElementById("pricing-comparison")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  };
+  const basicFeatures = basicConfig ? buildFeatureList(basicConfig) : [];
+  const proFeatures = proConfig ? buildFeatureList(proConfig) : [];
 
   return (
     <div className="min-h-screen">
@@ -436,28 +397,23 @@ const PricingFullPage = () => {
             </div>
           )}
 
-          <div
-            className={`
-              flex md:grid gap-4 md:gap-6 mb-12 md:mb-16
-              overflow-x-auto md:overflow-visible
-              snap-x snap-mandatory md:snap-none
-              -mx-4 px-4 md:mx-0 md:px-0
-              pb-4 md:pb-0
-              [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]
-              ${gridCols}
-            `}
-          >
+          <div className={`grid gap-6 mb-16 ${gridCols}`}>
             {/* Free */}
-            <motion.div className="glass-card p-5 flex flex-col snap-center shrink-0 w-[85%] sm:w-[60%] md:w-auto" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <div className="mb-4">
+            <motion.div className="glass-card p-6 flex flex-col" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="mb-6">
                 <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Free</span>
                 <div className="flex items-baseline gap-1 mt-3">
                   <span className="text-3xl font-heading font-bold">{formatPrice(0, currency)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">View-only, forever free</p>
               </div>
-              <ul className="space-y-2 flex-1 mb-4">
-                {freeFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
+              <ul className="space-y-2.5 flex-1 mb-6">
+                {["View shared funnels", "Access public content", "Browse marketplace"].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm"><Check size={14} className="text-primary shrink-0" /> {f}</li>
+                ))}
+                {["Create funnels", "Create landing pages", "Go live", "Lead capture"].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground/60"><X size={14} className="shrink-0" /> {f}</li>
+                ))}
               </ul>
               {!plan.isPaid && !plan.isExpired ? (
                 <Button variant="outline" disabled className="w-full">Current Plan</Button>
@@ -466,24 +422,17 @@ const PricingFullPage = () => {
                   {user ? "Stay Free" : "Get Started"}
                 </Button>
               )}
-              <button
-                type="button"
-                onClick={scrollToComparison}
-                className="mt-3 text-xs text-muted-foreground hover:text-primary transition-colors text-center inline-flex items-center justify-center gap-1"
-              >
-                See all features <ChevronDown size={12} />
-              </button>
             </motion.div>
 
             {/* Basic */}
             {basicEnabled && basicConfig && (
-              <motion.div className="glass-card p-5 flex flex-col relative snap-center shrink-0 w-[85%] sm:w-[60%] md:w-auto" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+              <motion.div className="glass-card p-6 flex flex-col relative" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
                 {basicConfig.plan_badge_text && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-card border border-border text-xs font-semibold flex items-center gap-1 whitespace-nowrap">
                     <User size={12} /> {basicConfig.plan_badge_text}
                   </div>
                 )}
-                <div className="mb-4">
+                <div className="mb-6">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium">Basic</span>
                     <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
@@ -495,37 +444,39 @@ const PricingFullPage = () => {
                     <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground italic mt-1">Introductory pricing — limited time</p>
+                  {billing === "monthly" && getSavings(basicConfig) > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      or {formatPrice(currency === "USD" ? Number(basicConfig.usd_price_yearly || 0) : basicConfig.yearly_price, currency)}/year — save {formatPrice(getSavings(basicConfig), currency)}
+                    </p>
+                  )}
                 </div>
-                <ul className="space-y-2 flex-1 mb-4">
+                <ul className="space-y-2.5 flex-1 mb-6">
                   {basicFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
                 </ul>
                 {isCurrentTier("basic") ? (
                   <Button disabled className="w-full">Current Plan</Button>
                 ) : (
                   <>
+                    <GuaranteePill />
                     <Button className="w-full gap-2" onClick={() => handlePayment("basic")} disabled={loading === `basic_${billing}`}>
                       {loading === `basic_${billing}` ? <Loader2 size={16} className="animate-spin" /> : null}
-                      Get Basic
+                      Subscribe — {formatPrice(getPrice(basicConfig), currency)}/{billing === "monthly" ? "mo" : "yr"}
                     </Button>
+                    <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
+                      <Shield size={10} className="text-emerald-500" /> {gateway === "stripe" ? "Secure payment via Stripe · Cards · Apple Pay · Google Pay" : "Secure payment via Razorpay · UPI · Cards · NetBanking"}
+                    </p>
                   </>
                 )}
-                <button
-                  type="button"
-                  onClick={scrollToComparison}
-                  className="mt-3 text-xs text-muted-foreground hover:text-primary transition-colors text-center inline-flex items-center justify-center gap-1"
-                >
-                  See all features <ChevronDown size={12} />
-                </button>
               </motion.div>
             )}
 
             {/* Pro */}
             {proEnabled && proConfig && (
-              <motion.div className="glass-card p-5 flex flex-col relative border-primary/40 glow-primary snap-center shrink-0 w-[85%] sm:w-[60%] md:w-auto" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+              <motion.div className="glass-card p-6 flex flex-col relative border-primary/40 glow-primary" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-xs font-semibold text-white flex items-center gap-1 whitespace-nowrap shadow-lg shadow-emerald-500/30">
                   <Crown size={12} /> Most Popular
                 </div>
-                <div className="mb-4">
+                <div className="mb-6">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-medium">Pro</span>
                     <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
@@ -537,44 +488,35 @@ const PricingFullPage = () => {
                     <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground italic mt-1">Introductory pricing — limited time</p>
+                  {billing === "monthly" && getSavings(proConfig) > 0 && (
+                    <p className="text-xs text-primary mt-1">
+                      or {formatPrice(currency === "USD" ? Number(proConfig.usd_price_yearly || 0) : proConfig.yearly_price, currency)}/year — save {formatPrice(getSavings(proConfig), currency)}
+                    </p>
+                  )}
                 </div>
-                <ul className="space-y-2 flex-1 mb-4">
+                <ul className="space-y-2.5 flex-1 mb-6">
                   {proFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
                 </ul>
                 {isCurrentTier("pro") ? (
                   <Button disabled className="w-full">Current Plan</Button>
                 ) : (
                   <>
+                    <GuaranteePill />
                     <Button className="w-full gap-2" onClick={() => handlePayment("pro")} disabled={loading === `pro_${billing}`}>
                       {loading === `pro_${billing}` ? <Loader2 size={16} className="animate-spin" /> : <Crown size={16} />}
-                      Go Pro
+                      Subscribe — {formatPrice(getPrice(proConfig), currency)}/{billing === "monthly" ? "mo" : "yr"}
                     </Button>
+                    <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
+                      <Shield size={10} className="text-emerald-500" /> {gateway === "stripe" ? "Secure payment via Stripe · Cards · Apple Pay · Google Pay" : "Secure payment via Razorpay · UPI · Cards · NetBanking"}
+                    </p>
                   </>
                 )}
-                <button
-                  type="button"
-                  onClick={scrollToComparison}
-                  className="mt-3 text-xs text-muted-foreground hover:text-primary transition-colors text-center inline-flex items-center justify-center gap-1"
-                >
-                  See all features <ChevronDown size={12} />
-                </button>
               </motion.div>
             )}
           </div>
 
-          {/* Mobile dot indicators — hint that cards are swipeable */}
-          <div className="flex md:hidden items-center justify-center gap-1.5 mb-8 -mt-4">
-            {Array.from({ length: 1 + (basicEnabled ? 1 : 0) + (proEnabled ? 1 : 0) }).map((_, idx) => (
-              <span
-                key={idx}
-                className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40"
-                aria-hidden
-              />
-            ))}
-          </div>
-
           {/* Dynamic comparison table */}
-          <div id="pricing-comparison" className="glass-card overflow-hidden max-w-5xl mx-auto mb-12 scroll-mt-24">
+          <div className="glass-card overflow-hidden max-w-5xl mx-auto mb-12">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
