@@ -345,7 +345,7 @@ export const PricingSection = () => {
             node: (
               <motion.div
                 key={plan.name}
-                className={`glass-card p-6 relative flex flex-col h-full ${
+                className={`glass-card p-6 relative flex flex-col md:h-full ${
                   plan.highlight ? "border-primary/40 glow-primary" : ""
                 }`}
                 initial={{ opacity: 0, y: 20 }}
@@ -354,11 +354,11 @@ export const PricingSection = () => {
                 transition={{ delay: i * 0.1 }}
               >
                 {plan.badge && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-primary text-xs font-semibold text-primary-foreground">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-primary text-xs font-semibold text-primary-foreground shadow-md whitespace-nowrap z-10">
                     {plan.badge}
                   </div>
                 )}
-                <div className="mb-6">
+                <div className="mb-5">
                   <h3 className="text-lg font-heading font-semibold mb-2">{plan.name}</h3>
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-heading font-bold">{plan.price}</span>
@@ -368,7 +368,9 @@ export const PricingSection = () => {
                     <p className="text-xs text-primary mt-1">{plan.daily}</p>
                   )}
                 </div>
-                <ul className="space-y-3 flex-1 mb-6">
+                {/* On mobile: cap feature list height and scroll internally to keep card compact.
+                    On desktop: original flex-1 behavior so cards align in the grid. */}
+                <ul className="space-y-3 mb-6 max-h-[260px] overflow-y-auto pr-1 md:max-h-none md:overflow-visible md:flex-1">
                   {plan.features.map((f) => (
                     <li key={f.text} className="flex items-center gap-2 text-sm">
                       {f.included ? (
