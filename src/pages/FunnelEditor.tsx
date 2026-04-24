@@ -26,6 +26,8 @@ import { FunnelLivePreview } from "@/components/funnel/FunnelLivePreview";
 import { SpeakerPhotoUpload } from "@/components/funnel/SpeakerPhotoUpload";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { usePlan } from "@/hooks/usePlan";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { StepLockOverlay } from "@/components/funnel/StepLockOverlay";
 import { Crown } from "lucide-react";
 
 interface FlowStep {
@@ -112,6 +114,7 @@ const FunnelEditor = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { canUseMultiStep } = usePlan();
+  const { tier, features, planConfigs } = usePlanLimits();
   const queryClient = useQueryClient();
 
   // Wizard state — modeChosen gates entry into the real wizard
@@ -395,7 +398,40 @@ const FunnelEditor = () => {
   const totalSteps = visibleSteps.length;
   const lastStepIdx = totalSteps - 1;
 
-  // visibleSteps & nav computed
+  // ── Plan-based step gating ──
+  // Map wizard step labels to required feature flags from plan_config.
+  // Pro/Enterprise unlock everything (all flags true). Basic unlocks most. Free locks all of these.
+  type StepLock = { featureName: string; requiredPlan: "Basic" | "Pro"; priceLabel: string } | null;
+  const basicMonthly = planConfigs.find((c) => c.plan_name === "basic")?.monthly_price ?? 199;
+  const proMonthly = planConfigs.find((c) => c.plan_name === "pro")?.monthly_price ?? 799;
+  const basicPrice = `₹${basicMonthly}/mo`;
+  const proPrice = `₹${proMonthly}/mo`;
+
+  const getStepLock = (label: string): StepLock => {
+    // Pro & Enterprise: nothing locked
+    if (tier === "pro" || tier === "enterprise") return null;
+    switch (label) {
+      case "Speaker":
+        // No dedicated flag — gate behind Basic plan (anything paid)
+        return tier === "basic" ? null : { featureName: "Speaker Profile", requiredPlan: "Basic", priceLabel: basicPrice };
+      case "Video Topics":
+        return tier === "basic" ? null : { featureName: "Video Topics", requiredPlan: "Basic", priceLabel: basicPrice };
+      case "Lead Capture":
+        return features.leadCapture ? null : { featureName: "Lead Capture", requiredPlan: "Basic", priceLabel: basicPrice };
+      case "Contact Info":
+        // Contact buttons + WhatsApp automation gated together
+        return tier === "basic" ? null : { featureName: "Contact & WhatsApp", requiredPlan: "Basic", priceLabel: basicPrice };
+      case "Payment":
+        // Payment is Pro-only per spec
+        return { featureName: "Payment Collection", requiredPlan: "Pro", priceLabel: proPrice };
+      case "Privacy":
+        return tier === "basic" ? null : { featureName: "Privacy & Access Codes", requiredPlan: "Basic", priceLabel: basicPrice };
+      default:
+        return null;
+    }
+  };
+
+  const currentStepLock = modeChosen ? getStepLock(visibleSteps[wizardStep]?.label ?? "") : null;
 
   // ── Render helper for common steps ──
   // Single: 0=Controls, 1=Speaker, 2=VideoTopics, 3=LeadForm, 4=Whatsapp, 5=Payment, 6=Privacy, 7=Publish
@@ -1115,22 +1151,28 @@ const FunnelEditor = () => {
         {/* Sidebar nav — desktop only */}
         {modeChosen && (
           <div className="hidden lg:flex flex-col gap-1 w-48 shrink-0">
-            {visibleSteps.map((s, i) => (
-              <button key={i} onClick={() => setWizardStep(i)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
-                  wizardStep === i
-                    ? "bg-primary/10 border-l-[3px] border-primary text-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted border-l-[3px] border-transparent"
-                }`}
-              >
-                <s.icon size={15} className={wizardStep === i ? "text-primary" : ""} />
-                <div className="min-w-0">
-                  <p className="text-[10px] font-semibold tracking-[0.05em] text-muted-foreground/50">{(s as any).num || i + 1}</p>
-                  <p className="text-[13px] font-semibold leading-tight">{s.label}</p>
-                </div>
-                {i === lastStepIdx && funnel.is_published && <Check size={14} className="ml-auto text-emerald-500" />}
-              </button>
-            ))}
+            {visibleSteps.map((s, i) => {
+              const lock = getStepLock(s.label);
+              return (
+                <button key={i} onClick={() => setWizardStep(i)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
+                    wizardStep === i
+                      ? "bg-primary/10 border-l-[3px] border-primary text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted border-l-[3px] border-transparent"
+                  }`}
+                >
+                  <s.icon size={15} className={wizardStep === i ? "text-primary" : ""} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-semibold tracking-[0.05em] text-muted-foreground/50">{(s as any).num || i + 1}</p>
+                    <p className="text-[13px] font-semibold leading-tight flex items-center gap-1.5">
+                      {s.label}
+                      {lock && <Lock size={10} className="text-amber-500 shrink-0" />}
+                    </p>
+                  </div>
+                  {i === lastStepIdx && funnel.is_published && <Check size={14} className="ml-auto text-emerald-500" />}
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -1153,18 +1195,26 @@ const FunnelEditor = () => {
             {/* Mobile compact step selector — wrapping grid, no horizontal scroll */}
             {modeChosen && (
               <div className="lg:hidden grid grid-cols-4 sm:grid-cols-5 gap-1.5 pb-3 mb-3">
-                {visibleSteps.map((s, i) => (
-                  <button key={i} onClick={() => setWizardStep(i)}
-                    className={`flex flex-col items-center gap-1 px-1.5 py-2 rounded-lg text-[10px] font-semibold transition-all ${
-                      wizardStep === i
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted/60 text-muted-foreground"
-                    }`}
-                  >
-                    <s.icon size={14} />
-                    <span className="truncate w-full text-center leading-tight">{s.label.split(' ').slice(-1)[0]}</span>
-                  </button>
-                ))}
+                {visibleSteps.map((s, i) => {
+                  const lock = getStepLock(s.label);
+                  return (
+                    <button key={i} onClick={() => setWizardStep(i)}
+                      className={`relative flex flex-col items-center gap-1 px-1.5 py-2 rounded-lg text-[10px] font-semibold transition-all ${
+                        wizardStep === i
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted/60 text-muted-foreground"
+                      }`}
+                    >
+                      <s.icon size={14} />
+                      <span className="truncate w-full text-center leading-tight">{s.label.split(' ').slice(-1)[0]}</span>
+                      {lock && (
+                        <span className="absolute top-0.5 right-0.5">
+                          <Lock size={9} className="text-amber-500" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             )}
 
@@ -1179,7 +1229,17 @@ const FunnelEditor = () => {
 
             {/* Content card */}
             <div className="glass-card p-4 sm:p-6 space-y-4">
-              {renderWizardContent()}
+              {currentStepLock ? (
+                <StepLockOverlay
+                  featureName={currentStepLock.featureName}
+                  requiredPlan={currentStepLock.requiredPlan}
+                  priceLabel={currentStepLock.priceLabel}
+                >
+                  {renderWizardContent()}
+                </StepLockOverlay>
+              ) : (
+                renderWizardContent()
+              )}
             </div>
 
             {/* Navigation — always visible, no horizontal scroll needed */}
