@@ -436,23 +436,28 @@ const PricingFullPage = () => {
             </div>
           )}
 
-          <div className={`grid gap-6 mb-16 ${gridCols}`}>
+          <div
+            className={`
+              flex md:grid gap-4 md:gap-6 mb-12 md:mb-16
+              overflow-x-auto md:overflow-visible
+              snap-x snap-mandatory md:snap-none
+              -mx-4 px-4 md:mx-0 md:px-0
+              pb-4 md:pb-0
+              [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]
+              ${gridCols}
+            `}
+          >
             {/* Free */}
-            <motion.div className="glass-card p-6 flex flex-col" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <div className="mb-6">
+            <motion.div className="glass-card p-5 flex flex-col snap-center shrink-0 w-[85%] sm:w-[60%] md:w-auto" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="mb-4">
                 <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Free</span>
                 <div className="flex items-baseline gap-1 mt-3">
                   <span className="text-3xl font-heading font-bold">{formatPrice(0, currency)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">View-only, forever free</p>
               </div>
-              <ul className="space-y-2.5 flex-1 mb-6">
-                {["View shared funnels", "Access public content", "Browse marketplace"].map(f => (
-                  <li key={f} className="flex items-center gap-2 text-sm"><Check size={14} className="text-primary shrink-0" /> {f}</li>
-                ))}
-                {["Create funnels", "Create landing pages", "Go live", "Lead capture"].map(f => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground/60"><X size={14} className="shrink-0" /> {f}</li>
-                ))}
+              <ul className="space-y-2 flex-1 mb-4">
+                {freeFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
               </ul>
               {!plan.isPaid && !plan.isExpired ? (
                 <Button variant="outline" disabled className="w-full">Current Plan</Button>
@@ -461,6 +466,13 @@ const PricingFullPage = () => {
                   {user ? "Stay Free" : "Get Started"}
                 </Button>
               )}
+              <button
+                type="button"
+                onClick={scrollToComparison}
+                className="mt-3 text-xs text-muted-foreground hover:text-primary transition-colors text-center inline-flex items-center justify-center gap-1"
+              >
+                See all features <ChevronDown size={12} />
+              </button>
             </motion.div>
 
             {/* Basic */}
