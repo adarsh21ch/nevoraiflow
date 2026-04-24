@@ -398,7 +398,40 @@ const FunnelEditor = () => {
   const totalSteps = visibleSteps.length;
   const lastStepIdx = totalSteps - 1;
 
-  // visibleSteps & nav computed
+  // ── Plan-based step gating ──
+  // Map wizard step labels to required feature flags from plan_config.
+  // Pro/Enterprise unlock everything (all flags true). Basic unlocks most. Free locks all of these.
+  type StepLock = { featureName: string; requiredPlan: "Basic" | "Pro"; priceLabel: string } | null;
+  const basicMonthly = planConfigs.find((c) => c.plan_name === "basic")?.monthly_price ?? 199;
+  const proMonthly = planConfigs.find((c) => c.plan_name === "pro")?.monthly_price ?? 799;
+  const basicPrice = `₹${basicMonthly}/mo`;
+  const proPrice = `₹${proMonthly}/mo`;
+
+  const getStepLock = (label: string): StepLock => {
+    // Pro & Enterprise: nothing locked
+    if (tier === "pro" || tier === "enterprise") return null;
+    switch (label) {
+      case "Speaker":
+        // No dedicated flag — gate behind Basic plan (anything paid)
+        return tier === "basic" ? null : { featureName: "Speaker Profile", requiredPlan: "Basic", priceLabel: basicPrice };
+      case "Video Topics":
+        return tier === "basic" ? null : { featureName: "Video Topics", requiredPlan: "Basic", priceLabel: basicPrice };
+      case "Lead Capture":
+        return features.leadCapture ? null : { featureName: "Lead Capture", requiredPlan: "Basic", priceLabel: basicPrice };
+      case "Contact Info":
+        // Contact buttons + WhatsApp automation gated together
+        return tier === "basic" ? null : { featureName: "Contact & WhatsApp", requiredPlan: "Basic", priceLabel: basicPrice };
+      case "Payment":
+        // Payment is Pro-only per spec
+        return { featureName: "Payment Collection", requiredPlan: "Pro", priceLabel: proPrice };
+      case "Privacy":
+        return tier === "basic" ? null : { featureName: "Privacy & Access Codes", requiredPlan: "Basic", priceLabel: basicPrice };
+      default:
+        return null;
+    }
+  };
+
+  const currentStepLock = modeChosen ? getStepLock(visibleSteps[wizardStep]?.label ?? "") : null;
 
   // ── Render helper for common steps ──
   // Single: 0=Controls, 1=Speaker, 2=VideoTopics, 3=LeadForm, 4=Whatsapp, 5=Payment, 6=Privacy, 7=Publish
