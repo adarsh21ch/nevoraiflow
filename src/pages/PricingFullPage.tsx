@@ -163,6 +163,7 @@ const PricingFullPage = () => {
     refetchOnWindowFocus: true,
   });
 
+  const freeConfig = planConfigs.find((c: any) => c.plan_name === "free");
   const basicConfig = planConfigs.find((c: any) => c.plan_name === "basic");
   const proConfig = planConfigs.find((c: any) => c.plan_name === "pro");
   const basicEnabled = basicConfig?.is_enabled !== false;
@@ -297,28 +298,32 @@ const PricingFullPage = () => {
   const effectiveBasic = isCurrentTier("basic") || (!plan.isPaid && isNevoraiMember);
   const effectivePro = isCurrentTier("pro");
 
-  // Dynamic comparison table
+  // Dynamic comparison table — Free column is now driven by `freeConfig`
   const buildComparisonRows = () => {
-    const limitDisplay = (val: number | undefined) => {
+    const limitDisplay = (val: number | undefined | null) => {
       if (val === undefined || val === null) return "—";
       if (val === -1) return "Unlimited";
       if (val === 0) return "—";
       return String(val);
     };
 
+    const freeFunnels = freeConfig?.feature_funnel_creation === false ? "—" : limitDisplay(freeConfig?.max_funnels);
+    const freeLanding = freeConfig?.feature_landing_pages ? limitDisplay(freeConfig?.max_landing_pages) : "—";
+    const freeLive = freeConfig?.feature_go_live ? limitDisplay(freeConfig?.max_live_sessions) : "—";
+
     const rows: { name: string; free: boolean | string; basic: boolean | string; pro: boolean | string }[] = [
-      { name: "Funnels", free: "0 (view only)", basic: limitDisplay(basicConfig?.max_funnels), pro: limitDisplay(proConfig?.max_funnels) },
-      { name: "Landing Pages", free: "—", basic: basicConfig?.feature_landing_pages ? limitDisplay(basicConfig?.max_landing_pages) : "—", pro: proConfig?.feature_landing_pages ? limitDisplay(proConfig?.max_landing_pages) : "—" },
-      { name: "Live Sessions", free: "—", basic: basicConfig?.feature_go_live ? limitDisplay(basicConfig?.max_live_sessions) : "—", pro: proConfig?.feature_go_live ? limitDisplay(proConfig?.max_live_sessions) : "—" },
-      { name: "Lead Capture", free: false, basic: !!basicConfig?.feature_lead_capture, pro: !!proConfig?.feature_lead_capture },
-      { name: "Analytics", free: false, basic: !!basicConfig?.feature_analytics, pro: !!proConfig?.feature_analytics },
-      { name: "WhatsApp Automation", free: false, basic: !!basicConfig?.feature_whatsapp_automation, pro: !!proConfig?.feature_whatsapp_automation },
-      { name: "Multi-level Funnels", free: false, basic: !!basicConfig?.multilevel_funnel_enabled, pro: !!proConfig?.multilevel_funnel_enabled },
+      { name: "Funnels", free: freeFunnels, basic: limitDisplay(basicConfig?.max_funnels), pro: limitDisplay(proConfig?.max_funnels) },
+      { name: "Landing Pages", free: freeLanding, basic: basicConfig?.feature_landing_pages ? limitDisplay(basicConfig?.max_landing_pages) : "—", pro: proConfig?.feature_landing_pages ? limitDisplay(proConfig?.max_landing_pages) : "—" },
+      { name: "Live Sessions", free: freeLive, basic: basicConfig?.feature_go_live ? limitDisplay(basicConfig?.max_live_sessions) : "—", pro: proConfig?.feature_go_live ? limitDisplay(proConfig?.max_live_sessions) : "—" },
+      { name: "Lead Capture", free: !!freeConfig?.feature_lead_capture, basic: !!basicConfig?.feature_lead_capture, pro: !!proConfig?.feature_lead_capture },
+      { name: "Analytics", free: !!freeConfig?.feature_analytics, basic: !!basicConfig?.feature_analytics, pro: !!proConfig?.feature_analytics },
+      { name: "WhatsApp Automation", free: !!freeConfig?.feature_whatsapp_automation, basic: !!basicConfig?.feature_whatsapp_automation, pro: !!proConfig?.feature_whatsapp_automation },
+      { name: "Multi-level Funnels", free: !!freeConfig?.multilevel_funnel_enabled, basic: !!basicConfig?.multilevel_funnel_enabled, pro: !!proConfig?.multilevel_funnel_enabled },
       { name: "Team Members", free: false, basic: false, pro: proConfig?.max_team_members === -1 ? true : (proConfig?.max_team_members > 0 ? `Up to ${proConfig?.max_team_members}` : false) },
-      { name: "Video Sharing", free: false, basic: !!basicConfig?.feature_video_sharing, pro: !!proConfig?.feature_video_sharing },
-      { name: "Advanced Analytics", free: false, basic: !!basicConfig?.feature_advanced_analytics, pro: !!proConfig?.feature_advanced_analytics },
-      { name: "Priority Support", free: false, basic: !!basicConfig?.feature_priority_support, pro: !!proConfig?.feature_priority_support },
-      { name: "Team Analytics", free: false, basic: !!basicConfig?.feature_team_analytics, pro: !!proConfig?.feature_team_analytics },
+      { name: "Video Sharing", free: !!freeConfig?.feature_video_sharing, basic: !!basicConfig?.feature_video_sharing, pro: !!proConfig?.feature_video_sharing },
+      { name: "Advanced Analytics", free: !!freeConfig?.feature_advanced_analytics, basic: !!basicConfig?.feature_advanced_analytics, pro: !!proConfig?.feature_advanced_analytics },
+      { name: "Priority Support", free: !!freeConfig?.feature_priority_support, basic: !!basicConfig?.feature_priority_support, pro: !!proConfig?.feature_priority_support },
+      { name: "Team Analytics", free: !!freeConfig?.feature_team_analytics, basic: !!basicConfig?.feature_team_analytics, pro: !!proConfig?.feature_team_analytics },
     ];
     return rows;
   };
@@ -327,6 +332,28 @@ const PricingFullPage = () => {
   const proFeatures = proConfig ? buildFeatureList(proConfig) : [];
 
   // ---- Card builders (rendered into both desktop grid + mobile carousel) ----
+  // Free card features are fully driven by `freeConfig` from admin panel.
+  const freeIncluded: string[] = [];
+  const freeExcluded: string[] = [];
+
+  if (freeConfig?.feature_funnel_creation !== false) {
+    if (freeConfig?.max_funnels === -1) freeIncluded.push("Unlimited funnels");
+    else if ((freeConfig?.max_funnels ?? 0) > 0) freeIncluded.push(`Create up to ${freeConfig.max_funnels} funnel${freeConfig.max_funnels === 1 ? "" : "s"}`);
+  }
+  if (freeConfig?.feature_video_upload) {
+    if (freeConfig?.max_videos === -1) freeIncluded.push("Unlimited video uploads");
+    else if ((freeConfig?.max_videos ?? 0) > 0) freeIncluded.push(`Upload up to ${freeConfig.max_videos} video${freeConfig.max_videos === 1 ? "" : "s"}`);
+  }
+  freeIncluded.push("Add videos via nFlow Video Link");
+  if (freeConfig?.daily_view_limit === -1) freeIncluded.push("Unlimited daily views");
+  else if ((freeConfig?.daily_view_limit ?? 0) > 0) freeIncluded.push(`${freeConfig.daily_view_limit} views/day total`);
+  freeIncluded.push("Access public content");
+  freeIncluded.push("Browse marketplace");
+
+  if (!freeConfig?.feature_landing_pages) freeExcluded.push("Create landing pages");
+  if (!freeConfig?.feature_go_live) freeExcluded.push("Go live");
+  if (!freeConfig?.feature_lead_capture) freeExcluded.push("Lead capture");
+
   const freeCard: ReactNode = (
     <motion.div className="glass-card p-6 flex flex-col h-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       <div className="mb-6">
@@ -334,19 +361,13 @@ const PricingFullPage = () => {
         <div className="flex items-baseline gap-1 mt-3">
           <span className="text-3xl font-heading font-bold">{formatPrice(0, currency)}</span>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">View-only · forever free · no credit card</p>
+        <p className="text-xs text-muted-foreground mt-1">Forever free · no credit card</p>
       </div>
       <ul className="space-y-2.5 mb-6 max-h-[260px] md:max-h-[360px] overflow-y-auto pr-1 md:flex-1">
-        {[
-          "Create up to 2 funnels",
-          "Upload up to 2 videos",
-          "Add videos via nFlow Video Link",
-          "Access public content",
-          "Browse marketplace",
-        ].map(f => (
+        {freeIncluded.map(f => (
           <li key={f} className="flex items-center gap-2 text-sm"><Check size={14} className="text-primary shrink-0" /> {f}</li>
         ))}
-        {["Create landing pages", "Go live", "Lead capture"].map(f => (
+        {freeExcluded.map(f => (
           <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground/60"><X size={14} className="shrink-0" /> {f}</li>
         ))}
       </ul>
