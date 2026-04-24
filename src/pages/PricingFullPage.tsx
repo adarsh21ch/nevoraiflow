@@ -13,9 +13,9 @@ import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
@@ -122,10 +122,12 @@ const PricingFullPage = () => {
   const { plan, refreshPlan } = usePlan();
   const { openSupport } = useWhatsAppSupport();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState<string | null>(null);
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const { currency, gateway } = useCurrency();
   const [stripeCheckout, setStripeCheckout] = useState<{ priceId: string } | null>(null);
+  const autoTriggeredRef = useRef(false);
 
   const { data: planConfigs = [] } = useQuery({
     queryKey: ["plan-configs"],
@@ -245,6 +247,24 @@ const PricingFullPage = () => {
       setLoading(null);
     }
   }, [user, profile, navigate, openSupport, refreshPlan, billing, planConfigs, gateway]);
+
+  // Auto-trigger checkout after returning from /auth with ?plan=basic|pro
+  useEffect(() => {
+    if (autoTriggeredRef.current) return;
+    const planParam = searchParams.get("plan");
+    if (!planParam || !user || planConfigs.length === 0) return;
+    const target = planParam.toLowerCase();
+    if (target !== "basic" && target !== "pro") return;
+    const config = planConfigs.find((c: any) => c.plan_name === target);
+    if (!config || config.is_enabled === false) return;
+    autoTriggeredRef.current = true;
+    // Clear the param so refreshes don't re-trigger
+    const next = new URLSearchParams(searchParams);
+    next.delete("plan");
+    setSearchParams(next, { replace: true });
+    // Slight delay so the modal opens cleanly after mount
+    setTimeout(() => handlePayment(target), 250);
+  }, [searchParams, user, planConfigs, handlePayment, setSearchParams]);
 
   const isCurrentTier = (t: string) => plan.isPaid && plan.tier === t && !plan.isExpired;
 
