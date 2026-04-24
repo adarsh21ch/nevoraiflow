@@ -5,12 +5,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Carousel, CarouselApi, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
 import { useNevoraiMember } from "@/hooks/useNevoraiMember";
 import { useWhatsAppSupport } from "@/hooks/useWhatsAppSupport";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const VIEWS_TOOLTIP = "Total unique viewers across all your funnels per day. Resets at midnight IST.";
 
