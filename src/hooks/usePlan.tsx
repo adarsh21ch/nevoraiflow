@@ -40,7 +40,6 @@ const FREE_LIMITS: PlanLimits = {
 
 const PREMIUM_FEATURES = [
   "video_upload",
-  "video_link",
   "video_sharing",
   "live_broadcast",
   "advanced_analytics",
