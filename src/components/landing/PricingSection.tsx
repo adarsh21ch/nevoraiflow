@@ -364,13 +364,17 @@ export const PricingSection = () => {
                     <span className="text-3xl font-heading font-bold">{plan.price}</span>
                     <span className="text-sm text-muted-foreground">{plan.period}</span>
                   </div>
-                  {plan.daily && (
+                  {plan.daily ? (
                     <p className="text-xs text-primary mt-1">{plan.daily}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {plan.name === "Free" ? "Forever free · no credit card" : "\u00A0"}
+                    </p>
                   )}
                 </div>
-                {/* On mobile: cap feature list height and scroll internally to keep card compact.
-                    On desktop: original flex-1 behavior so cards align in the grid. */}
-                <ul className="space-y-3 mb-6 max-h-[260px] overflow-y-auto pr-1 md:max-h-none md:overflow-visible md:flex-1">
+                {/* Cap list height on both mobile and desktop so all cards stay
+                    visually balanced. Internal scroll keeps the grid aligned. */}
+                <ul className="space-y-3 mb-6 max-h-[260px] md:max-h-[340px] overflow-y-auto pr-1 md:flex-1">
                   {plan.features.map((f) => (
                     <li key={f.text} className="flex items-center gap-2 text-sm">
                       {f.included ? (
@@ -451,9 +455,9 @@ export const PricingSection = () => {
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-xs font-semibold text-background flex items-center gap-1 whitespace-nowrap shadow-md z-10">
                 <Crown size={12} /> {enterpriseConfig?.badge_text || "For Large Networks"}
               </div>
-              <div className="mb-4">
+              <div className="mb-5">
                 <h3 className="text-lg font-heading font-semibold mb-1">Enterprise</h3>
-                <p className="text-[11px] text-amber-500 font-medium mb-3">
+                <p className="text-[11px] text-amber-500 font-medium mb-2">
                   {enterpriseConfig?.subheading || "100+ active team members"}
                 </p>
                 <div className="flex items-baseline gap-1">
@@ -462,19 +466,14 @@ export const PricingSection = () => {
                   </span>
                   <span className="text-sm text-muted-foreground">/month</span>
                 </div>
-                {enterpriseConfig?.price_note && (
+                {enterpriseConfig?.price_note ? (
                   <p className="text-xs text-amber-500 mt-1">{enterpriseConfig.price_note}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1">&nbsp;</p>
                 )}
-                {enterpriseConfig?.show_setup_fee_note !== false &&
-                  enterpriseConfig?.setup_fee_note && (
-                    <p className="text-[11px] italic text-muted-foreground mt-1">
-                      {enterpriseConfig.setup_fee_note}
-                    </p>
-                  )}
               </div>
-              {/* Mobile: cap height + scroll internally so the long enterprise list
-                  doesn't blow up the carousel height. Desktop: original layout. */}
-              <ul className="space-y-2.5 mb-6 max-h-[260px] overflow-y-auto pr-1 md:max-h-none md:overflow-visible md:flex-1">
+              {/* Same height cap on desktop so all four cards stay aligned. */}
+              <ul className="space-y-3 mb-6 max-h-[260px] md:max-h-[340px] overflow-y-auto pr-1 md:flex-1">
                 {(enterpriseFeatures.length > 0
                   ? enterpriseFeatures
                   : [{ text: "Loading…", enabled: true }]

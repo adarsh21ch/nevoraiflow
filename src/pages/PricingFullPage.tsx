@@ -334,9 +334,9 @@ const PricingFullPage = () => {
         <div className="flex items-baseline gap-1 mt-3">
           <span className="text-3xl font-heading font-bold">{formatPrice(0, currency)}</span>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">View-only, forever free</p>
+        <p className="text-xs text-muted-foreground mt-1">View-only · forever free · no credit card</p>
       </div>
-      <ul className="space-y-2.5 mb-6 max-h-[260px] overflow-y-auto pr-1 md:max-h-none md:overflow-visible md:flex-1">
+      <ul className="space-y-2.5 mb-6 max-h-[260px] md:max-h-[360px] overflow-y-auto pr-1 md:flex-1">
         {["View shared funnels", "Access public content", "Browse marketplace"].map(f => (
           <li key={f} className="flex items-center gap-2 text-sm"><Check size={14} className="text-primary shrink-0" /> {f}</li>
         ))}
@@ -379,7 +379,7 @@ const PricingFullPage = () => {
           </p>
         )}
       </div>
-      <ul className="space-y-2.5 mb-6 max-h-[260px] overflow-y-auto pr-1 md:max-h-none md:overflow-visible md:flex-1">
+      <ul className="space-y-2.5 mb-6 max-h-[260px] md:max-h-[360px] overflow-y-auto pr-1 md:flex-1">
         {basicFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
       </ul>
       {effectiveBasic ? (
@@ -440,7 +440,7 @@ const PricingFullPage = () => {
           </p>
         )}
       </div>
-      <ul className="space-y-2.5 mb-6 max-h-[260px] overflow-y-auto pr-1 md:max-h-none md:overflow-visible md:flex-1">
+      <ul className="space-y-2.5 mb-6 max-h-[260px] md:max-h-[360px] overflow-y-auto pr-1 md:flex-1">
         {proFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
       </ul>
       {effectivePro ? (
