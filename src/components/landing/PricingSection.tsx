@@ -89,6 +89,11 @@ const buildFeatures = (config: any) => {
 };
 
 export const PricingSection = () => {
+  const navigate = useNavigate();
+  const { user, profile } = useAuth();
+  const { openSupport } = useWhatsAppSupport();
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
   const { data: planConfigs = [] } = useQuery({
     queryKey: ["plan-configs-landing"],
     queryFn: async () => {
@@ -97,6 +102,87 @@ export const PricingSection = () => {
     },
     staleTime: 60_000,
   });
+
+  const loadRazorpayScript = (): Promise<boolean> => new Promise((resolve) => {
+    if ((window as any).Razorpay) return resolve(true);
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+
+  const handlePlanClick = useCallback(async (planName: string) => {
+    if (planName === "Free") {
+      navigate(user ? "/dashboard" : "/auth?tab=signup");
+      return;
+    }
+    if (!user) {
+      // After login, return user to /pricing where checkout opens via the same flow
+      navigate(`/auth?tab=signup&redirect=/pricing&plan=${planName.toLowerCase()}`);
+      return;
+    }
+    const config = planConfigs.find((c: any) => c.plan_name === planName.toLowerCase());
+    if (!config) {
+      toast.error("Plan not available right now.");
+      return;
+    }
+    const planKey = `${planName.toLowerCase()}_monthly`;
+    setLoadingPlan(planKey);
+    try {
+      const ok = await loadRazorpayScript();
+      if (!ok) throw new Error("Failed to load payment gateway");
+      const { data, error } = await supabase.functions.invoke("razorpay-portal", {
+        body: { action: "create_order", amount: config.monthly_price, plan_key: planKey },
+      });
+      if (error || !data?.order_id) throw new Error(error?.message || "Failed to create order");
+
+      const options = {
+        key: data.key_id,
+        amount: data.amount,
+        currency: data.currency,
+        name: "nFlow",
+        description: `${planName} Plan — monthly`,
+        order_id: data.order_id,
+        handler: async (response: any) => {
+          try {
+            const { error: verifyError } = await supabase.functions.invoke("razorpay-portal", {
+              body: {
+                action: "verify_payment",
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                plan_key: planKey,
+              },
+            });
+            if (verifyError) throw verifyError;
+            toast.success(`Payment successful! Welcome to ${planName} 🎉`, { duration: 6000 });
+            setTimeout(() => navigate("/billing"), 1500);
+          } catch {
+            toast.error("Payment received but verification pending. Contact support.");
+            openSupport(`Hi, my ${planName} payment was successful but access not unlocked. Payment ID: ${response.razorpay_payment_id}`);
+          }
+        },
+        prefill: {
+          name: profile?.full_name || "",
+          email: user.email,
+          contact: profile?.phone || "",
+        },
+        theme: { color: "#2563EB" },
+        modal: { ondismiss: () => setLoadingPlan(null) },
+      };
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on("payment.failed", () => {
+        toast.error("Payment failed. Please try again.");
+        setLoadingPlan(null);
+      });
+      rzp.open();
+    } catch (err: any) {
+      toast.error(err.message || "Something went wrong");
+      setLoadingPlan(null);
+    }
+  }, [user, profile, planConfigs, navigate, openSupport]);
+
 
   const freeConfig = planConfigs.find((c: any) => c.plan_name === "free");
   const basicConfig = planConfigs.find((c: any) => c.plan_name === "basic");
