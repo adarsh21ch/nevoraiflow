@@ -328,7 +328,7 @@ const PricingFullPage = () => {
 
   // ---- Card builders (rendered into both desktop grid + mobile carousel) ----
   const freeCard: ReactNode = (
-    <motion.div className="glass-card p-6 flex flex-col md:h-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+    <motion.div className="glass-card p-6 flex flex-col h-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       <div className="mb-6">
         <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Free</span>
         <div className="flex items-baseline gap-1 mt-3">
