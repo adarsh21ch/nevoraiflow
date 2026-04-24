@@ -138,7 +138,8 @@ export const PricingSection = () => {
       const { data } = await supabase.from("plan_config").select("*");
       return (data || []) as any[];
     },
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const loadRazorpayScript = (): Promise<boolean> => new Promise((resolve) => {
