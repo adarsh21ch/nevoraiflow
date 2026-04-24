@@ -287,6 +287,39 @@ export const PricingSection = () => {
           </div>
         </motion.div>
 
+        {/* Monthly / Yearly billing toggle */}
+        {(basicEnabled || proEnabled) && (
+          <div className="flex items-center justify-center gap-3 mb-10">
+            <button
+              type="button"
+              onClick={() => setBilling("monthly")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                billing === "monthly"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              type="button"
+              onClick={() => setBilling("yearly")}
+              className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                billing === "yearly"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Yearly
+              {togglePct > 0 && (
+                <span className="absolute -top-2 -right-2 text-[10px] bg-emerald-500 text-white px-1.5 py-0.5 rounded-full font-bold shadow">
+                  Save {togglePct}%
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+
         <div className={`grid gap-6 ${gridCols}`}>
           {cards.map((plan, i) => (
             <motion.div
