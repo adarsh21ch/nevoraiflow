@@ -16,19 +16,46 @@ import { cn } from "@/lib/utils";
 
 const VIEWS_TOOLTIP = "Total unique viewers across all your funnels per day. Resets at midnight IST.";
 
-const freePlan = {
-  name: "Free",
-  features: [
-    { text: "Create up to 2 funnels", included: true },
-    { text: "Upload up to 2 videos", included: true },
-    { text: "Add videos via nFlow Video Link", included: true },
-    { text: "Access public content", included: true },
-    { text: "Browse marketplace", included: true },
-    { text: "No lead capture", included: false },
-    { text: "No live broadcast", included: false },
-  ],
-  cta: "Start Free",
-  variant: "outline" as const,
+const FREE_CTA = "Start Free";
+const FREE_VARIANT = "outline" as const;
+
+/**
+ * Build the Free-plan feature list entirely from the admin `plan_config` row.
+ * Always shows: marketplace + public content + nFlow video link (constant
+ * platform capabilities). Everything else is driven by DB so admin edits to
+ * max_funnels / max_videos / daily_view_limit / feature_* immediately reflect
+ * on the public pricing card.
+ */
+const buildFreeFeatures = (config: any): { text: string; included: boolean; tooltip?: string }[] => {
+  const items: { text: string; included: boolean; tooltip?: string }[] = [];
+
+  // Funnels (only show if creation is allowed AND at least 1 funnel)
+  if (config?.feature_funnel_creation !== false) {
+    if (config?.max_funnels === -1) items.push({ text: "Unlimited funnels", included: true });
+    else if ((config?.max_funnels ?? 0) > 0) items.push({ text: `Create up to ${config.max_funnels} funnel${config.max_funnels === 1 ? "" : "s"}`, included: true });
+  }
+
+  // Video uploads
+  if (config?.feature_video_upload) {
+    if (config?.max_videos === -1) items.push({ text: "Unlimited video uploads", included: true });
+    else if ((config?.max_videos ?? 0) > 0) items.push({ text: `Upload up to ${config.max_videos} video${config.max_videos === 1 ? "" : "s"}`, included: true });
+  }
+
+  // Always-on platform capabilities for free users
+  items.push({ text: "Add videos via nFlow Video Link", included: true });
+
+  // Daily view limit
+  const dv = formatDailyViews(config?.daily_view_limit);
+  if (dv) items.push({ text: dv.text, included: true, tooltip: dv.tooltip });
+
+  items.push({ text: "Access public content", included: true });
+  items.push({ text: "Browse marketplace", included: true });
+
+  // Negative feature flags — show as crossed out so users see what's gated
+  items.push({ text: "Lead capture", included: !!config?.feature_lead_capture });
+  items.push({ text: "Live broadcast", included: !!config?.feature_go_live });
+
+  return items;
 };
 
 const formatStorage = (mb: number | null | undefined): string | null => {
