@@ -93,8 +93,14 @@ const buildFeatures = (config: any) => {
 export const PricingSection = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const { plan } = usePlan();
+  const { isMember: isNevoraiMember } = useNevoraiMember();
   const { openSupport } = useWhatsAppSupport();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  const isCurrentTier = (t: string) => plan.isPaid && plan.tier === t && !plan.isExpired;
+  const onBasic = isCurrentTier("basic") || (!plan.isPaid && isNevoraiMember);
+  const onPro = isCurrentTier("pro");
 
   const { data: planConfigs = [] } = useQuery({
     queryKey: ["plan-configs-landing"],
