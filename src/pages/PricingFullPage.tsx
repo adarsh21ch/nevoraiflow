@@ -328,7 +328,7 @@ const PricingFullPage = () => {
 
   // ---- Card builders (rendered into both desktop grid + mobile carousel) ----
   const freeCard: ReactNode = (
-    <motion.div className="glass-card p-6 flex flex-col h-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+    <motion.div className="glass-card p-6 flex flex-col md:h-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       <div className="mb-6">
         <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Free</span>
         <div className="flex items-baseline gap-1 mt-3">
@@ -336,7 +336,7 @@ const PricingFullPage = () => {
         </div>
         <p className="text-xs text-muted-foreground mt-1">View-only, forever free</p>
       </div>
-      <ul className="space-y-2.5 flex-1 mb-6">
+      <ul className="space-y-2.5 mb-6 max-h-[260px] overflow-y-auto pr-1 md:max-h-none md:overflow-visible md:flex-1">
         {["View shared funnels", "Access public content", "Browse marketplace"].map(f => (
           <li key={f} className="flex items-center gap-2 text-sm"><Check size={14} className="text-primary shrink-0" /> {f}</li>
         ))}
@@ -355,7 +355,7 @@ const PricingFullPage = () => {
   );
 
   const basicCard: ReactNode = basicEnabled && basicConfig ? (
-    <motion.div className="glass-card p-6 flex flex-col h-full relative" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+    <motion.div className="glass-card p-6 flex flex-col md:h-full relative" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
       {basicConfig.plan_badge_text && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-card border border-border text-xs font-semibold flex items-center gap-1 whitespace-nowrap">
           <User size={12} /> {basicConfig.plan_badge_text}
@@ -379,7 +379,7 @@ const PricingFullPage = () => {
           </p>
         )}
       </div>
-      <ul className="space-y-2.5 flex-1 mb-6">
+      <ul className="space-y-2.5 mb-6 max-h-[260px] overflow-y-auto pr-1 md:max-h-none md:overflow-visible md:flex-1">
         {basicFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
       </ul>
       {effectiveBasic ? (
@@ -418,7 +418,7 @@ const PricingFullPage = () => {
   })();
 
   const proCard: ReactNode = proEnabled && proConfig ? (
-    <motion.div className="glass-card p-6 flex flex-col h-full relative border-primary/40 glow-primary" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+    <motion.div className="glass-card p-6 flex flex-col md:h-full relative border-primary/40 glow-primary" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
       <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-xs font-semibold text-white flex items-center gap-1 whitespace-nowrap shadow-lg shadow-emerald-500/30">
         <Crown size={12} /> Most Popular
       </div>
@@ -440,7 +440,7 @@ const PricingFullPage = () => {
           </p>
         )}
       </div>
-      <ul className="space-y-2.5 flex-1 mb-6">
+      <ul className="space-y-2.5 mb-6 max-h-[260px] overflow-y-auto pr-1 md:max-h-none md:overflow-visible md:flex-1">
         {proFeatures.map((item, i) => <FeatureRow key={i} item={item} />)}
       </ul>
       {effectivePro ? (
@@ -535,16 +535,18 @@ const PricingFullPage = () => {
               opts={{ align: "center", loop: false }}
               className="w-full"
             >
-              <CarouselContent className="-ml-4">
+              {/* py-4 prevents the absolute -top-3 badges from being clipped
+                  by Embla's overflow-hidden viewport. */}
+              <CarouselContent className="-ml-4 py-4">
                 {cards.map((c) => (
                   <CarouselItem key={c.key} className="pl-4 basis-[88%] sm:basis-[70%]">
-                    <div className="h-full">{c.node}</div>
+                    {c.node}
                   </CarouselItem>
                 ))}
               </CarouselContent>
             </Carousel>
             {/* Dot indicators */}
-            <div className="flex items-center justify-center gap-2 mt-5">
+            <div className="flex items-center justify-center gap-2 mt-3">
               {cards.map((c, i) => (
                 <button
                   key={c.key}
@@ -558,7 +560,7 @@ const PricingFullPage = () => {
                 />
               ))}
             </div>
-            <p className="text-center text-xs text-muted-foreground mt-3">
+            <p className="text-center text-xs text-muted-foreground mt-2">
               Swipe to compare plans
             </p>
           </div>

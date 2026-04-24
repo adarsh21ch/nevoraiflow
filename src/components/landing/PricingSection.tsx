@@ -345,7 +345,7 @@ export const PricingSection = () => {
             node: (
               <motion.div
                 key={plan.name}
-                className={`glass-card p-6 relative flex flex-col h-full ${
+                className={`glass-card p-6 relative flex flex-col md:h-full ${
                   plan.highlight ? "border-primary/40 glow-primary" : ""
                 }`}
                 initial={{ opacity: 0, y: 20 }}
@@ -354,11 +354,11 @@ export const PricingSection = () => {
                 transition={{ delay: i * 0.1 }}
               >
                 {plan.badge && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-primary text-xs font-semibold text-primary-foreground">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-primary text-xs font-semibold text-primary-foreground shadow-md whitespace-nowrap z-10">
                     {plan.badge}
                   </div>
                 )}
-                <div className="mb-6">
+                <div className="mb-5">
                   <h3 className="text-lg font-heading font-semibold mb-2">{plan.name}</h3>
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-heading font-bold">{plan.price}</span>
@@ -368,7 +368,9 @@ export const PricingSection = () => {
                     <p className="text-xs text-primary mt-1">{plan.daily}</p>
                   )}
                 </div>
-                <ul className="space-y-3 flex-1 mb-6">
+                {/* On mobile: cap feature list height and scroll internally to keep card compact.
+                    On desktop: original flex-1 behavior so cards align in the grid. */}
+                <ul className="space-y-3 mb-6 max-h-[260px] overflow-y-auto pr-1 md:max-h-none md:overflow-visible md:flex-1">
                   {plan.features.map((f) => (
                     <li key={f.text} className="flex items-center gap-2 text-sm">
                       {f.included ? (
@@ -440,13 +442,13 @@ export const PricingSection = () => {
 
           const enterpriseNode: ReactNode = enterpriseVisible ? (
             <motion.div
-              className="relative flex flex-col h-full p-6 rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-500/[0.06] via-background to-background shadow-[0_0_40px_-15px_rgba(245,158,11,0.4)]"
+              className="relative flex flex-col md:h-full p-6 rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-500/[0.06] via-background to-background shadow-[0_0_40px_-15px_rgba(245,158,11,0.4)]"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: cards.length * 0.1 }}
             >
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-xs font-semibold text-background flex items-center gap-1 whitespace-nowrap">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-xs font-semibold text-background flex items-center gap-1 whitespace-nowrap shadow-md z-10">
                 <Crown size={12} /> {enterpriseConfig?.badge_text || "For Large Networks"}
               </div>
               <div className="mb-4">
@@ -470,7 +472,9 @@ export const PricingSection = () => {
                     </p>
                   )}
               </div>
-              <ul className="space-y-2.5 flex-1 mb-6">
+              {/* Mobile: cap height + scroll internally so the long enterprise list
+                  doesn't blow up the carousel height. Desktop: original layout. */}
+              <ul className="space-y-2.5 mb-6 max-h-[260px] overflow-y-auto pr-1 md:max-h-none md:overflow-visible md:flex-1">
                 {(enterpriseFeatures.length > 0
                   ? enterpriseFeatures
                   : [{ text: "Loading…", enabled: true }]
@@ -539,16 +543,20 @@ const MobilePricingCarousel = ({ items }: { items: { key: string; node: ReactNod
 
   return (
     <div className="md:hidden">
+      {/* py-4 on the carousel gives breathing room so the absolute -top-3 badges
+          aren't clipped by Embla's overflow-hidden viewport. items-stretch is
+          removed by passing no extra classes — children size to their own
+          content (md:h-full only kicks in on desktop). */}
       <Carousel setApi={setApi} opts={{ align: "center", loop: false }} className="w-full">
-        <CarouselContent className="-ml-4">
+        <CarouselContent className="-ml-4 py-4">
           {items.map((it) => (
             <CarouselItem key={it.key} className="pl-4 basis-[88%] sm:basis-[70%]">
-              <div className="h-full">{it.node}</div>
+              {it.node}
             </CarouselItem>
           ))}
         </CarouselContent>
       </Carousel>
-      <div className="flex items-center justify-center gap-2 mt-5">
+      <div className="flex items-center justify-center gap-2 mt-3">
         {items.map((it, i) => (
           <button
             key={it.key}
@@ -562,7 +570,7 @@ const MobilePricingCarousel = ({ items }: { items: { key: string; node: ReactNod
           />
         ))}
       </div>
-      <p className="text-center text-xs text-muted-foreground mt-3">Swipe to compare plans</p>
+      <p className="text-center text-xs text-muted-foreground mt-2">Swipe to compare plans</p>
     </div>
   );
 };
