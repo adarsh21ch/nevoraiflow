@@ -163,6 +163,7 @@ const PricingFullPage = () => {
     refetchOnWindowFocus: true,
   });
 
+  const freeConfig = planConfigs.find((c: any) => c.plan_name === "free");
   const basicConfig = planConfigs.find((c: any) => c.plan_name === "basic");
   const proConfig = planConfigs.find((c: any) => c.plan_name === "pro");
   const basicEnabled = basicConfig?.is_enabled !== false;
