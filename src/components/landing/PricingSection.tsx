@@ -183,12 +183,14 @@ export const PricingSection = () => {
   });
 
   if (basicEnabled && basicConfig) {
-    const price = basicConfig.monthly_price;
-    const daily = price > 0 ? `Just ₹${Math.ceil(price / 30)}/day` : "";
+    const monthly = basicConfig.monthly_price;
+    const yearly = basicConfig.yearly_price;
+    const price = billing === "monthly" ? monthly : yearly;
+    const daily = monthly > 0 ? `Just ₹${Math.ceil(monthly / 30)}/day` : "";
     cards.push({
       name: "Basic",
       price: `₹${price.toLocaleString("en-IN")}`,
-      period: "/month",
+      period: billing === "monthly" ? "/month" : "/year",
       daily,
       badge: basicConfig.plan_badge_text || null,
       features: buildFeatures(basicConfig),
@@ -199,12 +201,14 @@ export const PricingSection = () => {
   }
 
   if (proEnabled && proConfig) {
-    const price = proConfig.monthly_price;
-    const daily = price > 0 ? `Just ₹${Math.ceil(price / 30)}/day` : "";
+    const monthly = proConfig.monthly_price;
+    const yearly = proConfig.yearly_price;
+    const price = billing === "monthly" ? monthly : yearly;
+    const daily = monthly > 0 ? `Just ₹${Math.ceil(monthly / 30)}/day` : "";
     cards.push({
       name: "Pro",
       price: `₹${price.toLocaleString("en-IN")}`,
-      period: "/month",
+      period: billing === "monthly" ? "/month" : "/year",
       daily,
       badge: proConfig.plan_badge_text || "Most Popular",
       features: buildFeatures(proConfig),
