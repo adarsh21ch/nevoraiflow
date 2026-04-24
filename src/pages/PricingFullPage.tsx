@@ -418,7 +418,7 @@ const PricingFullPage = () => {
   })();
 
   const proCard: ReactNode = proEnabled && proConfig ? (
-    <motion.div className="glass-card p-6 flex flex-col h-full relative border-primary/40 glow-primary" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+    <motion.div className="glass-card p-6 flex flex-col md:h-full relative border-primary/40 glow-primary" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
       <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-xs font-semibold text-white flex items-center gap-1 whitespace-nowrap shadow-lg shadow-emerald-500/30">
         <Crown size={12} /> Most Popular
       </div>
