@@ -5,12 +5,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Carousel, CarouselApi, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
 import { useNevoraiMember } from "@/hooks/useNevoraiMember";
 import { useWhatsAppSupport } from "@/hooks/useWhatsAppSupport";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const VIEWS_TOOLTIP = "Total unique viewers across all your funnels per day. Resets at midnight IST.";
 
@@ -336,109 +338,109 @@ export const PricingSection = () => {
           </div>
         </motion.div>
 
-        <div className={`grid gap-6 ${gridCols}`}>
-          {cards.map((plan, i) => (
-            <motion.div
-              key={plan.name}
-              className={`glass-card p-6 relative flex flex-col ${
-                plan.highlight ? "border-primary/40 glow-primary" : ""
-              }`}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-            >
-              {plan.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-primary text-xs font-semibold text-primary-foreground">
-                  {plan.badge}
-                </div>
-              )}
-              <div className="mb-6">
-                <h3 className="text-lg font-heading font-semibold mb-2">{plan.name}</h3>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-heading font-bold">{plan.price}</span>
-                  <span className="text-sm text-muted-foreground">{plan.period}</span>
-                </div>
-                {plan.daily && (
-                  <p className="text-xs text-primary mt-1">{plan.daily}</p>
+        {/* Build all card render nodes once, used by both mobile carousel and desktop grid */}
+        {(() => {
+          const planNodes: { key: string; node: ReactNode }[] = cards.map((plan, i) => ({
+            key: plan.name,
+            node: (
+              <motion.div
+                key={plan.name}
+                className={`glass-card p-6 relative flex flex-col h-full ${
+                  plan.highlight ? "border-primary/40 glow-primary" : ""
+                }`}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+              >
+                {plan.badge && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-primary text-xs font-semibold text-primary-foreground">
+                    {plan.badge}
+                  </div>
                 )}
-              </div>
-              <ul className="space-y-3 flex-1 mb-6">
-                {plan.features.map((f) => (
-                  <li key={f.text} className="flex items-center gap-2 text-sm">
-                    {f.included ? (
-                      <Check size={16} className="text-success shrink-0" />
-                    ) : (
-                      <X size={16} className="text-muted-foreground/40 shrink-0" />
-                    )}
-                    <span className={f.included ? "text-foreground" : "text-muted-foreground/60"}>
-                      {f.text}
-                    </span>
-                    {(f as any).tooltip && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
-                              <Info size={11} />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[220px] text-xs">
-                            {(f as any).tooltip}
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              {(() => {
-                const lname = plan.name.toLowerCase();
-                // Free card
-                if (lname === "free") {
-                  if (!user || (!userPlan.isPaid && !isNevoraiMember)) {
-                    return (
-                      <Button variant={plan.variant} className="w-full gap-2" onClick={() => handlePlanClick(plan.name)}>
-                        {plan.cta}
-                      </Button>
-                    );
+                <div className="mb-6">
+                  <h3 className="text-lg font-heading font-semibold mb-2">{plan.name}</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-heading font-bold">{plan.price}</span>
+                    <span className="text-sm text-muted-foreground">{plan.period}</span>
+                  </div>
+                  {plan.daily && (
+                    <p className="text-xs text-primary mt-1">{plan.daily}</p>
+                  )}
+                </div>
+                <ul className="space-y-3 flex-1 mb-6">
+                  {plan.features.map((f) => (
+                    <li key={f.text} className="flex items-center gap-2 text-sm">
+                      {f.included ? (
+                        <Check size={16} className="text-success shrink-0" />
+                      ) : (
+                        <X size={16} className="text-muted-foreground/40 shrink-0" />
+                      )}
+                      <span className={f.included ? "text-foreground" : "text-muted-foreground/60"}>
+                        {f.text}
+                      </span>
+                      {(f as any).tooltip && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                                <Info size={11} />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[220px] text-xs">
+                              {(f as any).tooltip}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                {(() => {
+                  const lname = plan.name.toLowerCase();
+                  if (lname === "free") {
+                    if (!user || (!userPlan.isPaid && !isNevoraiMember)) {
+                      return (
+                        <Button variant={plan.variant} className="w-full gap-2" onClick={() => handlePlanClick(plan.name)}>
+                          {plan.cta}
+                        </Button>
+                      );
+                    }
+                    return <Button variant="outline" disabled className="w-full">Current Plan</Button>;
                   }
-                  return <Button variant="outline" disabled className="w-full">Current Plan</Button>;
-                }
-                // Basic card
-                if (lname === "basic") {
-                  if (onBasic) {
-                    return (
-                      <Button disabled className="w-full gap-2">
-                        {isNevoraiMember && !userPlan.isPaid ? (<><Sparkles size={14} /> Active via Nevorai membership</>) : "Current Plan"}
-                      </Button>
-                    );
+                  if (lname === "basic") {
+                    if (onBasic) {
+                      return (
+                        <Button disabled className="w-full gap-2">
+                          {isNevoraiMember && !userPlan.isPaid ? (<><Sparkles size={14} /> Active via Nevorai membership</>) : "Current Plan"}
+                        </Button>
+                      );
+                    }
+                    if (onPro) return <Button disabled variant="outline" className="w-full">Included in Pro</Button>;
                   }
-                  if (onPro) return <Button disabled variant="outline" className="w-full">Included in Pro</Button>;
-                }
-                // Pro card
-                if (lname === "pro" && onPro) {
-                  return <Button disabled className="w-full">Current Plan</Button>;
-                }
-                const isUpgrade = lname === "pro" && onBasic;
-                return (
-                  <Button
-                    variant={plan.variant}
-                    className="w-full gap-2"
-                    onClick={() => handlePlanClick(plan.name)}
-                    disabled={loadingPlan === `${lname}_monthly`}
-                  >
-                    {loadingPlan === `${lname}_monthly` && <Loader2 size={16} className="animate-spin" />}
-                    {isUpgrade ? <><ArrowUp size={14} /> Upgrade to Pro</> : plan.cta}
-                  </Button>
-                );
-              })()}
-            </motion.div>
-          ))}
+                  if (lname === "pro" && onPro) {
+                    return <Button disabled className="w-full">Current Plan</Button>;
+                  }
+                  const isUpgrade = lname === "pro" && onBasic;
+                  return (
+                    <Button
+                      variant={plan.variant}
+                      className="w-full gap-2"
+                      onClick={() => handlePlanClick(plan.name)}
+                      disabled={loadingPlan === `${lname}_monthly`}
+                    >
+                      {loadingPlan === `${lname}_monthly` && <Loader2 size={16} className="animate-spin" />}
+                      {isUpgrade ? <><ArrowUp size={14} /> Upgrade to Pro</> : plan.cta}
+                    </Button>
+                  );
+                })()}
+              </motion.div>
+            ),
+          }));
 
-          {/* Enterprise card — DB-driven, always last, premium look */}
-          {enterpriseVisible && (
+          const enterpriseNode: ReactNode = enterpriseVisible ? (
             <motion.div
-              className="relative flex flex-col p-6 rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-500/[0.06] via-background to-background shadow-[0_0_40px_-15px_rgba(245,158,11,0.4)]"
+              className="relative flex flex-col h-full p-6 rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-500/[0.06] via-background to-background shadow-[0_0_40px_-15px_rgba(245,158,11,0.4)]"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -488,9 +490,79 @@ export const PricingSection = () => {
                 </Button>
               </Link>
             </motion.div>
-          )}
-        </div>
+          ) : null;
+
+          const allNodes: { key: string; node: ReactNode }[] = [
+            ...planNodes,
+            ...(enterpriseNode ? [{ key: "enterprise", node: enterpriseNode }] : []),
+          ];
+
+          return (
+            <>
+              {/* Mobile: swipeable carousel with dots */}
+              <MobilePricingCarousel items={allNodes} />
+
+              {/* Desktop: original grid */}
+              <div className={`hidden md:grid gap-6 ${gridCols}`}>
+                {allNodes.map((n) => (
+                  <div key={n.key} className="h-full">
+                    {n.node}
+                  </div>
+                ))}
+              </div>
+            </>
+          );
+        })()}
       </div>
     </section>
+  );
+};
+
+// Mobile-only swipeable pricing carousel with dot indicators.
+// Kept inside this file (not extracted) to keep the change scoped to one
+// component, per the user's UI-only request.
+const MobilePricingCarousel = ({ items }: { items: { key: string; node: ReactNode }[] }) => {
+  const [api, setApi] = useState<CarouselApi | null>(null);
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    if (!api) return;
+    setActive(api.selectedScrollSnap());
+    const onSelect = () => setActive(api.selectedScrollSnap());
+    api.on("select", onSelect);
+    api.on("reInit", onSelect);
+    return () => {
+      api.off("select", onSelect);
+      api.off("reInit", onSelect);
+    };
+  }, [api]);
+
+  return (
+    <div className="md:hidden">
+      <Carousel setApi={setApi} opts={{ align: "center", loop: false }} className="w-full">
+        <CarouselContent className="-ml-4">
+          {items.map((it) => (
+            <CarouselItem key={it.key} className="pl-4 basis-[88%] sm:basis-[70%]">
+              <div className="h-full">{it.node}</div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
+      <div className="flex items-center justify-center gap-2 mt-5">
+        {items.map((it, i) => (
+          <button
+            key={it.key}
+            type="button"
+            aria-label={`Show ${it.key} plan`}
+            onClick={() => api?.scrollTo(i)}
+            className={cn(
+              "h-2 rounded-full transition-all",
+              active === i ? "w-6 bg-primary" : "w-2 bg-muted-foreground/30",
+            )}
+          />
+        ))}
+      </div>
+      <p className="text-center text-xs text-muted-foreground mt-3">Swipe to compare plans</p>
+    </div>
   );
 };
