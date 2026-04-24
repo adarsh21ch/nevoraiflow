@@ -578,6 +578,18 @@ const PricingFullPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Inline auth popup — shown when a logged-out user clicks Basic/Pro */}
+      <AuthModal
+        open={authModalOpen}
+        onOpenChange={setAuthModalOpen}
+        contextLabel={pendingModalPlan ? `Sign in to continue with ${pendingModalPlan === "pro" ? "Pro" : "Basic"}` : undefined}
+        onAuthSuccess={() => {
+          // The pending plan is in localStorage — auto-trigger effect picks it up
+          // once the auth context updates. No extra call needed here.
+          setPendingModalPlan(null);
+        }}
+      />
     </div>
   );
 };
