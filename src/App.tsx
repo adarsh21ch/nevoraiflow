@@ -64,7 +64,7 @@ const App = () => (
     <CurrencyProvider>
     <TooltipProvider>
       <Sonner />
-      <PaymentTestModeBanner />
+      {/* <PaymentTestModeBanner /> hidden — international payments temporarily disabled */}
       <BrowserRouter>
         <AuthProvider>
           <ErrorBoundary>

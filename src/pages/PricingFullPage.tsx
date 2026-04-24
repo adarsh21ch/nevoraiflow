@@ -297,10 +297,7 @@ const PricingFullPage = () => {
             )}
           </motion.div>
 
-          {/* Currency switcher */}
-          <div className="flex justify-center mb-6">
-            <CurrencySwitcher />
-          </div>
+          {/* Currency switcher hidden — international payments temporarily disabled */}
           {/* Billing toggle */}
           {(basicEnabled || proEnabled) && (
             <div className="flex items-center justify-center gap-3 mb-10">

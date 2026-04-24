@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 
 export type Currency = "INR" | "USD";
 export type Gateway = "razorpay" | "stripe";
@@ -28,24 +28,13 @@ function detectFromTimezone(): Currency {
 }
 
 export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
+  // International payments temporarily disabled — force INR/Razorpay everywhere.
   const [currency, setCurrencyState] = useState<Currency>("INR");
-  const [isAutoDetected, setIsAutoDetected] = useState(true);
+  const [isAutoDetected] = useState(false);
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as Currency | null;
-    if (stored === "INR" || stored === "USD") {
-      setCurrencyState(stored);
-      setIsAutoDetected(false);
-    } else {
-      setCurrencyState(detectFromTimezone());
-      setIsAutoDetected(true);
-    }
-  }, []);
-
-  const setCurrency = (c: Currency) => {
-    setCurrencyState(c);
-    setIsAutoDetected(false);
-    localStorage.setItem(STORAGE_KEY, c);
+  const setCurrency = (_c: Currency) => {
+    // No-op while international payments are disabled.
+    setCurrencyState("INR");
   };
 
   const value: CurrencyCtx = {

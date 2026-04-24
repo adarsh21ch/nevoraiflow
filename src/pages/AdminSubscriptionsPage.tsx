@@ -313,13 +313,11 @@ const AdminSubscriptionsPage = () => {
 
           {!isFree && (
             <TabsContent value="pricing" className="pt-2 space-y-0.5">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground pt-1">🇮🇳 India (Razorpay)</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground pt-1">Pricing (₹)</p>
               <PlanField planName={planName} field="monthly_price" label="Monthly (₹)" value={config?.monthly_price} onSave={saveField} disabled={isDisabled} />
               <PlanField planName={planName} field="yearly_price" label="Yearly (₹)" value={config?.yearly_price} onSave={saveField} disabled={isDisabled} />
 
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground pt-3">🌍 International (Stripe)</p>
-              <PlanField planName={planName} field="usd_price_monthly" label="Monthly ($)" value={config?.usd_price_monthly} onSave={saveField} disabled={isDisabled} hint="Price in USD for international users" />
-              <PlanField planName={planName} field="usd_price_yearly" label="Yearly ($)" value={config?.usd_price_yearly} onSave={saveField} disabled={isDisabled} hint="Price in USD for international users" />
+              {/* International (USD) pricing fields hidden — re-enable when international payments launch */}
 
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground pt-3">General</p>
               <PlanField planName={planName} field="yearly_validity_days" label="Validity (days)" value={config?.yearly_validity_days} onSave={saveField} disabled={isDisabled} />
