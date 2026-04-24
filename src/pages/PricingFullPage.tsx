@@ -123,6 +123,7 @@ const PricingFullPage = () => {
   const { plan, refreshPlan } = usePlan();
   const { openSupport } = useWhatsAppSupport();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState<string | null>(null);
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
