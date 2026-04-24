@@ -93,13 +93,13 @@ const buildFeatures = (config: any) => {
 export const PricingSection = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const { plan } = usePlan();
+  const { plan: userPlan } = usePlan();
   const { isMember: isNevoraiMember } = useNevoraiMember();
   const { openSupport } = useWhatsAppSupport();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
-  const isCurrentTier = (t: string) => plan.isPaid && plan.tier === t && !plan.isExpired;
-  const onBasic = isCurrentTier("basic") || (!plan.isPaid && isNevoraiMember);
+  const isCurrentTier = (t: string) => userPlan.isPaid && userPlan.tier === t && !userPlan.isExpired;
+  const onBasic = isCurrentTier("basic") || (!userPlan.isPaid && isNevoraiMember);
   const onPro = isCurrentTier("pro");
 
   const { data: planConfigs = [] } = useQuery({
@@ -389,7 +389,7 @@ export const PricingSection = () => {
                 const lname = plan.name.toLowerCase();
                 // Free card
                 if (lname === "free") {
-                  if (!user || (!plan.isPaid && !isNevoraiMember)) {
+                  if (!user || (!userPlan.isPaid && !isNevoraiMember)) {
                     return (
                       <Button variant={plan.variant} className="w-full gap-2" onClick={() => handlePlanClick(plan.name)}>
                         {plan.cta}
@@ -403,7 +403,7 @@ export const PricingSection = () => {
                   if (onBasic) {
                     return (
                       <Button disabled className="w-full gap-2">
-                        {isNevoraiMember && !plan.isPaid ? (<><Sparkles size={14} /> Active via Nevorai membership</>) : "Current Plan"}
+                        {isNevoraiMember && !userPlan.isPaid ? (<><Sparkles size={14} /> Active via Nevorai membership</>) : "Current Plan"}
                       </Button>
                     );
                   }
