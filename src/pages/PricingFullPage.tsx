@@ -337,19 +337,35 @@ const PricingFullPage = () => {
         <p className="text-xs text-muted-foreground mt-1">View-only · forever free · no credit card</p>
       </div>
       <ul className="space-y-2.5 mb-6 max-h-[260px] md:max-h-[360px] overflow-y-auto pr-1 md:flex-1">
-        {["View shared funnels", "Access public content", "Browse marketplace"].map(f => (
+        {[
+          "Create up to 2 funnels",
+          "Upload up to 2 videos",
+          "Add videos via nFlow Video Link",
+          "Access public content",
+          "Browse marketplace",
+        ].map(f => (
           <li key={f} className="flex items-center gap-2 text-sm"><Check size={14} className="text-primary shrink-0" /> {f}</li>
         ))}
-        {["Create funnels", "Create landing pages", "Go live", "Lead capture"].map(f => (
+        {["Create landing pages", "Go live", "Lead capture"].map(f => (
           <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground/60"><X size={14} className="shrink-0" /> {f}</li>
         ))}
       </ul>
       {!plan.isPaid && !plan.isExpired && !isNevoraiMember ? (
-        <Button variant="outline" disabled className="w-full">Current Plan</Button>
+        <>
+          <Button variant="outline" disabled className="w-full">Current Plan</Button>
+          <p className="text-[11px] text-muted-foreground text-center mt-2 leading-snug">
+            No credit card required. Start building your first funnel in minutes.
+          </p>
+        </>
       ) : (
-        <Button variant="outline" onClick={() => navigate(user ? "/dashboard" : "/auth?tab=signup")} className="w-full">
-          {user ? "Stay Free" : "Get Started"}
-        </Button>
+        <>
+          <Button variant="outline" onClick={() => navigate(user ? "/dashboard" : "/auth?tab=signup")} className="w-full">
+            {user ? "Stay Free" : "Get Started"}
+          </Button>
+          <p className="text-[11px] text-muted-foreground text-center mt-2 leading-snug">
+            No credit card required. Start building your first funnel in minutes.
+          </p>
+        </>
       )}
     </motion.div>
   );
