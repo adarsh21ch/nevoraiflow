@@ -6,9 +6,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
-import { useWhatsAppSupport } from "@/hooks/useWhatsAppSupport";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { AuthModal } from "@/components/auth/AuthModal";
+import {
+  useRazorpayCheckout,
+  usePendingPlanAutoCheckout,
+  savePendingPlan,
+  type PendingPlan,
+} from "@/hooks/useRazorpayCheckout";
 
 const VIEWS_TOOLTIP = "Total unique viewers across all your funnels per day. Resets at midnight IST.";
 
