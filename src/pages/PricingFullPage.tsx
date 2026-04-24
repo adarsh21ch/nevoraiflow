@@ -127,7 +127,8 @@ const PricingFullPage = () => {
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const { currency, gateway } = useCurrency();
   const [stripeCheckout, setStripeCheckout] = useState<{ priceId: string } | null>(null);
-  const autoTriggeredRef = useRef(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [pendingModalPlan, setPendingModalPlan] = useState<"basic" | "pro" | null>(null);
 
   const { data: planConfigs = [] } = useQuery({
     queryKey: ["plan-configs"],
@@ -162,30 +163,10 @@ const PricingFullPage = () => {
     return config.monthly_price * 12 - config.yearly_price;
   };
 
-  const handlePayment = useCallback(async (planName: string) => {
-    if (!user) {
-      navigate("/auth?tab=signup&redirect=/pricing");
-      return;
-    }
+  const runRazorpayCheckout = useCallback(async (planName: "basic" | "pro") => {
     const config = planConfigs.find((c: any) => c.plan_name === planName);
     if (!config) return;
-
     const planKey = `${planName}_${billing}`;
-
-    // International users → Stripe (USD)
-    if (gateway === "stripe") {
-      const usdAmount = billing === "monthly"
-        ? Number(config.usd_price_monthly || 0)
-        : Number(config.usd_price_yearly || 0);
-      if (usdAmount <= 0) {
-        toast.error("USD pricing not configured for this plan. Contact support.");
-        return;
-      }
-      setStripeCheckout({ priceId: planKey });
-      return;
-    }
-
-    // Indian users → Razorpay (INR) — existing flow unchanged
     const amount = billing === "monthly" ? config.monthly_price : config.yearly_price;
     setLoading(planKey);
     try {
@@ -216,11 +197,12 @@ const PricingFullPage = () => {
               },
             });
             if (verifyError) throw verifyError;
+            try { localStorage.removeItem("nflow_pending_plan"); } catch {}
             toast.success(`Payment successful! Welcome to ${planName.charAt(0).toUpperCase() + planName.slice(1)} 🎉 You're covered by our 7-day money-back guarantee.`, {
               duration: 7000,
             });
             refreshPlan();
-            setTimeout(() => navigate("/billing"), 1500);
+            setTimeout(() => navigate("/dashboard?welcome=1"), 1500);
           } catch {
             toast.error("Payment received but verification pending. Contact support.");
             openSupport("Hi, my payment was successful but access not unlocked. Payment ID: " + response.razorpay_payment_id);
@@ -228,7 +210,7 @@ const PricingFullPage = () => {
         },
         prefill: {
           name: profile?.full_name || "",
-          email: user.email,
+          email: user?.email,
           contact: profile?.phone || "",
         },
         theme: { color: "#2563EB" },
@@ -246,25 +228,91 @@ const PricingFullPage = () => {
     } finally {
       setLoading(null);
     }
-  }, [user, profile, navigate, openSupport, refreshPlan, billing, planConfigs, gateway]);
+  }, [user, profile, navigate, openSupport, refreshPlan, billing, planConfigs]);
 
-  // Auto-trigger checkout after returning from /auth with ?plan=basic|pro
+  const handlePayment = useCallback(async (planName: string) => {
+    const config = planConfigs.find((c: any) => c.plan_name === planName);
+    if (!config) return;
+
+    // International users → Stripe (USD)
+    if (gateway === "stripe") {
+      if (!user) {
+        // Save then open auth modal — Stripe needs an authenticated user
+        try {
+          localStorage.setItem("nflow_pending_plan", JSON.stringify({ planName, billing }));
+        } catch {}
+        setPendingModalPlan(planName as "basic" | "pro");
+        setAuthModalOpen(true);
+        return;
+      }
+      const usdAmount = billing === "monthly"
+        ? Number(config.usd_price_monthly || 0)
+        : Number(config.usd_price_yearly || 0);
+      if (usdAmount <= 0) {
+        toast.error("USD pricing not configured for this plan. Contact support.");
+        return;
+      }
+      setStripeCheckout({ priceId: `${planName}_${billing}` });
+      return;
+    }
+
+    // Indian users → Razorpay
+    if (!user) {
+      try {
+        localStorage.setItem("nflow_pending_plan", JSON.stringify({ planName, billing }));
+      } catch {}
+      setPendingModalPlan(planName as "basic" | "pro");
+      setAuthModalOpen(true);
+      return;
+    }
+    void runRazorpayCheckout(planName as "basic" | "pro");
+  }, [user, gateway, planConfigs, billing, runRazorpayCheckout]);
+
+  // After auth round-trip via popup OR after returning from /auth?plan=, fire checkout
+  const autoTriggeredRef = useRef(false);
   useEffect(() => {
     if (autoTriggeredRef.current) return;
+    if (!user || planConfigs.length === 0) return;
+
+    // 1. Pending plan stored before auth modal
+    let pendingName: "basic" | "pro" | null = null;
+    let pendingBilling: "monthly" | "yearly" | null = null;
+    try {
+      const raw = localStorage.getItem("nflow_pending_plan");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.planName === "basic" || parsed?.planName === "pro") {
+          pendingName = parsed.planName;
+          if (parsed?.billing === "monthly" || parsed?.billing === "yearly") {
+            pendingBilling = parsed.billing;
+          }
+        }
+      }
+    } catch {}
+
+    // 2. Or via legacy /auth?plan= query param
     const planParam = searchParams.get("plan");
-    if (!planParam || !user || planConfigs.length === 0) return;
-    const target = planParam.toLowerCase();
-    if (target !== "basic" && target !== "pro") return;
-    const config = planConfigs.find((c: any) => c.plan_name === target);
+    if (!pendingName && planParam) {
+      const target = planParam.toLowerCase();
+      if (target === "basic" || target === "pro") pendingName = target;
+    }
+
+    if (!pendingName) return;
+    const config = planConfigs.find((c: any) => c.plan_name === pendingName);
     if (!config || config.is_enabled === false) return;
+
     autoTriggeredRef.current = true;
-    // Clear the param so refreshes don't re-trigger
-    const next = new URLSearchParams(searchParams);
-    next.delete("plan");
-    setSearchParams(next, { replace: true });
-    // Slight delay so the modal opens cleanly after mount
-    setTimeout(() => handlePayment(target), 250);
-  }, [searchParams, user, planConfigs, handlePayment, setSearchParams]);
+    if (pendingBilling) setBilling(pendingBilling);
+
+    // Clear ?plan param so refresh doesn't re-trigger
+    if (planParam) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("plan");
+      setSearchParams(next, { replace: true });
+    }
+
+    setTimeout(() => handlePayment(pendingName!), 250);
+  }, [user, planConfigs, searchParams, setSearchParams, handlePayment]);
 
   const isCurrentTier = (t: string) => plan.isPaid && plan.tier === t && !plan.isExpired;
 
