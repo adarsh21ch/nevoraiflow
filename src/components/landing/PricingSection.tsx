@@ -442,13 +442,13 @@ export const PricingSection = () => {
 
           const enterpriseNode: ReactNode = enterpriseVisible ? (
             <motion.div
-              className="relative flex flex-col h-full p-6 rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-500/[0.06] via-background to-background shadow-[0_0_40px_-15px_rgba(245,158,11,0.4)]"
+              className="relative flex flex-col md:h-full p-6 rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-500/[0.06] via-background to-background shadow-[0_0_40px_-15px_rgba(245,158,11,0.4)]"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: cards.length * 0.1 }}
             >
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-xs font-semibold text-background flex items-center gap-1 whitespace-nowrap">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-xs font-semibold text-background flex items-center gap-1 whitespace-nowrap shadow-md z-10">
                 <Crown size={12} /> {enterpriseConfig?.badge_text || "For Large Networks"}
               </div>
               <div className="mb-4">
@@ -472,7 +472,9 @@ export const PricingSection = () => {
                     </p>
                   )}
               </div>
-              <ul className="space-y-2.5 flex-1 mb-6">
+              {/* Mobile: cap height + scroll internally so the long enterprise list
+                  doesn't blow up the carousel height. Desktop: original layout. */}
+              <ul className="space-y-2.5 mb-6 max-h-[260px] overflow-y-auto pr-1 md:max-h-none md:overflow-visible md:flex-1">
                 {(enterpriseFeatures.length > 0
                   ? enterpriseFeatures
                   : [{ text: "Loading…", enabled: true }]
