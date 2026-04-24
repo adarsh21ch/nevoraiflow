@@ -254,7 +254,15 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
                         </>
                       )}
                     </nav>
-                    <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-card p-3">
+                    <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-card p-3 space-y-1">
+                      <Link
+                        to="/"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex min-h-[46px] items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-foreground transition-all hover:bg-muted"
+                      >
+                        <Home size={18} />
+                        <span>Back to nFlow.com</span>
+                      </Link>
                       <button
                         onClick={() => {
                           setMobileMenuOpen(false);
