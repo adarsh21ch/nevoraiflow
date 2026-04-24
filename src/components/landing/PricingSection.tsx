@@ -385,15 +385,47 @@ export const PricingSection = () => {
                   </li>
                 ))}
               </ul>
-              <Button
-                variant={plan.variant}
-                className="w-full gap-2"
-                onClick={() => handlePlanClick(plan.name)}
-                disabled={loadingPlan === `${plan.name.toLowerCase()}_monthly`}
-              >
-                {loadingPlan === `${plan.name.toLowerCase()}_monthly` && <Loader2 size={16} className="animate-spin" />}
-                {plan.cta}
-              </Button>
+              {(() => {
+                const lname = plan.name.toLowerCase();
+                // Free card
+                if (lname === "free") {
+                  if (!user || (!plan.isPaid && !isNevoraiMember)) {
+                    return (
+                      <Button variant={plan.variant} className="w-full gap-2" onClick={() => handlePlanClick(plan.name)}>
+                        {plan.cta}
+                      </Button>
+                    );
+                  }
+                  return <Button variant="outline" disabled className="w-full">Current Plan</Button>;
+                }
+                // Basic card
+                if (lname === "basic") {
+                  if (onBasic) {
+                    return (
+                      <Button disabled className="w-full gap-2">
+                        {isNevoraiMember && !plan.isPaid ? (<><Sparkles size={14} /> Active via Nevorai membership</>) : "Current Plan"}
+                      </Button>
+                    );
+                  }
+                  if (onPro) return <Button disabled variant="outline" className="w-full">Included in Pro</Button>;
+                }
+                // Pro card
+                if (lname === "pro" && onPro) {
+                  return <Button disabled className="w-full">Current Plan</Button>;
+                }
+                const isUpgrade = lname === "pro" && onBasic;
+                return (
+                  <Button
+                    variant={plan.variant}
+                    className="w-full gap-2"
+                    onClick={() => handlePlanClick(plan.name)}
+                    disabled={loadingPlan === `${lname}_monthly`}
+                  >
+                    {loadingPlan === `${lname}_monthly` && <Loader2 size={16} className="animate-spin" />}
+                    {isUpgrade ? <><ArrowUp size={14} /> Upgrade to Pro</> : plan.cta}
+                  </Button>
+                );
+              })()}
             </motion.div>
           ))}
 
