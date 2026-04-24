@@ -2,7 +2,7 @@ import { Navbar } from "@/components/landing/Navbar";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Footer } from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
-import { Check, X, Crown, Shield, Loader2, Users, User, Lock } from "lucide-react";
+import { Check, X, Crown, Shield, Loader2, Users, User, Lock, Tag } from "lucide-react";
 import { GuaranteeBanner, GuaranteePill } from "@/components/GuaranteeBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
@@ -364,11 +364,17 @@ const PricingFullPage = () => {
                   </div>
                 )}
                 <div className="mb-6">
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium">Basic</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium">Basic</span>
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
+                      <Tag size={10} /> Launch Price
+                    </span>
+                  </div>
                   <div className="flex items-baseline gap-1 mt-3">
                     <span className="text-3xl font-heading font-bold">{formatPrice(getPrice(basicConfig), currency)}</span>
                     <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
                   </div>
+                  <p className="text-[11px] text-muted-foreground italic mt-1">Introductory pricing — limited time</p>
                   {billing === "monthly" && getSavings(basicConfig) > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
                       or {formatPrice(currency === "USD" ? Number(basicConfig.usd_price_yearly || 0) : basicConfig.yearly_price, currency)}/year — save {formatPrice(getSavings(basicConfig), currency)}
@@ -398,17 +404,21 @@ const PricingFullPage = () => {
             {/* Pro */}
             {proEnabled && proConfig && (
               <motion.div className="glass-card p-6 flex flex-col relative border-primary/40 glow-primary" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                {proConfig.plan_badge_text && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-primary text-xs font-semibold text-primary-foreground flex items-center gap-1 whitespace-nowrap">
-                    <Users size={12} /> {proConfig.plan_badge_text}
-                  </div>
-                )}
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-xs font-semibold text-white flex items-center gap-1 whitespace-nowrap shadow-lg shadow-emerald-500/30">
+                  <Crown size={12} /> Most Popular
+                </div>
                 <div className="mb-6">
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-medium">Pro</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-medium">Pro</span>
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
+                      <Tag size={10} /> Launch Price
+                    </span>
+                  </div>
                   <div className="flex items-baseline gap-1 mt-3">
                     <span className="text-3xl font-heading font-bold">{formatPrice(getPrice(proConfig), currency)}</span>
                     <span className="text-sm text-muted-foreground">/{billing === "monthly" ? "mo" : "yr"}</span>
                   </div>
+                  <p className="text-[11px] text-muted-foreground italic mt-1">Introductory pricing — limited time</p>
                   {billing === "monthly" && getSavings(proConfig) > 0 && (
                     <p className="text-xs text-primary mt-1">
                       or {formatPrice(currency === "USD" ? Number(proConfig.usd_price_yearly || 0) : proConfig.yearly_price, currency)}/year — save {formatPrice(getSavings(proConfig), currency)}
