@@ -246,22 +246,18 @@ export const PricingSection = () => {
     highlight: boolean;
   }[] = [];
 
-  // Free card — merge static "explore" features with DB-driven daily views
-  const freeFeatures: { text: string; included: boolean; tooltip?: string }[] = [...freePlan.features];
-  const freeDv = formatDailyViews(freeConfig?.daily_view_limit);
-  if (freeDv) {
-    freeFeatures.splice(3, 0, { text: freeDv.text, included: true, tooltip: freeDv.tooltip });
-  }
+  // Free card — features fully driven by admin `plan_config` free row
+  const freeFeatures = buildFreeFeatures(freeConfig);
 
   cards.push({
-    name: freePlan.name,
+    name: "Free",
     price: "₹0",
     period: "",
     daily: "",
     badge: null,
     features: freeFeatures,
-    cta: freePlan.cta,
-    variant: freePlan.variant,
+    cta: FREE_CTA,
+    variant: FREE_VARIANT,
     highlight: false,
   });
 
