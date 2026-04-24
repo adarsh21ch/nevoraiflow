@@ -443,6 +443,15 @@ export const PricingSection = () => {
           )}
         </div>
       </div>
+
+      <AuthModal
+        open={authModalOpen}
+        onOpenChange={setAuthModalOpen}
+        contextLabel={pendingPlan ? `Sign in to continue with ${pendingPlan.planName === "pro" ? "Pro" : "Basic"}` : undefined}
+        onAuthSuccess={() => {
+          if (pendingPlan) void startCheckout(pendingPlan);
+        }}
+      />
     </section>
   );
 };
