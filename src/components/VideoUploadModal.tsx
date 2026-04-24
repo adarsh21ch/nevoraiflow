@@ -9,8 +9,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/hooks/useAuth";
 import { uploadVideoToR2 } from "@/lib/r2VideoUpload";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, X, FileVideo, Loader2, Info, AlertCircle, RotateCcw, ChevronDown, AlertTriangle } from "lucide-react";
+import { Upload, X, FileVideo, Loader2, Info, AlertCircle, RotateCcw, ChevronDown, AlertTriangle, Copy } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface Props {
   open: boolean;
@@ -63,6 +65,7 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
   const [error, setError] = useState<string | null>(null);
   const [formatWarning, setFormatWarning] = useState<string | null>(null);
   const [tipOpen, setTipOpen] = useState(false);
+  const [allowCopyLink, setAllowCopyLink] = useState(true);
 
   const reset = () => {
     setFile(null);
@@ -74,6 +77,7 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
     setEta("");
     setError(null);
     setFormatWarning(null);
+    setAllowCopyLink(true);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,7 +114,7 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
     startTimeRef.current = Date.now();
 
     try {
-      await uploadVideoToR2({
+      const result = await uploadVideoToR2({
         file,
         title: title.trim(),
         onProgress: (percent, meta) => {
@@ -130,6 +134,14 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
           }
         },
       });
+
+      // Persist the "allow copy link" preference + description on the new video asset
+      if (result?.videoId) {
+        await supabase
+          .from("video_assets")
+          .update({ allow_copy_link: allowCopyLink, description: description.trim() || null })
+          .eq("id", result.videoId);
+      }
 
       toast.success("Video uploaded successfully!");
       reset();
@@ -282,6 +294,27 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
               placeholder="Brief description..."
               className="mt-1 bg-muted border-border resize-none"
               rows={2}
+              disabled={busy}
+            />
+          </div>
+
+          {/* Allow viewers to reuse this video via nFlow Link */}
+          <div className="flex items-start justify-between gap-3 p-3 rounded-lg bg-muted/40 border border-border">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <Copy size={13} className="text-primary shrink-0" />
+                <Label className="text-sm font-medium cursor-pointer" htmlFor="allow-copy-link">
+                  Allow others to reuse this video
+                </Label>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                Public viewers see a "Copy nFlow Link" button so they can add this video to their own gallery. Daily view limits still apply.
+              </p>
+            </div>
+            <Switch
+              id="allow-copy-link"
+              checked={allowCopyLink}
+              onCheckedChange={setAllowCopyLink}
               disabled={busy}
             />
           </div>

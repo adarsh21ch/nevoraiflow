@@ -9,6 +9,8 @@ import {
   Loader2, MessageCircle, Phone as PhoneIcon, BadgeCheck, Info, Sparkles
 } from "lucide-react";
 
+import { CopyNflowLinkButton } from "@/components/CopyNflowLinkButton";
+
 interface FunnelStep {
   id: string;
   step_order: number;
@@ -24,6 +26,7 @@ interface FunnelStep {
   booking_url: string | null;
   video_url?: string | null;
   video_thumbnail?: string | null;
+  video_allow_copy_link?: boolean;
 }
 
 interface StepProgress {
@@ -732,6 +735,11 @@ export const MultiStepViewer = ({
                     initialTime={activeProgress?.last_position_seconds || 0}
                     onTimeUpdate={(ct: number, dur: number) => handleVideoTimeUpdate(activeStepIndex, ct, dur)}
                   />
+                  {activeStep.video_asset_id && activeStep.video_allow_copy_link !== false && (
+                    <div className="flex justify-end">
+                      <CopyNflowLinkButton videoId={activeStep.video_asset_id} />
+                    </div>
+                  )}
                 </div>
               )}
 

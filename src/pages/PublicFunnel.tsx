@@ -16,6 +16,7 @@ import { MultiStepViewer } from "@/components/funnel/MultiStepViewer";
 import { CodeGateScreen } from "@/components/funnel/CodeGateScreen";
 import { PrivateLeadForm } from "@/components/funnel/PrivateLeadForm";
 import { FunnelDailyLimitGate } from "@/components/funnel/FunnelDailyLimitGate";
+import { CopyNflowLinkButton } from "@/components/CopyNflowLinkButton";
 /* ─── Speed Popover ─── */
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
 
@@ -855,6 +856,11 @@ const PublicFunnel = () => {
                   onTimeUpdate={(ct, dur) => { setWatchSeconds(Math.floor(ct)); setVideoDuration(dur); }}
                   onPlay={() => setVideoPlaying(true)}
                 />
+              )}
+              {videoUrl && videoAsset?.id && (videoAsset as any)?.allow_copy_link !== false && (
+                <div className="flex justify-end">
+                  <CopyNflowLinkButton videoId={videoAsset.id} />
+                </div>
               )}
               {!videoUrl && (
                 <div className="aspect-video rounded-2xl flex items-center justify-center" style={{ background: tc.bgCard, border: `1px solid ${tc.borderSubtle}` }}>

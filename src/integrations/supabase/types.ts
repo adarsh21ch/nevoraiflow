@@ -2500,6 +2500,7 @@ export type Database = {
       }
       video_assets: {
         Row: {
+          allow_copy_link: boolean
           created_at: string | null
           description: string | null
           duration_seconds: number | null
@@ -2521,6 +2522,7 @@ export type Database = {
           view_count: number | null
         }
         Insert: {
+          allow_copy_link?: boolean
           created_at?: string | null
           description?: string | null
           duration_seconds?: number | null
@@ -2542,6 +2544,7 @@ export type Database = {
           view_count?: number | null
         }
         Update: {
+          allow_copy_link?: boolean
           created_at?: string | null
           description?: string | null
           duration_seconds?: number | null

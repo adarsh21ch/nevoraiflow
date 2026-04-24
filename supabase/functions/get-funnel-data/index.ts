@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       promises.push(
         supabase
           .from("video_assets")
-          .select("id, title, public_url, thumbnail_url, duration_seconds, status")
+          .select("id, title, public_url, thumbnail_url, duration_seconds, status, allow_copy_link")
           .eq("id", funnel.video_asset_id)
           .single()
           .then((r) => ({ key: "video", data: r.data }))
@@ -106,15 +106,15 @@ Deno.serve(async (req) => {
             .filter((s) => s.step_type === "video" && s.video_asset_id)
             .map((s) => s.video_asset_id!);
 
-          let videoMap: Record<string, { public_url: string | null; thumbnail_url: string | null }> = {};
+          let videoMap: Record<string, { public_url: string | null; thumbnail_url: string | null; allow_copy_link: boolean }> = {};
           if (videoIds.length > 0) {
             const { data: videos } = await supabase
               .from("video_assets")
-              .select("id, public_url, thumbnail_url")
+              .select("id, public_url, thumbnail_url, allow_copy_link")
               .in("id", videoIds);
             if (videos) {
               for (const v of videos) {
-                videoMap[v.id] = { public_url: v.public_url, thumbnail_url: v.thumbnail_url };
+                videoMap[v.id] = { public_url: v.public_url, thumbnail_url: v.thumbnail_url, allow_copy_link: v.allow_copy_link !== false };
               }
             }
           }
@@ -124,6 +124,7 @@ Deno.serve(async (req) => {
             ...s,
             video_url: s.video_asset_id ? videoMap[s.video_asset_id]?.public_url || null : null,
             video_thumbnail: s.video_asset_id ? videoMap[s.video_asset_id]?.thumbnail_url || null : null,
+            video_allow_copy_link: s.video_asset_id ? videoMap[s.video_asset_id]?.allow_copy_link !== false : false,
           }));
 
           return { key: "steps", data: enrichedSteps };
