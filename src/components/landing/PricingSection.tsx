@@ -345,7 +345,7 @@ export const PricingSection = () => {
             node: (
               <motion.div
                 key={plan.name}
-                className={`glass-card p-6 relative flex flex-col md:h-full ${
+                className={`glass-card p-6 relative flex flex-col h-full ${
                   plan.highlight ? "border-primary/40 glow-primary" : ""
                 }`}
                 initial={{ opacity: 0, y: 20 }}
@@ -446,7 +446,7 @@ export const PricingSection = () => {
 
           const enterpriseNode: ReactNode = enterpriseVisible ? (
             <motion.div
-              className="relative flex flex-col md:h-full p-6 rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-500/[0.06] via-background to-background shadow-[0_0_40px_-15px_rgba(245,158,11,0.4)]"
+              className="relative flex flex-col h-full p-6 rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-500/[0.06] via-background to-background shadow-[0_0_40px_-15px_rgba(245,158,11,0.4)]"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -547,9 +547,9 @@ const MobilePricingCarousel = ({ items }: { items: { key: string; node: ReactNod
           removed by passing no extra classes — children size to their own
           content (md:h-full only kicks in on desktop). */}
       <Carousel setApi={setApi} opts={{ align: "center", loop: false }} className="w-full">
-        <CarouselContent className="-ml-4 py-4">
+        <CarouselContent className="-ml-4 py-4 items-stretch">
           {items.map((it) => (
-            <CarouselItem key={it.key} className="pl-4 basis-[88%] sm:basis-[70%]">
+            <CarouselItem key={it.key} className="pl-4 basis-[88%] sm:basis-[70%] h-auto">
               {it.node}
             </CarouselItem>
           ))}

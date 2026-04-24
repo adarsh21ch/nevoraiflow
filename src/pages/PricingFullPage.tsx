@@ -328,7 +328,7 @@ const PricingFullPage = () => {
 
   // ---- Card builders (rendered into both desktop grid + mobile carousel) ----
   const freeCard: ReactNode = (
-    <motion.div className="glass-card p-6 flex flex-col md:h-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+    <motion.div className="glass-card p-6 flex flex-col h-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       <div className="mb-6">
         <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Free</span>
         <div className="flex items-baseline gap-1 mt-3">
@@ -355,7 +355,7 @@ const PricingFullPage = () => {
   );
 
   const basicCard: ReactNode = basicEnabled && basicConfig ? (
-    <motion.div className="glass-card p-6 flex flex-col md:h-full relative" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+    <motion.div className="glass-card p-6 flex flex-col h-full relative" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
       {basicConfig.plan_badge_text && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-card border border-border text-xs font-semibold flex items-center gap-1 whitespace-nowrap">
           <User size={12} /> {basicConfig.plan_badge_text}
@@ -418,7 +418,7 @@ const PricingFullPage = () => {
   })();
 
   const proCard: ReactNode = proEnabled && proConfig ? (
-    <motion.div className="glass-card p-6 flex flex-col md:h-full relative border-primary/40 glow-primary" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+    <motion.div className="glass-card p-6 flex flex-col h-full relative border-primary/40 glow-primary" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
       <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-xs font-semibold text-white flex items-center gap-1 whitespace-nowrap shadow-lg shadow-emerald-500/30">
         <Crown size={12} /> Most Popular
       </div>
@@ -537,9 +537,9 @@ const PricingFullPage = () => {
             >
               {/* py-4 prevents the absolute -top-3 badges from being clipped
                   by Embla's overflow-hidden viewport. */}
-              <CarouselContent className="-ml-4 py-4">
+              <CarouselContent className="-ml-4 py-4 items-stretch">
                 {cards.map((c) => (
-                  <CarouselItem key={c.key} className="pl-4 basis-[88%] sm:basis-[70%]">
+                  <CarouselItem key={c.key} className="pl-4 basis-[88%] sm:basis-[70%] h-auto">
                     {c.node}
                   </CarouselItem>
                 ))}
