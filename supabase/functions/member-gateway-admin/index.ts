@@ -266,6 +266,29 @@ Deno.serve(async (req) => {
         );
     }
 
+    // Tamper-proof admin audit trail (writes to admin_audit_logs via SECURITY DEFINER RPC)
+    try {
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+        || req.headers.get("cf-connecting-ip")
+        || null;
+      const ua = req.headers.get("user-agent") || null;
+      await supabase.rpc("log_admin_action", {
+        _admin_user_id: adminUserId,
+        _action: `member_gateway_${body.action}`,
+        _target_type: "user",
+        _target_id: profile.id,
+        _metadata: {
+          target_email: profile.email,
+          add_days: body.add_days ?? null,
+        },
+        _ip_address: ip,
+        _user_agent: ua,
+      });
+    } catch (auditErr) {
+      // Never fail the action just because audit logging failed; log it loudly.
+      console.error("[member-gateway-admin] audit log failed", auditErr);
+    }
+
     return new Response(
       JSON.stringify({ ok: true, action: body.action }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },

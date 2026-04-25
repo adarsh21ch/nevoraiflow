@@ -2,7 +2,18 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const RAZORPAY_WEBHOOK_SECRET = Deno.env.get("RAZORPAY_WEBHOOK_SECRET")!;
 
+// Constant-time string compare to prevent timing attacks on HMAC verification.
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
 async function verifyWebhookSignature(body: string, signature: string): Promise<boolean> {
+  if (!signature || !RAZORPAY_WEBHOOK_SECRET) return false;
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw", encoder.encode(RAZORPAY_WEBHOOK_SECRET),
@@ -10,7 +21,7 @@ async function verifyWebhookSignature(body: string, signature: string): Promise<
   );
   const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
   const expectedSig = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, "0")).join("");
-  return expectedSig === signature;
+  return timingSafeEqual(expectedSig, signature.toLowerCase());
 }
 
 Deno.serve(async (req) => {

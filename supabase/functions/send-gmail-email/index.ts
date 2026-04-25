@@ -127,8 +127,8 @@ function parseGmailApiError(errText: string): {
       ? parsed.error.errors[0].reason
       : undefined
     const details = Array.isArray(parsed?.error?.details) ? parsed.error.details : []
-    const errorInfo = details.find((detail) => detail?.['@type'] === 'type.googleapis.com/google.rpc.ErrorInfo')
-    const help = details.find((detail) => detail?.['@type'] === 'type.googleapis.com/google.rpc.Help')
+    const errorInfo = details.find((detail: any) => detail?.['@type'] === 'type.googleapis.com/google.rpc.ErrorInfo')
+    const help = details.find((detail: any) => detail?.['@type'] === 'type.googleapis.com/google.rpc.Help')
     const serviceDisabled = errorInfo?.reason === 'SERVICE_DISABLED' || topLevelReason === 'accessNotConfigured'
 
     if (serviceDisabled) {

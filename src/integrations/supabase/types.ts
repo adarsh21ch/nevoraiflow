@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_logs: {
+        Row: {
+          action: string
+          admin_email: string | null
+          admin_user_id: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          metadata: Json
+          target_id: string | null
+          target_type: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          admin_email?: string | null
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          target_id?: string | null
+          target_type?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          admin_email?: string | null
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          target_id?: string | null
+          target_type?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       admin_subscription_plans: {
         Row: {
           billing_type: string
@@ -68,6 +107,30 @@ export type Database = {
           tier?: string
           video_limit?: number | null
           video_max_size_mb?: number | null
+        }
+        Relationships: []
+      }
+      auth_attempts: {
+        Row: {
+          attempted_at: string
+          email: string
+          id: string
+          ip_address: string | null
+          succeeded: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          email: string
+          id?: string
+          ip_address?: string | null
+          succeeded?: boolean
+        }
+        Update: {
+          attempted_at?: string
+          email?: string
+          id?: string
+          ip_address?: string | null
+          succeeded?: boolean
         }
         Relationships: []
       }
@@ -2622,6 +2685,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_auth_lockout: {
+        Args: { _email: string; _ip: string }
+        Returns: Json
+      }
       cleanup_expired_member_otps: { Args: never; Returns: undefined }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -2651,6 +2718,18 @@ export type Database = {
         Returns: Json
       }
       is_nevorai_member: { Args: { _user_id: string }; Returns: boolean }
+      log_admin_action: {
+        Args: {
+          _action: string
+          _admin_user_id: string
+          _ip_address?: string
+          _metadata?: Json
+          _target_id?: string
+          _target_type?: string
+          _user_agent?: string
+        }
+        Returns: string
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -2667,6 +2746,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      record_auth_attempt: {
+        Args: { _email: string; _ip: string; _success: boolean }
+        Returns: undefined
       }
     }
     Enums: {

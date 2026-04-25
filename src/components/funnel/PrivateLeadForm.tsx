@@ -26,11 +26,30 @@ export const PrivateLeadForm = ({
   const [form, setForm] = useState({
     name: "", phone: "", email: "", city: "", state: "", whatsapp: "",
   });
+  // Honeypot — real users never see this; bots fill every field.
+  const [website, setWebsite] = useState("");
+  const formMountedAt = useState(() => Date.now())[0];
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Honeypot trap — silently "succeed" so bots don't learn they were caught.
+    if (website.trim() !== "") {
+      console.warn("[PrivateLeadForm] honeypot triggered");
+      setShowSuccess(true);
+      setTimeout(() => onSuccess(), 1500);
+      return;
+    }
+    // Submit-too-fast trap — humans take >2s to fill a form.
+    if (Date.now() - formMountedAt < 2000) {
+      console.warn("[PrivateLeadForm] submit-too-fast trap");
+      setShowSuccess(true);
+      setTimeout(() => onSuccess(), 1500);
+      return;
+    }
+
     if (!form.name.trim() || !form.phone.trim()) {
       toast.error("Name and phone are required");
       return;
@@ -132,6 +151,17 @@ export const PrivateLeadForm = ({
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
+            {/* Honeypot — hidden from real users; bots typically fill it */}
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }}
+              aria-hidden="true"
+            />
             <div>
               <Label className="text-xs font-medium" style={{ color: textMuted }}>Full Name *</Label>
               <Input
