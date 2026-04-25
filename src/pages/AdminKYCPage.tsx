@@ -243,7 +243,8 @@ const AdminKYCPage = () => {
                   </div>
                 )}
               </div>
-            )}
+              );
+            })()}
           </DialogContent>
         </Dialog>
       </div>
