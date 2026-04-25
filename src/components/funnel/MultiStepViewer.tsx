@@ -32,6 +32,7 @@ interface FunnelStep {
   // Per-step access code (additive, optional)
   access_code_enabled?: boolean;
   access_code_plain?: string | null;
+  access_code_message?: string | null;
   // Per-step speaker override (additive, optional)
   speaker_mode_step?: string;
   speaker_name_custom?: string | null;
@@ -45,6 +46,9 @@ interface FunnelStep {
   timer_cta_text?: string | null;
   timer_cta_url?: string | null;
   timer_cta_style?: string | null;
+  // Per-step video topics (additive, optional)
+  video_topics_step_enabled?: boolean;
+  video_topics_step?: string[] | null;
 }
 
 interface StepProgress {
