@@ -105,6 +105,11 @@ export const FunnelLivePreview = ({ funnel, selectedVideo, flowSteps, leadForm }
                 <span className={idx === 0 ? "text-white font-medium" : "text-white/40"}>
                   {step.title || `Step ${idx + 1}`}
                 </span>
+                {step.access_code_enabled && (
+                  <span title="Locked with code" className="ml-auto text-amber-400 inline-flex items-center">
+                    <Lock size={9} />
+                  </span>
+                )}
               </div>
             ))}
           </div>
