@@ -257,28 +257,51 @@ export const MultiStepViewer = ({
 
   const checkUnlockCondition = (step: FunnelStep, prevIndex: number): boolean => {
     const rule = step.unlock_rule_type;
-    if (rule === "auto") return true;
     if (rule === "manual") return false;
 
     const prevStep = steps[prevIndex];
     const prevProgress = progressMap[prevStep.id];
-    if (!prevProgress) return false;
 
-    switch (rule) {
-      case "watch_complete":
-        return prevProgress.status === "completed";
-      case "watch_seconds":
-        return prevProgress.max_watched_seconds >= parseInt(step.unlock_rule_value || "0");
-      case "watch_percent":
-        return prevProgress.watched_percentage >= parseInt(step.unlock_rule_value || "0");
-      case "cta_click":
-      case "lead_submitted":
-      case "payment_submitted":
-      case "booking_done":
-        return prevProgress.status === "completed";
-      default:
-        return true;
+    // Evaluate the watch/CTA condition first
+    let conditionMet = false;
+    if (rule === "auto") {
+      conditionMet = true;
+    } else if (!prevProgress) {
+      conditionMet = false;
+    } else {
+      switch (rule) {
+        case "watch_complete":
+          conditionMet = prevProgress.status === "completed";
+          break;
+        case "watch_seconds":
+          conditionMet = prevProgress.max_watched_seconds >= parseInt(step.unlock_rule_value || "0");
+          break;
+        case "watch_percent":
+          conditionMet = prevProgress.watched_percentage >= parseInt(step.unlock_rule_value || "0");
+          break;
+        case "cta_click":
+        case "lead_submitted":
+        case "payment_submitted":
+        case "booking_done":
+          conditionMet = prevProgress.status === "completed";
+          break;
+        default:
+          conditionMet = true;
+      }
     }
+
+    if (!conditionMet) return false;
+
+    // Time-delay gate (additive): wait N minutes after previous step completion
+    if (step.time_delay_enabled && step.time_delay_minutes && step.time_delay_minutes > 0) {
+      const completedAt = prevProgress?.completed_at;
+      if (!completedAt) return false;
+      const delayMs = step.time_delay_minutes * 60 * 1000;
+      const elapsed = Date.now() - new Date(completedAt).getTime();
+      if (elapsed < delayMs) return false;
+    }
+
+    return true;
   };
 
   const handleVideoTimeUpdate = useCallback((stepIndex: number, currentTime: number, duration: number) => {
