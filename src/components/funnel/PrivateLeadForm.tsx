@@ -34,6 +34,22 @@ export const PrivateLeadForm = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Honeypot trap — silently "succeed" so bots don't learn they were caught.
+    if (website.trim() !== "") {
+      console.warn("[PrivateLeadForm] honeypot triggered");
+      setShowSuccess(true);
+      setTimeout(() => onSuccess(), 1500);
+      return;
+    }
+    // Submit-too-fast trap — humans take >2s to fill a form.
+    if (Date.now() - formMountedAt < 2000) {
+      console.warn("[PrivateLeadForm] submit-too-fast trap");
+      setShowSuccess(true);
+      setTimeout(() => onSuccess(), 1500);
+      return;
+    }
+
     if (!form.name.trim() || !form.phone.trim()) {
       toast.error("Name and phone are required");
       return;
