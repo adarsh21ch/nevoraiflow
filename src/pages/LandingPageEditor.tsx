@@ -115,6 +115,7 @@ const formFields = [
   { key: "phone", label: "Phone Number" },
   { key: "email", label: "Email Address" },
   { key: "age", label: "Age" },
+  { key: "dob", label: "Date of Birth" },
   { key: "city", label: "City" },
   { key: "state", label: "State" },
   { key: "occupation", label: "Current Occupation" },
