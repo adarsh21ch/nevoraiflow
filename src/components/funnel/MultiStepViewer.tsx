@@ -140,6 +140,16 @@ export const MultiStepViewer = ({
     return map;
   });
 
+  // Tick every 30s when any step has an active time-delay gate, so countdown
+  // hints stay accurate and the step auto-unlocks visually when the wait ends.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const hasDelay = steps.some((s) => s.time_delay_enabled && (s.time_delay_minutes || 0) > 0);
+    if (!hasDelay) return;
+    const id = setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => clearInterval(id);
+  }, [steps]);
+
   useEffect(() => {
     const loadProgress = async () => {
       const { data } = await supabase
