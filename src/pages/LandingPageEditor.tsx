@@ -783,6 +783,35 @@ const LandingPageEditor = () => {
           </Select>
         </div>
 
+        <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <Label className="font-semibold flex items-center gap-2">
+                <Lock size={14} /> Private page (access code)
+              </Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Visitors must enter a code to view this page. Existing public pages stay public.
+              </p>
+            </div>
+            <Switch
+              checked={!!form.access_code_enabled}
+              onCheckedChange={(v) => updateField("access_code_enabled", v)}
+            />
+          </div>
+          {form.access_code_enabled && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">Access code</Label>
+              <Input
+                value={form.access_code_plain || ""}
+                onChange={(e) => updateField("access_code_plain", e.target.value.toUpperCase().slice(0, 32))}
+                placeholder="e.g. SESSION-2025"
+                className="font-mono uppercase tracking-wider"
+              />
+              <p className="text-[11px] text-muted-foreground">Share this code only with invited viewers.</p>
+            </div>
+          )}
+        </div>
+
         <div className="border border-border rounded-xl p-4 space-y-2.5">
           <h3 className="font-semibold mb-2">Publish Checklist</h3>
           {[
