@@ -1076,16 +1076,43 @@ const FunnelEditor = () => {
         <h2 className="text-lg font-heading font-semibold">Video Topics</h2>
         <p className="text-sm text-muted-foreground">Add key points covered in your video. These will appear on your funnel page.</p>
         <div className="space-y-5 mt-4">
-          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
-            <div>
-              <Label className="font-semibold">Show Video Topics on funnel page</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">Display key points below the video</p>
+          {/* Scope selector — multi-step only */}
+          {isMulti && (
+            <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+              <Label className="font-semibold">Video Topics Mode</Label>
+              <div className="flex rounded-xl border border-border overflow-hidden">
+                {(["global", "per_step"] as const).map((scope) => (
+                  <button
+                    key={scope}
+                    onClick={() => update("video_topics_scope", scope)}
+                    className={`flex-1 py-2.5 text-sm font-semibold transition-all ${
+                      funnel.video_topics_scope === scope
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {scope === "global" ? "🌍 Same topics on all steps" : "🎯 Different per step"}
+                  </button>
+                ))}
+              </div>
+              {funnel.video_topics_scope === "per_step" && (
+                <p className="text-xs text-muted-foreground">Configure key points individually inside each step's settings.</p>
+              )}
             </div>
-            <Switch checked={funnel.video_topics_enabled} onCheckedChange={(v) => {
-              update("video_topics_enabled", v);
-              if (v && funnel.video_topics.length === 0) update("video_topics", ["", "", ""]);
-            }} />
-          </div>
+          )}
+
+          {(funnel.video_topics_scope === "global" || !isMulti) && (
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
+              <div>
+                <Label className="font-semibold">Show Video Topics on funnel page</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">Display key points below the video</p>
+              </div>
+              <Switch checked={funnel.video_topics_enabled} onCheckedChange={(v) => {
+                update("video_topics_enabled", v);
+                if (v && funnel.video_topics.length === 0) update("video_topics", ["", "", ""]);
+              }} />
+            </div>
+          )}
 
           {!funnel.video_topics_enabled && (
             <p className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-xl">Video topics section will be hidden on the funnel page.</p>
