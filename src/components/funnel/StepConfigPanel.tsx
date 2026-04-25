@@ -6,8 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
-import { Video, Lock, Clock, MessageSquare, Music } from "lucide-react";
+import { Video, Lock, Clock, MessageSquare, Music, Mic, ShieldCheck } from "lucide-react";
 import { getStepTypeMeta } from "./StepTypeSelector";
+import { SpeakerPhotoUpload } from "./SpeakerPhotoUpload";
 
 interface FlowStep {
   id?: string;
@@ -28,6 +29,15 @@ interface FlowStep {
   between_step_message?: string;
   between_step_message_enabled?: boolean;
   unlock_after_percent?: number;
+  // Per-step access code (additive)
+  access_code_enabled?: boolean;
+  access_code_plain?: string;
+  // Per-step speaker override (additive)
+  speaker_mode_step?: string; // 'inherit' | 'override'
+  speaker_name_custom?: string;
+  speaker_title?: string;
+  speaker_bio?: string;
+  speaker_photo_url_custom?: string;
 }
 
 interface StepConfigPanelProps {
@@ -337,6 +347,82 @@ export const StepConfigPanel = ({ open, onClose, step, stepIndex, onUpdate, onOp
               </div>
             </div>
           )}
+
+          {/* Per-step Access Code (additive) */}
+          <div className="pt-4 border-t border-border space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                <ShieldCheck size={12} className="text-muted-foreground" />
+                Lock this step with a code
+              </Label>
+              <Switch
+                checked={!!step.access_code_enabled}
+                onCheckedChange={(v) => onUpdate("access_code_enabled" as keyof FlowStep, v)}
+              />
+            </div>
+            {step.access_code_enabled && (
+              <div className="space-y-1.5">
+                <Input
+                  value={step.access_code_plain || ""}
+                  onChange={(e) =>
+                    onUpdate("access_code_plain" as keyof FlowStep, e.target.value.toUpperCase().slice(0, 32))
+                  }
+                  placeholder="e.g. WEEK-2"
+                  className="bg-muted border-border font-mono uppercase tracking-wider"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Viewer must enter this code to unlock this specific step.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Per-step Speaker override (additive) */}
+          <div className="pt-4 border-t border-border space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                <Mic size={12} className="text-muted-foreground" />
+                Speaker for this step
+              </Label>
+              <Switch
+                checked={step.speaker_mode_step === "override"}
+                onCheckedChange={(v) =>
+                  onUpdate("speaker_mode_step" as keyof FlowStep, v ? "override" : "inherit")
+                }
+              />
+            </div>
+            {step.speaker_mode_step === "override" ? (
+              <div className="space-y-2">
+                <Input
+                  value={step.speaker_name_custom || ""}
+                  onChange={(e) => onUpdate("speaker_name_custom" as keyof FlowStep, e.target.value)}
+                  placeholder="Speaker name"
+                  className="bg-muted border-border"
+                />
+                <Input
+                  value={step.speaker_title || ""}
+                  onChange={(e) => onUpdate("speaker_title" as keyof FlowStep, e.target.value)}
+                  placeholder="Title (e.g. Founder)"
+                  className="bg-muted border-border"
+                />
+                <Textarea
+                  value={step.speaker_bio || ""}
+                  onChange={(e) => onUpdate("speaker_bio" as keyof FlowStep, e.target.value)}
+                  placeholder="Short bio"
+                  rows={2}
+                  className="bg-muted border-border"
+                />
+                <SpeakerPhotoUpload
+                  value={step.speaker_photo_url_custom || ""}
+                  onChange={(url) => onUpdate("speaker_photo_url_custom" as keyof FlowStep, url)}
+                />
+              </div>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">
+                Inherits the funnel's main speaker. Toggle on to use a different speaker for this step.
+              </p>
+            )}
+          </div>
 
           {/* Active toggle */}
           <div className="pt-4 border-t border-border">

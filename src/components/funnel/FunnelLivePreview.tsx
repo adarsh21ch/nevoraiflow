@@ -16,7 +16,7 @@ interface FunnelLivePreviewProps {
     required_fields: { email: boolean; city: boolean; state: boolean; whatsapp: boolean };
   };
   selectedVideo: { title: string; url: string | null } | null;
-  flowSteps: { title: string; step_type: string; step_order: number }[];
+  flowSteps: { title: string; step_type: string; step_order: number; access_code_enabled?: boolean }[];
   leadForm: {
     capture_enabled: boolean;
     show_name: boolean;
@@ -105,6 +105,11 @@ export const FunnelLivePreview = ({ funnel, selectedVideo, flowSteps, leadForm }
                 <span className={idx === 0 ? "text-white font-medium" : "text-white/40"}>
                   {step.title || `Step ${idx + 1}`}
                 </span>
+                {step.access_code_enabled && (
+                  <span title="Locked with code" className="ml-auto text-amber-400 inline-flex items-center">
+                    <Lock size={9} />
+                  </span>
+                )}
               </div>
             ))}
           </div>

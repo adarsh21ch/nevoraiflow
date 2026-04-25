@@ -15,6 +15,9 @@ import {
 import { Loader2, Check, Lock, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { TestimonialsViewer } from "@/components/funnel/TestimonialsViewer";
+import { LandingPageCodeGate } from "@/components/funnel/LandingPageCodeGate";
+import { DateOfBirthInput } from "@/components/funnel/DateOfBirthInput";
+import { PostSubmitVideoPlayer } from "@/components/landing/PostSubmitVideoPlayer";
 
 const PublicLandingPage = () => {
   const { slug } = useParams();
@@ -26,6 +29,7 @@ const PublicLandingPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [honeypot, setHoneypot] = useState("");
+  const [pageUnlocked, setPageUnlocked] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -40,6 +44,15 @@ const PublicLandingPage = () => {
         setPage(data);
         const saved = localStorage.getItem(`nf_registered_${data.id}`);
         if (saved) setSubmitted(true);
+        // Restore prior unlock for private pages
+        if (data.access_code_enabled) {
+          try {
+            const verified = localStorage.getItem(`nf_lp_verified_${data.id}`);
+            if (verified) setPageUnlocked(true);
+          } catch {}
+        } else {
+          setPageUnlocked(true);
+        }
         if (data.post_submit_video_asset_id) {
           const { data: v } = await supabase
             .from("video_assets")
@@ -121,6 +134,17 @@ const PublicLandingPage = () => {
     );
   }
 
+  // Private landing page gate (additive: only blocks when access_code_enabled is true)
+  if (page.access_code_enabled && !pageUnlocked) {
+    return (
+      <LandingPageCodeGate
+        pageId={page.id}
+        pageTitle={page.title || "Private page"}
+        onSuccess={() => setPageUnlocked(true)}
+      />
+    );
+  }
+
   const sections = (page.sections as any[]) || [];
   const bgClass = page.background_style === "light"
     ? "bg-background text-foreground"
@@ -133,6 +157,7 @@ const PublicLandingPage = () => {
     { key: "phone", label: "Phone Number", enabled: page.field_phone_enabled, required: page.field_phone_required, prefix: "+91" },
     { key: "email", label: "Email Address", enabled: page.field_email_enabled, required: page.field_email_required, type: "email" },
     { key: "age", label: "Age", enabled: page.field_age_enabled, required: page.field_age_required },
+    { key: "dob", label: "Date of Birth", enabled: !!page.field_dob_enabled, required: !!page.field_dob_required, fieldType: "dob" },
     { key: "city", label: "City", enabled: page.field_city_enabled, required: page.field_city_required },
     { key: "state", label: "State", enabled: page.field_state_enabled, required: page.field_state_required, fieldType: "state_dropdown" },
     { key: "occupation", label: "Occupation", enabled: page.field_occupation_enabled, required: page.field_occupation_required },
@@ -247,14 +272,11 @@ const PublicLandingPage = () => {
                     )}
                   </div>
                 )}
-                <div className="aspect-video rounded-xl overflow-hidden bg-black">
-                  <video
-                    src={video.public_url}
-                    controls
-                    className="w-full h-full"
-                    poster={video.thumbnail_url || undefined}
-                  />
-                </div>
+                <PostSubmitVideoPlayer
+                  videoUrl={video.public_url}
+                  thumbnailUrl={video.thumbnail_url}
+                />
+
               </>
             ) : (
               <Card className="p-12 text-center space-y-3">
@@ -347,6 +369,12 @@ const PublicLandingPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                      ) : (f as any).fieldType === "dob" ? (
+                        <DateOfBirthInput
+                          value={formData[f.key] || ""}
+                          onChange={(val) => setFormData((prev) => ({ ...prev, [f.key]: val }))}
+                          required={f.required}
+                        />
                       ) : (
                         <Input
                           type={(f as any).type || "text"}

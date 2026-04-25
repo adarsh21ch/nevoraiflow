@@ -1308,6 +1308,8 @@ export type Database = {
           field_custom_2_enabled: boolean | null
           field_custom_2_label: string | null
           field_custom_2_required: boolean | null
+          field_dob_enabled: boolean
+          field_dob_required: boolean
           field_email_enabled: boolean | null
           field_email_required: boolean | null
           field_name_enabled: boolean | null
@@ -1371,6 +1373,8 @@ export type Database = {
           field_custom_2_enabled?: boolean | null
           field_custom_2_label?: string | null
           field_custom_2_required?: boolean | null
+          field_dob_enabled?: boolean
+          field_dob_required?: boolean
           field_email_enabled?: boolean | null
           field_email_required?: boolean | null
           field_name_enabled?: boolean | null
@@ -1434,6 +1438,8 @@ export type Database = {
           field_custom_2_enabled?: boolean | null
           field_custom_2_label?: string | null
           field_custom_2_required?: boolean | null
+          field_dob_enabled?: boolean
+          field_dob_required?: boolean
           field_email_enabled?: boolean | null
           field_email_required?: boolean | null
           field_name_enabled?: boolean | null

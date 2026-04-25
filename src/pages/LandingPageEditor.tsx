@@ -17,6 +17,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import {
   FileText, Palette, ClipboardList, Mail, Video, Link2, Rocket, Mic,
   Save, ArrowLeft, Check, X, Plus, Trash2, GripVertical, Eye, Edit3, Search, Star,
+  Lock as LockIcon,
 } from "lucide-react";
 import { TestimonialsBuilderStep } from "@/components/funnel/TestimonialsBuilderStep";
 import { toast } from "sonner";
@@ -58,9 +59,12 @@ const defaultFormState = {
   field_phone_enabled: true, field_phone_required: true,
   field_email_enabled: true, field_email_required: true,
   field_age_enabled: false, field_age_required: false,
+  field_dob_enabled: false, field_dob_required: false,
   field_city_enabled: false, field_city_required: false,
   field_state_enabled: false, field_state_required: false,
   field_occupation_enabled: false, field_occupation_required: false,
+  access_code_enabled: false,
+  access_code_plain: "",
   field_custom_1_enabled: false, field_custom_1_label: "", field_custom_1_required: false,
   field_custom_2_enabled: false, field_custom_2_label: "", field_custom_2_required: false,
   send_confirmation_email: true,
@@ -112,6 +116,7 @@ const formFields = [
   { key: "phone", label: "Phone Number" },
   { key: "email", label: "Email Address" },
   { key: "age", label: "Age" },
+  { key: "dob", label: "Date of Birth" },
   { key: "city", label: "City" },
   { key: "state", label: "State" },
   { key: "occupation", label: "Current Occupation" },
@@ -777,6 +782,35 @@ const LandingPageEditor = () => {
               <SelectItem value="archived">Archived</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <Label className="font-semibold flex items-center gap-2">
+                <LockIcon size={14} /> Private page (access code)
+              </Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Visitors must enter a code to view this page. Existing public pages stay public.
+              </p>
+            </div>
+            <Switch
+              checked={!!form.access_code_enabled}
+              onCheckedChange={(v) => updateField("access_code_enabled", v)}
+            />
+          </div>
+          {form.access_code_enabled && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">Access code</Label>
+              <Input
+                value={form.access_code_plain || ""}
+                onChange={(e) => updateField("access_code_plain", e.target.value.toUpperCase().slice(0, 32))}
+                placeholder="e.g. SESSION-2025"
+                className="font-mono uppercase tracking-wider"
+              />
+              <p className="text-[11px] text-muted-foreground">Share this code only with invited viewers.</p>
+            </div>
+          )}
         </div>
 
         <div className="border border-border rounded-xl p-4 space-y-2.5">

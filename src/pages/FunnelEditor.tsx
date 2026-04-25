@@ -50,6 +50,15 @@ interface FlowStep {
   between_step_message?: string;
   between_step_message_enabled?: boolean;
   unlock_after_percent?: number;
+  // Per-step access code (additive)
+  access_code_enabled?: boolean;
+  access_code_plain?: string;
+  // Per-step speaker override (additive)
+  speaker_mode_step?: string;
+  speaker_name_custom?: string;
+  speaker_title?: string;
+  speaker_bio?: string;
+  speaker_photo_url_custom?: string;
 }
 
 const createEmptyStep = (order: number, type: string = "video"): FlowStep => ({
@@ -255,6 +264,13 @@ const FunnelEditor = () => {
         step_type: s.step_type || "video", video_asset_id: s.video_asset_id, is_active: s.is_active ?? true,
         unlock_rule_type: s.unlock_rule_type || "auto", unlock_rule_value: s.unlock_rule_value || "",
         cta_text: s.cta_text || "", cta_url: s.cta_url || "", booking_url: s.booking_url || "",
+        access_code_enabled: !!s.access_code_enabled,
+        access_code_plain: s.access_code_plain || "",
+        speaker_mode_step: s.speaker_mode_step || "inherit",
+        speaker_name_custom: s.speaker_name_custom || "",
+        speaker_title: s.speaker_title || "",
+        speaker_bio: s.speaker_bio || "",
+        speaker_photo_url_custom: s.speaker_photo_url_custom || "",
       })));
     }
   }, [existingSteps]);
@@ -331,6 +347,15 @@ const FunnelEditor = () => {
           unlock_rule_type: s.unlock_rule_type, unlock_rule_value: s.unlock_rule_value || null,
           cta_text: s.cta_text ? sanitizeText(s.cta_text) : null,
           cta_url: s.cta_url || null, booking_url: s.booking_url || null,
+          // Per-step access code
+          access_code_enabled: !!s.access_code_enabled,
+          access_code_plain: s.access_code_enabled ? (s.access_code_plain || null) : null,
+          // Per-step speaker override
+          speaker_mode_step: s.speaker_mode_step || "inherit",
+          speaker_name_custom: s.speaker_mode_step === "override" ? (s.speaker_name_custom || null) : null,
+          speaker_title: s.speaker_mode_step === "override" ? (s.speaker_title || null) : null,
+          speaker_bio: s.speaker_mode_step === "override" ? (s.speaker_bio || null) : null,
+          speaker_photo_url_custom: s.speaker_mode_step === "override" ? (s.speaker_photo_url_custom || null) : null,
         }));
         const { error: stepErr } = await supabase.from("funnel_steps").insert(stepsPayload);
         if (stepErr) throw stepErr;

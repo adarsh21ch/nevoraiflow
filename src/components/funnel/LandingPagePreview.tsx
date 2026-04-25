@@ -76,6 +76,7 @@ export const LandingPagePreview = ({
     { key: "phone", label: "Phone Number", enabled: form.field_phone_enabled },
     { key: "email", label: "Email Address", enabled: form.field_email_enabled },
     { key: "age", label: "Age", enabled: form.field_age_enabled },
+    { key: "dob", label: "Date of Birth (DD / MM / YYYY)", enabled: !!form.field_dob_enabled },
     { key: "city", label: "City", enabled: form.field_city_enabled },
     { key: "state", label: "State", enabled: form.field_state_enabled },
     { key: "occupation", label: "Occupation", enabled: form.field_occupation_enabled },
@@ -295,6 +296,11 @@ export const LandingPagePreview = ({
           <>
             {/* Page sections */}
             <div className="space-y-5">
+              {form.access_code_enabled && (
+                <div className="rounded-md border border-current/20 bg-current/5 px-2.5 py-1.5 text-[10px] flex items-center gap-1.5 opacity-80">
+                  <Lock size={11} /> Private page · viewers must enter access code
+                </div>
+              )}
               {sections.length > 0 ? (
                 sections.map(renderSection)
               ) : (
