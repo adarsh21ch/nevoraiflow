@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Pencil, Copy } from "lucide-react";
+import { sanitizeText } from "@/lib/sanitize";
 
 interface Props {
   open: boolean;
@@ -39,19 +40,21 @@ export const VideoRenameModal = ({ open, onClose, videoId, currentTitle, onSucce
   }, [open, currentTitle, videoId]);
 
   const handleSave = async () => {
-    if (!title.trim()) return;
+    const cleanTitle = sanitizeText(title);
+    if (!cleanTitle) return;
     setLoading(true);
     try {
       const { error } = await supabase
         .from("video_assets")
-        .update({ title: title.trim(), allow_copy_link: allowCopyLink })
+        .update({ title: cleanTitle, allow_copy_link: allowCopyLink })
         .eq("id", videoId);
       if (error) throw error;
       toast.success("Video updated!");
       onSuccess();
       onClose();
     } catch (err: any) {
-      toast.error(err.message || "Failed to save");
+      console.error("[VideoRenameModal]", err);
+      toast.error("Failed to save");
     } finally {
       setLoading(false);
     }
