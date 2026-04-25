@@ -26,6 +26,9 @@ export const PrivateLeadForm = ({
   const [form, setForm] = useState({
     name: "", phone: "", email: "", city: "", state: "", whatsapp: "",
   });
+  // Honeypot — real users never see this; bots fill every field.
+  const [website, setWebsite] = useState("");
+  const formMountedAt = useState(() => Date.now())[0];
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
