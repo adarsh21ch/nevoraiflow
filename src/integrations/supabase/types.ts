@@ -110,6 +110,30 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_attempts: {
+        Row: {
+          attempted_at: string
+          email: string
+          id: string
+          ip_address: string | null
+          succeeded: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          email: string
+          id?: string
+          ip_address?: string | null
+          succeeded?: boolean
+        }
+        Update: {
+          attempted_at?: string
+          email?: string
+          id?: string
+          ip_address?: string | null
+          succeeded?: boolean
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -2661,6 +2685,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_auth_lockout: {
+        Args: { _email: string; _ip: string }
+        Returns: Json
+      }
       cleanup_expired_member_otps: { Args: never; Returns: undefined }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -2718,6 +2746,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      record_auth_attempt: {
+        Args: { _email: string; _ip: string; _success: boolean }
+        Returns: undefined
       }
     }
     Enums: {
