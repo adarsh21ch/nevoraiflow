@@ -342,37 +342,52 @@ const AuthPage = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) { toast.error("Please enter your name"); return; }
-    if (form.password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    if (form.password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
     setSubmitting(true);
     try {
       const { error } = await signUp(form.email, form.password, form.name, form.phone);
-      if (error) { toast.error(error.message); return; }
+      if (error) {
+        // Surface common, actionable errors verbatim (e.g. HIBP "leaked password")
+        toast.error(error.message);
+        return;
+      }
       toast.success("Account created! Please check your email to verify.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Step 2d: Existing nFlow user login
+  // Step 2d: Existing nFlow user login — server-tracked lockout (5 fails / 30 min)
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (Date.now() < lockUntil) {
-      toast.error("Too many attempts. Please wait 30 seconds.");
-      return;
-    }
     setSubmitting(true);
     try {
+      // 1. Check server-side lockout first
+      const { data: lockData } = await supabase.rpc("check_auth_lockout", {
+        _email: form.email,
+        _ip: null,
+      });
+      const lock = lockData as { locked?: boolean; unlock_at?: string } | null;
+      if (lock?.locked) {
+        const unlockAt = lock.unlock_at ? new Date(lock.unlock_at) : null;
+        const mins = unlockAt ? Math.max(1, Math.ceil((unlockAt.getTime() - Date.now()) / 60000)) : 30;
+        toast.error(`Too many failed attempts. Try again in ${mins} minute${mins === 1 ? "" : "s"}.`);
+        return;
+      }
+
+      // 2. Try sign-in
       const { error } = await signIn(form.email, form.password);
+
+      // 3. Record outcome on server
+      await supabase.rpc("record_auth_attempt", {
+        _email: form.email,
+        _ip: null,
+        _success: !error,
+      });
+
       if (error) {
-        const newCount = failCount + 1;
-        setFailCount(newCount);
-        if (newCount >= 3) {
-          setLockUntil(Date.now() + 30000);
-          setFailCount(0);
-          toast.error("Too many failed attempts. Locked for 30 seconds.");
-        } else {
-          toast.error(error.message);
-        }
+        // Generic message — don't reveal whether email exists
+        toast.error("Invalid email or password.");
         return;
       }
       toast.success("Welcome back!");
@@ -386,8 +401,8 @@ const AuthPage = () => {
   // with email + password next time. Skippable — OTP login still works.
   const handleSetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    if (form.password.length < 8) {
+      toast.error("Password must be at least 8 characters");
       return;
     }
     setSubmitting(true);
@@ -407,6 +422,7 @@ const AuthPage = () => {
   const handleSkipPassword = () => {
     navigate("/dashboard");
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 gradient-bg-subtle relative">
