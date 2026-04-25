@@ -134,6 +134,17 @@ const PublicLandingPage = () => {
     );
   }
 
+  // Private landing page gate (additive: only blocks when access_code_enabled is true)
+  if (page.access_code_enabled && !pageUnlocked) {
+    return (
+      <LandingPageCodeGate
+        pageId={page.id}
+        pageTitle={page.title || "Private page"}
+        onSuccess={() => setPageUnlocked(true)}
+      />
+    );
+  }
+
   const sections = (page.sections as any[]) || [];
   const bgClass = page.background_style === "light"
     ? "bg-background text-foreground"
