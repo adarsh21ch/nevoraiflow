@@ -94,9 +94,9 @@ const KYCPage = () => {
     mutationFn: async () => {
       const payload: Record<string, unknown> = {
         user_id: user!.id,
-        full_name: form.full_name,
-        city: form.city,
-        state: form.state,
+        full_name: sanitizeText(form.full_name),
+        city: sanitizeText(form.city),
+        state: sanitizeText(form.state),
         doc_type: form.doc_type,
         doc_image_url: form.doc_image_url,
         status: "pending",
