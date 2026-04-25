@@ -1051,6 +1051,8 @@ const FunnelEditor = () => {
             </div>
           </div>
         )}
+          </>
+        )}
       </div>
     </>
   );
