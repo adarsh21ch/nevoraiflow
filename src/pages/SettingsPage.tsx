@@ -60,10 +60,6 @@ const SettingsPage = () => {
     }
   };
 
-  const { subscription, tier } = useSubscription();
-  const { theme, toggleTheme } = useTheme();
-  const navigate = useNavigate();
-
   return (
     <DashboardLayout>
       <div className="max-w-2xl space-y-6">
