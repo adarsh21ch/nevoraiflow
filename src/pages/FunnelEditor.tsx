@@ -324,10 +324,13 @@ const FunnelEditor = () => {
       if (funnel.funnel_mode === "multi" && flowSteps.length > 0) {
         await supabase.from("funnel_steps").delete().eq("funnel_id", funnelId);
         const stepsPayload = flowSteps.map((s, i) => ({
-          funnel_id: funnelId, step_order: i, title: s.title, description: s.description || null,
+          funnel_id: funnelId, step_order: i,
+          title: sanitizeText(s.title),
+          description: s.description ? sanitizeText(s.description) : null,
           step_type: s.step_type, video_asset_id: s.video_asset_id || null, is_active: s.is_active,
           unlock_rule_type: s.unlock_rule_type, unlock_rule_value: s.unlock_rule_value || null,
-          cta_text: s.cta_text || null, cta_url: s.cta_url || null, booking_url: s.booking_url || null,
+          cta_text: s.cta_text ? sanitizeText(s.cta_text) : null,
+          cta_url: s.cta_url || null, booking_url: s.booking_url || null,
         }));
         const { error: stepErr } = await supabase.from("funnel_steps").insert(stepsPayload);
         if (stepErr) throw stepErr;
