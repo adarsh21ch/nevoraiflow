@@ -421,6 +421,22 @@ export const MultiStepViewer = ({
     const status = getStepStatus(step.id);
     if (status === "completed") return null;
     if (status === "locked") {
+      // Time-delay countdown takes priority when active and the prior step is done
+      if (step.time_delay_enabled && step.time_delay_minutes && idx > 0) {
+        const prevStep = steps[idx - 1];
+        const prevProgress = progressMap[prevStep.id];
+        if (prevProgress?.completed_at) {
+          const delayMs = step.time_delay_minutes * 60 * 1000;
+          const elapsed = Date.now() - new Date(prevProgress.completed_at).getTime();
+          const remainingMs = delayMs - elapsed;
+          if (remainingMs > 0) {
+            const mins = Math.ceil(remainingMs / 60000);
+            return `Unlocks in ${mins}m`;
+          }
+        } else {
+          return `Wait ${step.time_delay_minutes}m after previous step`;
+        }
+      }
       const hintFn = UNLOCK_HINTS[step.unlock_rule_type];
       return hintFn ? hintFn(step.unlock_rule_value) : null;
     }
