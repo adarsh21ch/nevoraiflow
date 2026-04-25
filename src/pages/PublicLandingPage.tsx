@@ -272,14 +272,11 @@ const PublicLandingPage = () => {
                     )}
                   </div>
                 )}
-                <div className="aspect-video rounded-xl overflow-hidden bg-black">
-                  <video
-                    src={video.public_url}
-                    controls
-                    className="w-full h-full"
-                    poster={video.thumbnail_url || undefined}
-                  />
-                </div>
+                <PostSubmitVideoPlayer
+                  videoUrl={video.public_url}
+                  thumbnailUrl={video.thumbnail_url}
+                />
+
               </>
             ) : (
               <Card className="p-12 text-center space-y-3">
