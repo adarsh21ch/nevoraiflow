@@ -712,6 +712,8 @@ export type Database = {
       funnel_steps: {
         Row: {
           access_code_enabled: boolean
+          access_code_hash: string | null
+          access_code_message: string | null
           access_code_plain: string | null
           between_step_audio_enabled: boolean | null
           between_step_audio_url: string | null
@@ -732,16 +734,28 @@ export type Database = {
           speaker_title: string | null
           step_order: number
           step_type: string
+          time_delay_enabled: boolean | null
+          time_delay_minutes: number | null
+          timer_cta_enabled: boolean | null
+          timer_cta_style: string | null
+          timer_cta_text: string | null
+          timer_cta_url: string | null
           title: string
           unlock_after_percent: number | null
+          unlock_condition: string | null
+          unlock_percentage: number | null
           unlock_rule_type: string
           unlock_rule_value: string | null
           unlock_timer_minutes: number | null
           updated_at: string
           video_asset_id: string | null
+          video_topics_step: Json | null
+          video_topics_step_enabled: boolean | null
         }
         Insert: {
           access_code_enabled?: boolean
+          access_code_hash?: string | null
+          access_code_message?: string | null
           access_code_plain?: string | null
           between_step_audio_enabled?: boolean | null
           between_step_audio_url?: string | null
@@ -762,16 +776,28 @@ export type Database = {
           speaker_title?: string | null
           step_order?: number
           step_type?: string
+          time_delay_enabled?: boolean | null
+          time_delay_minutes?: number | null
+          timer_cta_enabled?: boolean | null
+          timer_cta_style?: string | null
+          timer_cta_text?: string | null
+          timer_cta_url?: string | null
           title?: string
           unlock_after_percent?: number | null
+          unlock_condition?: string | null
+          unlock_percentage?: number | null
           unlock_rule_type?: string
           unlock_rule_value?: string | null
           unlock_timer_minutes?: number | null
           updated_at?: string
           video_asset_id?: string | null
+          video_topics_step?: Json | null
+          video_topics_step_enabled?: boolean | null
         }
         Update: {
           access_code_enabled?: boolean
+          access_code_hash?: string | null
+          access_code_message?: string | null
           access_code_plain?: string | null
           between_step_audio_enabled?: boolean | null
           between_step_audio_url?: string | null
@@ -792,13 +818,23 @@ export type Database = {
           speaker_title?: string | null
           step_order?: number
           step_type?: string
+          time_delay_enabled?: boolean | null
+          time_delay_minutes?: number | null
+          timer_cta_enabled?: boolean | null
+          timer_cta_style?: string | null
+          timer_cta_text?: string | null
+          timer_cta_url?: string | null
           title?: string
           unlock_after_percent?: number | null
+          unlock_condition?: string | null
+          unlock_percentage?: number | null
           unlock_rule_type?: string
           unlock_rule_value?: string | null
           unlock_timer_minutes?: number | null
           updated_at?: string
           video_asset_id?: string | null
+          video_topics_step?: Json | null
+          video_topics_step_enabled?: boolean | null
         }
         Relationships: [
           {
@@ -909,6 +945,7 @@ export type Database = {
           speaker_mode: string
           speaker_name: string | null
           speaker_photo_url: string | null
+          speaker_scope: string | null
           thumbnail_url: string | null
           title: string
           total_leads: number | null
@@ -921,6 +958,7 @@ export type Database = {
           video_asset_id: string | null
           video_topics: Json | null
           video_topics_enabled: boolean
+          video_topics_scope: string | null
           visibility: string | null
           whatsapp_auto_message: boolean | null
           whatsapp_message_template: string | null
@@ -965,6 +1003,7 @@ export type Database = {
           speaker_mode?: string
           speaker_name?: string | null
           speaker_photo_url?: string | null
+          speaker_scope?: string | null
           thumbnail_url?: string | null
           title: string
           total_leads?: number | null
@@ -977,6 +1016,7 @@ export type Database = {
           video_asset_id?: string | null
           video_topics?: Json | null
           video_topics_enabled?: boolean
+          video_topics_scope?: string | null
           visibility?: string | null
           whatsapp_auto_message?: boolean | null
           whatsapp_message_template?: string | null
@@ -1021,6 +1061,7 @@ export type Database = {
           speaker_mode?: string
           speaker_name?: string | null
           speaker_photo_url?: string | null
+          speaker_scope?: string | null
           thumbnail_url?: string | null
           title?: string
           total_leads?: number | null
@@ -1033,6 +1074,7 @@ export type Database = {
           video_asset_id?: string | null
           video_topics?: Json | null
           video_topics_enabled?: boolean
+          video_topics_scope?: string | null
           visibility?: string | null
           whatsapp_auto_message?: boolean | null
           whatsapp_message_template?: string | null
