@@ -56,6 +56,7 @@ const AdminKYCPage = () => {
   const openReview = async (kyc: any) => {
     setSelectedKyc(kyc);
     setRejectionReason("");
+    setRevealId(false); // always start masked
     if (kyc.doc_image_url) {
       const url = await getDocUrl(kyc.doc_image_url);
       setDocPreviewUrl(url);
