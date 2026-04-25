@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useState } from "react";
-import { Shield, Check, X, Eye, MapPin, FileText, CreditCard } from "lucide-react";
+import { Shield, Check, X, Eye, EyeOff, MapPin, FileText, CreditCard } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { maskPan, maskAadhaar } from "@/lib/mask";
 
 const AdminKYCPage = () => {
   const queryClient = useQueryClient();
