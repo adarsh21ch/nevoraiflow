@@ -11,6 +11,7 @@ import {
 
 import { CopyNflowLinkButton } from "@/components/CopyNflowLinkButton";
 import { sanitizeText, normalizePhone } from "@/lib/sanitize";
+import { StepCodeGate } from "@/components/funnel/StepCodeGate";
 
 interface FunnelStep {
   id: string;
@@ -28,6 +29,15 @@ interface FunnelStep {
   video_url?: string | null;
   video_thumbnail?: string | null;
   video_allow_copy_link?: boolean;
+  // Per-step access code (additive, optional)
+  access_code_enabled?: boolean;
+  access_code_plain?: string | null;
+  // Per-step speaker override (additive, optional)
+  speaker_mode_step?: string;
+  speaker_name_custom?: string | null;
+  speaker_title?: string | null;
+  speaker_bio?: string | null;
+  speaker_photo_url_custom?: string | null;
 }
 
 interface StepProgress {
@@ -108,6 +118,20 @@ export const MultiStepViewer = ({
   const [loading, setLoading] = useState(true);
   const sessionId = useRef(getSessionId(funnel.id));
   const progressSaveTimer = useRef<ReturnType<typeof setInterval>>();
+  // Tracks which step IDs have been unlocked via access code in THIS browser session.
+  // Hydrated from localStorage so reload doesn't re-prompt.
+  const [stepCodeUnlocked, setStepCodeUnlocked] = useState<Record<string, boolean>>(() => {
+    const map: Record<string, boolean> = {};
+    try {
+      const sid = sessionId.current;
+      for (const s of steps) {
+        if (s.access_code_enabled && localStorage.getItem(`nf_step_code_${s.id}_${sid}`) === "true") {
+          map[s.id] = true;
+        }
+      }
+    } catch {}
+    return map;
+  });
 
   useEffect(() => {
     const loadProgress = async () => {
@@ -726,25 +750,39 @@ export const MultiStepViewer = ({
                 </div>
               )}
 
-              {/* Step type content */}
-              {activeStep.step_type === "video" && activeStep.video_url && (
-                <div className="space-y-3">
-                  <VideoPlayer
-                    src={activeStep.video_url}
-                    poster={activeStep.video_thumbnail || undefined}
-                    allowSeek={funnel.allow_seek !== false}
-                    allowSpeed={funnel.allow_speed_change !== false}
-                    autoplay={true}
-                    initialTime={activeProgress?.last_position_seconds || 0}
-                    onTimeUpdate={(ct: number, dur: number) => handleVideoTimeUpdate(activeStepIndex, ct, dur)}
-                  />
-                  {activeStep.video_asset_id && activeStep.video_allow_copy_link !== false && (
-                    <div className="flex justify-end">
-                      <CopyNflowLinkButton videoId={activeStep.video_asset_id} />
+              {/* Per-step access code gate — wraps the step content when enabled and not yet unlocked */}
+              {activeStep.access_code_enabled && !stepCodeUnlocked[activeStep.id] ? (
+                <StepCodeGate
+                  funnelId={funnel.id}
+                  stepId={activeStep.id}
+                  stepTitle={activeStep.title}
+                  sessionId={sessionId.current}
+                  isDark={isDark}
+                  onSuccess={() =>
+                    setStepCodeUnlocked((prev) => ({ ...prev, [activeStep.id]: true }))
+                  }
+                />
+              ) : (
+                <>
+                  {/* Step type content */}
+                  {activeStep.step_type === "video" && activeStep.video_url && (
+                    <div className="space-y-3">
+                      <VideoPlayer
+                        src={activeStep.video_url}
+                        poster={activeStep.video_thumbnail || undefined}
+                        allowSeek={funnel.allow_seek !== false}
+                        allowSpeed={funnel.allow_speed_change !== false}
+                        autoplay={true}
+                        initialTime={activeProgress?.last_position_seconds || 0}
+                        onTimeUpdate={(ct: number, dur: number) => handleVideoTimeUpdate(activeStepIndex, ct, dur)}
+                      />
+                      {activeStep.video_asset_id && activeStep.video_allow_copy_link !== false && (
+                        <div className="flex justify-end">
+                          <CopyNflowLinkButton videoId={activeStep.video_asset_id} />
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              )}
 
               {activeStep.step_type === "video" && !activeStep.video_url && (
                 <div className="aspect-video rounded-2xl flex items-center justify-center" style={{ background: sc.cardBg, border: `1px solid ${sc.border}` }}>
@@ -905,6 +943,8 @@ export const MultiStepViewer = ({
                 >
                   Next Step <ChevronRight size={16} />
                 </Button>
+              )}
+                </>
               )}
             </div>
           )}
