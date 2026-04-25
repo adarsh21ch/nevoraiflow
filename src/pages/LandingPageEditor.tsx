@@ -788,7 +788,7 @@ const LandingPageEditor = () => {
           <div className="flex items-start justify-between gap-3">
             <div>
               <Label className="font-semibold flex items-center gap-2">
-                <Lock size={14} /> Private page (access code)
+                <LockIcon size={14} /> Private page (access code)
               </Label>
               <p className="text-xs text-muted-foreground mt-1">
                 Visitors must enter a code to view this page. Existing public pages stay public.
