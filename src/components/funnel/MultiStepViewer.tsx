@@ -845,6 +845,26 @@ export const MultiStepViewer = ({
                     </div>
                   )}
 
+                  {/* Per-step video topics — when scope is per_step */}
+                  {(funnel as any).video_topics_scope === "per_step"
+                    && activeStep.video_topics_step_enabled
+                    && Array.isArray(activeStep.video_topics_step)
+                    && activeStep.video_topics_step.filter((t) => (t || "").trim()).length > 0 && (
+                    <div className="rounded-2xl p-4 mt-3" style={{ background: sc.cardBg, border: `1px solid ${sc.cardBorder}` }}>
+                      <p className="font-heading font-bold text-sm mb-2" style={{ color: sc.text }}>What you'll learn in this step</p>
+                      <div className="space-y-2">
+                        {activeStep.video_topics_step!.filter((t) => (t || "").trim()).map((topic, i) => (
+                          <div key={i} className="flex items-start gap-2.5">
+                            <div className="w-5 h-5 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                              <Check size={11} className="text-emerald-500" />
+                            </div>
+                            <span className="text-sm" style={{ color: sc.text }}>{topic}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
               {activeStep.step_type === "video" && !activeStep.video_url && (
                 <div className="aspect-video rounded-2xl flex items-center justify-center" style={{ background: sc.cardBg, border: `1px solid ${sc.border}` }}>
                   <div className="text-center">
