@@ -14,6 +14,9 @@ interface FlowStep {
   cta_text: string;
   cta_url: string;
   booking_url: string;
+  access_code_enabled?: boolean;
+  speaker_mode_step?: string;
+  speaker_name_custom?: string;
 }
 
 interface JourneyPreviewProps {
