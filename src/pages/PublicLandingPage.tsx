@@ -44,6 +44,15 @@ const PublicLandingPage = () => {
         setPage(data);
         const saved = localStorage.getItem(`nf_registered_${data.id}`);
         if (saved) setSubmitted(true);
+        // Restore prior unlock for private pages
+        if (data.access_code_enabled) {
+          try {
+            const verified = localStorage.getItem(`nf_lp_verified_${data.id}`);
+            if (verified) setPageUnlocked(true);
+          } catch {}
+        } else {
+          setPageUnlocked(true);
+        }
         if (data.post_submit_video_asset_id) {
           const { data: v } = await supabase
             .from("video_assets")
