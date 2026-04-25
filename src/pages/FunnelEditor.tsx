@@ -50,6 +50,15 @@ interface FlowStep {
   between_step_message?: string;
   between_step_message_enabled?: boolean;
   unlock_after_percent?: number;
+  // Per-step access code (additive)
+  access_code_enabled?: boolean;
+  access_code_plain?: string;
+  // Per-step speaker override (additive)
+  speaker_mode_step?: string;
+  speaker_name_custom?: string;
+  speaker_title?: string;
+  speaker_bio?: string;
+  speaker_photo_url_custom?: string;
 }
 
 const createEmptyStep = (order: number, type: string = "video"): FlowStep => ({
