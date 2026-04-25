@@ -24,6 +24,7 @@ import { JourneyPreview } from "@/components/funnel/JourneyPreview";
 import { PrivacySettings } from "@/components/funnel/PrivacySettings";
 import { FunnelLivePreview } from "@/components/funnel/FunnelLivePreview";
 import { SpeakerPhotoUpload } from "@/components/funnel/SpeakerPhotoUpload";
+import { PerStepSpeakerAssignment } from "@/components/funnel/PerStepSpeakerAssignment";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { usePlan } from "@/hooks/usePlan";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
@@ -138,6 +139,8 @@ const FunnelEditor = () => {
     speaker_name: "", speaker_photo_url: "", speaker_about: "",
     video_topics_enabled: false,
     video_topics: [] as string[],
+    speaker_scope: "global" as "global" | "per_step",
+    video_topics_scope: "global" as "global" | "per_step",
   });
 
   const [leadForm, setLeadForm] = useState({
@@ -203,6 +206,8 @@ const FunnelEditor = () => {
         speaker_about: (f as any).speaker_about || "",
         video_topics_enabled: (f as any).video_topics_enabled ?? false,
         video_topics: Array.isArray((f as any).video_topics) ? (f as any).video_topics : [],
+        speaker_scope: (f as any).speaker_scope || "global",
+        video_topics_scope: (f as any).video_topics_scope || "global",
       }));
       setModeChosen(true);
       if (f.audio_note_url) setAudioNoteEnabled(true);
@@ -236,13 +241,30 @@ const FunnelEditor = () => {
         step_type: s.step_type || "video", video_asset_id: s.video_asset_id, is_active: s.is_active ?? true,
         unlock_rule_type: s.unlock_rule_type || "auto", unlock_rule_value: s.unlock_rule_value || "",
         cta_text: s.cta_text || "", cta_url: s.cta_url || "", booking_url: s.booking_url || "",
-        access_code_enabled: !!s.access_code_enabled,
-        access_code_plain: s.access_code_plain || "",
+        // Upgraded unlock model
+        unlock_condition: s.unlock_condition || "full_watch",
+        unlock_percentage: s.unlock_percentage ?? 80,
+        time_delay_enabled: s.time_delay_enabled ?? false,
+        time_delay_minutes: s.time_delay_minutes ?? 0,
+        // Per-step speaker
         speaker_mode_step: s.speaker_mode_step || "inherit",
         speaker_name_custom: s.speaker_name_custom || "",
         speaker_title: s.speaker_title || "",
         speaker_bio: s.speaker_bio || "",
         speaker_photo_url_custom: s.speaker_photo_url_custom || "",
+        // Per-step video topics
+        video_topics_step_enabled: s.video_topics_step_enabled ?? false,
+        video_topics_step: Array.isArray(s.video_topics_step) ? s.video_topics_step : [],
+        // Timer CTA
+        timer_cta_enabled: s.timer_cta_enabled ?? false,
+        timer_cta_text: s.timer_cta_text || "",
+        timer_cta_url: s.timer_cta_url || "",
+        timer_cta_style: s.timer_cta_style || "gold",
+        // Per-step access code (keep both plaintext + hash compatibility)
+        access_code_enabled: !!s.access_code_enabled,
+        access_code_plain: s.access_code_plain || "",
+        access_code_hash: s.access_code_hash || null,
+        access_code_message: s.access_code_message || "",
       })));
     }
   }, [existingSteps]);
@@ -290,6 +312,8 @@ const FunnelEditor = () => {
       speaker_about: funnel.speaker_about ? s(funnel.speaker_about) : null,
       video_topics_enabled: funnel.video_topics_enabled,
       video_topics: funnel.video_topics.filter((t: string) => t.trim() !== "").map((t: string) => s(t)),
+      speaker_scope: funnel.speaker_scope,
+      video_topics_scope: funnel.video_topics_scope,
     };
   }, [user, funnel, selectedVideo]);
 
@@ -311,23 +335,49 @@ const FunnelEditor = () => {
       }
       if (funnel.funnel_mode === "multi" && flowSteps.length > 0) {
         await supabase.from("funnel_steps").delete().eq("funnel_id", funnelId);
-        const stepsPayload = flowSteps.map((s, i) => ({
-          funnel_id: funnelId, step_order: i,
-          title: sanitizeText(s.title),
-          description: s.description ? sanitizeText(s.description) : null,
-          step_type: s.step_type, video_asset_id: s.video_asset_id || null, is_active: s.is_active,
-          unlock_rule_type: s.unlock_rule_type, unlock_rule_value: s.unlock_rule_value || null,
-          cta_text: s.cta_text ? sanitizeText(s.cta_text) : null,
-          cta_url: s.cta_url || null, booking_url: s.booking_url || null,
-          // Per-step access code
-          access_code_enabled: !!s.access_code_enabled,
-          access_code_plain: s.access_code_enabled ? (s.access_code_plain || null) : null,
-          // Per-step speaker override
-          speaker_mode_step: s.speaker_mode_step || "inherit",
-          speaker_name_custom: s.speaker_mode_step === "override" ? (s.speaker_name_custom || null) : null,
-          speaker_title: s.speaker_mode_step === "override" ? (s.speaker_title || null) : null,
-          speaker_bio: s.speaker_mode_step === "override" ? (s.speaker_bio || null) : null,
-          speaker_photo_url_custom: s.speaker_mode_step === "override" ? (s.speaker_photo_url_custom || null) : null,
+        const stepsPayload = await Promise.all(flowSteps.map(async (s, i) => {
+          // Hash the access code if user provided a fresh raw value
+          let accessCodeHash: string | null = s.access_code_hash || null;
+          if (s.access_code_enabled && (s as any)._access_code_raw) {
+            const encoder = new TextEncoder();
+            const buf = await crypto.subtle.digest("SHA-256", encoder.encode(String((s as any)._access_code_raw).trim().toUpperCase()));
+            accessCodeHash = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+          }
+          // Speaker override scope: 'override' or 'custom' both store custom data; 'account'/'inherit'/'none' don't.
+          const isStepOverride = s.speaker_mode_step === "override" || s.speaker_mode_step === "custom";
+          return {
+            funnel_id: funnelId, step_order: i,
+            title: sanitizeText(s.title),
+            description: s.description ? sanitizeText(s.description) : null,
+            step_type: s.step_type, video_asset_id: s.video_asset_id || null, is_active: s.is_active,
+            unlock_rule_type: s.unlock_rule_type, unlock_rule_value: s.unlock_rule_value || null,
+            cta_text: s.cta_text ? sanitizeText(s.cta_text) : null,
+            cta_url: s.cta_url || null, booking_url: s.booking_url || null,
+            // Upgraded unlock model
+            unlock_condition: s.unlock_condition || "full_watch",
+            unlock_percentage: s.unlock_percentage ?? 80,
+            time_delay_enabled: s.time_delay_enabled ?? false,
+            time_delay_minutes: s.time_delay_minutes ?? 0,
+            // Timer CTA
+            timer_cta_enabled: s.timer_cta_enabled ?? false,
+            timer_cta_text: s.timer_cta_text ? sanitizeText(s.timer_cta_text) : null,
+            timer_cta_url: s.timer_cta_url || null,
+            timer_cta_style: s.timer_cta_style || "gold",
+            // Per-step video topics
+            video_topics_step_enabled: s.video_topics_step_enabled ?? false,
+            video_topics_step: Array.isArray(s.video_topics_step) ? s.video_topics_step : [],
+            // Per-step access code (keep both plaintext + hash; viewer/edge fn prefers hash)
+            access_code_enabled: !!s.access_code_enabled,
+            access_code_plain: s.access_code_enabled ? (s.access_code_plain || null) : null,
+            access_code_hash: s.access_code_enabled ? accessCodeHash : null,
+            access_code_message: s.access_code_enabled ? (s.access_code_message ? sanitizeText(s.access_code_message) : null) : null,
+            // Per-step speaker override
+            speaker_mode_step: s.speaker_mode_step || "inherit",
+            speaker_name_custom: isStepOverride ? (s.speaker_name_custom ? sanitizeText(s.speaker_name_custom) : null) : null,
+            speaker_title: isStepOverride ? (s.speaker_title ? sanitizeText(s.speaker_title) : null) : null,
+            speaker_bio: isStepOverride ? (s.speaker_bio ? sanitizeText(s.speaker_bio) : null) : null,
+            speaker_photo_url_custom: isStepOverride ? (s.speaker_photo_url_custom || null) : null,
+          };
         }));
         const { error: stepErr } = await supabase.from("funnel_steps").insert(stepsPayload);
         if (stepErr) throw stepErr;
@@ -607,65 +657,109 @@ const FunnelEditor = () => {
               </Button>
             </div>
           ) : (
-            <div className="space-y-2.5">
+            <div className="space-y-0">
               {flowSteps.map((fs, idx) => {
                 const meta = getStepTypeMeta(fs.step_type);
+                const isEditing = editingStepIdx === idx;
+                const unlockBadge = fs.unlock_condition === "full_watch" ? "Full watch" :
+                  fs.unlock_condition === "percentage" ? `${fs.unlock_percentage || 80}%` :
+                  fs.unlock_condition === "time_spent" ? `${fs.unlock_percentage || 10} min` :
+                  UNLOCK_LABELS[fs.unlock_rule_type] || "Auto";
                 return (
-                  <div
-                    key={idx}
-                    className="group flex flex-col gap-2.5 p-4 rounded-[14px] border border-border hover:border-primary/30 bg-card/50 transition-all"
-                  >
-                    {/* Top row */}
-                    <div className="flex items-center gap-3">
-                      {/* Reorder */}
-                      <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => moveStep(idx, idx - 1)} disabled={idx === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors p-0.5"><ChevronUp size={12} /></button>
-                        <button onClick={() => moveStep(idx, idx + 1)} disabled={idx === flowSteps.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors p-0.5"><ChevronDown size={12} /></button>
-                      </div>
-
-                      {/* Icon */}
-                      <div className={`w-8 h-8 rounded-lg ${meta.bg} flex items-center justify-center shrink-0`}>
-                        <meta.icon size={16} className={meta.color} />
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">Step {idx + 1}</span>
-                          {!fs.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Inactive</span>}
+                  <div key={idx}>
+                    <div
+                      className={`group relative rounded-xl transition-all duration-150 ${
+                        isEditing
+                          ? "border-l-[3px] border-l-primary border-t border-r border-b border-border bg-card shadow-lg shadow-primary/5"
+                          : "border border-border bg-card hover:border-primary/30"
+                      }`}
+                      style={{ padding: "16px 20px" }}
+                    >
+                      {/* Top row */}
+                      <div className="flex items-center gap-3">
+                        {/* Reorder */}
+                        <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => moveStep(idx, idx - 1)} disabled={idx === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors p-0.5"><ChevronUp size={12} /></button>
+                          <button onClick={() => moveStep(idx, idx + 1)} disabled={idx === flowSteps.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors p-0.5"><ChevronDown size={12} /></button>
                         </div>
-                        <p className="text-[15px] font-semibold text-foreground truncate mt-0.5">
-                          {fs.title || <span className="text-muted-foreground italic">Untitled {meta.label}</span>}
-                        </p>
+
+                        <div className={`w-9 h-9 rounded-lg ${meta.bg} flex items-center justify-center shrink-0`}>
+                          <meta.icon size={16} className={meta.color} />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Step {idx + 1}</span>
+                            {!fs.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive">Inactive</span>}
+                          </div>
+                          <p className="text-[15px] font-semibold text-foreground truncate mt-1">
+                            {fs.title || <span className="text-muted-foreground italic">Untitled {meta.label}</span>}
+                          </p>
+                        </div>
+
+                        <Button
+                          variant={isEditing ? "default" : "outline"}
+                          size="sm"
+                          className="h-8 text-xs shrink-0 gap-1.5"
+                          onClick={() => setEditingStepIdx(isEditing ? null : idx)}
+                        >
+                          <Pencil size={12} />
+                          {isEditing ? "Editing" : "Edit"}
+                        </Button>
                       </div>
 
-                      {/* Edit button */}
-                      <Button variant="outline" size="sm" className="h-8 text-xs shrink-0" onClick={() => setEditingStepIdx(idx)}>
-                        Edit
-                      </Button>
-                    </div>
-
-                    {/* Bottom row: type badge + unlock rule + actions */}
-                    <div className="flex items-center justify-between pl-[52px]">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground">
-                          {meta.label}
-                        </span>
-                        {idx > 0 && (
-                          <span className="text-[12px] text-muted-foreground flex items-center gap-1">
-                            <Lock size={9} /> {UNLOCK_LABELS[fs.unlock_rule_type] || "Auto"}
+                      {/* Bottom row: badges */}
+                      <div className="flex items-center justify-between mt-3 pl-[52px]">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-primary/10 text-primary">
+                            {meta.label}
                           </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => duplicateStep(idx)}>
-                          <Copy size={13} />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeFlowStep(idx)}>
-                          <Trash2 size={13} />
-                        </Button>
+                          {idx > 0 && (
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-muted text-muted-foreground flex items-center gap-1">
+                              <Lock size={9} />
+                              {unlockBadge}
+                            </span>
+                          )}
+                          {fs.access_code_enabled && (
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-500 flex items-center gap-1">
+                              🔐 Code
+                            </span>
+                          )}
+                          {fs.time_delay_enabled && (fs.time_delay_minutes || 0) > 0 && (
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-600 flex items-center gap-1">
+                              ⏱ {fs.time_delay_minutes}m wait
+                            </span>
+                          )}
+                          {fs.speaker_mode_step && fs.speaker_mode_step !== "inherit" && fs.speaker_mode_step !== "none" && (
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-blue-500/10 text-blue-400 flex items-center gap-1">
+                              👤 {fs.speaker_mode_step === "account" ? "Account" : fs.speaker_mode_step === "override" || fs.speaker_mode_step === "custom" ? "Custom" : fs.speaker_mode_step}
+                            </span>
+                          )}
+                          {fs.video_topics_step_enabled && (fs.video_topics_step?.length || 0) > 0 && (
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-500 flex items-center gap-1">
+                              📋 {fs.video_topics_step?.length} topics
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => duplicateStep(idx)}>
+                            <Copy size={13} />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeFlowStep(idx)}>
+                            <Trash2 size={13} />
+                          </Button>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Vertical connector */}
+                    {idx < flowSteps.length - 1 && (
+                      <div className="flex justify-center py-1">
+                        <div className="w-px h-5 bg-border relative">
+                          <ChevronDown size={10} className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-muted-foreground" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -720,6 +814,9 @@ const FunnelEditor = () => {
         totalSteps={flowSteps.length}
         onUpdate={(key, value) => { if (editingStepIdx !== null) updateFlowStep(editingStepIdx, key, value); }}
         onOpenVideoPicker={() => { setStepVideoPickerIdx(editingStepIdx); }}
+        speakerScope={funnel.speaker_scope}
+        videoTopicsScope={funnel.video_topics_scope}
+        userProfile={userProfile}
       />
       <VideoPickerModal
         open={stepVideoPickerIdx !== null}
@@ -838,7 +935,35 @@ const FunnelEditor = () => {
       <h2 className="text-lg font-heading font-semibold">Speaker</h2>
       <p className="text-sm text-muted-foreground">Choose how the speaker is shown on your funnel page.</p>
       <div className="space-y-5 mt-4">
-        {/* Mode selector */}
+        {/* Scope selector — multi-step only */}
+        {isMulti && (
+          <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+            <Label className="font-semibold">Speaker Mode</Label>
+            <div className="flex rounded-xl border border-border overflow-hidden">
+              {(["global", "per_step"] as const).map((scope) => (
+                <button
+                  key={scope}
+                  onClick={() => update("speaker_scope", scope)}
+                  className={`flex-1 py-2.5 text-sm font-semibold transition-all ${
+                    funnel.speaker_scope === scope
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {scope === "global" ? "🌍 One speaker for all steps" : "🎯 Different per step"}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {isMulti && funnel.speaker_scope === "per_step" && (
+          <PerStepSpeakerAssignment steps={flowSteps as any} setSteps={setFlowSteps as any} />
+        )}
+
+        {(funnel.speaker_scope === "global" || !isMulti) && (
+          <>
+            {/* Mode selector */}
         <div className="flex rounded-xl border border-border overflow-hidden">
           {(["none", "account", "custom"] as const).map((mode) => (
             <button

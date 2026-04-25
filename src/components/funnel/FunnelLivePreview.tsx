@@ -1,5 +1,17 @@
-import { Play, Lock, Users, MessageCircle, Phone as PhoneIcon, Eye, Layers } from "lucide-react";
-import logoImg from "@/assets/nevorai-flow-logo.png";
+import { Play, Lock, Eye, ExternalLink, Share2 } from "lucide-react";
+
+interface PreviewStep {
+  title: string;
+  step_type: string;
+  step_order: number;
+  is_active?: boolean;
+  time_delay_enabled?: boolean;
+  time_delay_minutes?: number;
+  timer_cta_enabled?: boolean;
+  timer_cta_text?: string;
+  timer_cta_style?: string;
+  access_code_enabled?: boolean;
+}
 
 interface FunnelLivePreviewProps {
   funnel: {
@@ -7,6 +19,7 @@ interface FunnelLivePreviewProps {
     description: string;
     funnel_mode: "single" | "multi";
     visibility: string;
+    slug?: string;
     cta_enabled: boolean;
     cta_text: string;
     show_contact_buttons: boolean;
@@ -15,8 +28,8 @@ interface FunnelLivePreviewProps {
     payment_enabled: boolean;
     required_fields: { email: boolean; city: boolean; state: boolean; whatsapp: boolean };
   };
-  selectedVideo: { title: string; url: string | null } | null;
-  flowSteps: { title: string; step_type: string; step_order: number; access_code_enabled?: boolean }[];
+  selectedVideo: { title: string; url: string | null; thumbnail?: string | null } | null;
+  flowSteps: PreviewStep[];
   leadForm: {
     capture_enabled: boolean;
     show_name: boolean;
@@ -26,150 +39,164 @@ interface FunnelLivePreviewProps {
     show_custom: boolean;
     custom_field_label: string;
   };
+  previewStepIndex?: number | null;
 }
 
-export const FunnelLivePreview = ({ funnel, selectedVideo, flowSteps, leadForm }: FunnelLivePreviewProps) => {
+export const FunnelLivePreview = ({ funnel, selectedVideo, flowSteps, leadForm, previewStepIndex = null }: FunnelLivePreviewProps) => {
   const isMulti = funnel.funnel_mode === "multi";
   const isPrivate = funnel.visibility === "private";
+  const activeSteps = flowSteps.filter((s) => s.is_active !== false);
+  const activeIdx = typeof previewStepIndex === "number" ? previewStepIndex : 0;
+  const activeStep = activeSteps[activeIdx] || activeSteps[0];
+  const maxVisibleSteps = 5;
+  const hiddenCount = Math.max(0, activeSteps.length - maxVisibleSteps);
+  const visibleSteps = activeSteps.slice(0, maxVisibleSteps);
+
+  const previewUrl = funnel.slug ? `${window.location.origin}/f/${funnel.slug}` : null;
 
   return (
-    <div className="w-full h-full overflow-y-auto rounded-xl border border-border bg-[#09090b] text-white">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
-        <div className="flex items-center gap-1.5">
-          <Eye size={11} className="text-primary" />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Live Preview</span>
+    <div className="w-full rounded-xl border border-border bg-card overflow-hidden">
+      {/* Outer header */}
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-1.5">
+            <Eye size={12} className="text-primary" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Live Preview</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5">What your prospect sees</p>
         </div>
+        {previewUrl && (
+          <a
+            href={previewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] text-primary hover:underline flex items-center gap-1"
+          >
+            Open <ExternalLink size={9} />
+          </a>
+        )}
       </div>
 
-      <div className="p-3 space-y-3">
-        {/* Logo */}
-        <div className="flex items-center gap-1.5 justify-center">
-          <img src={logoImg} alt="" className="h-4 w-4" />
-          <span className="font-heading font-bold text-[11px]">Nevorai</span>
-          <span className="font-heading font-extrabold text-primary text-[11px]" style={{ fontStyle: "italic" }}>Flow</span>
+      {/* Device mockup frame */}
+      <div className="m-3 rounded-lg border border-border bg-background overflow-hidden">
+        {/* Mini navbar */}
+        <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-muted/30">
+          <span className="text-[9px] font-heading font-bold text-muted-foreground tracking-wide">nFlow</span>
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <Share2 size={8} />
+            <span className="text-[8px]">Share</span>
+          </div>
         </div>
 
-        {/* Title */}
-        <h2 className="font-heading font-extrabold text-center text-sm leading-tight">
-          {funnel.title || "Your Funnel Title"}
-        </h2>
-        {funnel.description && (
-          <p className="text-[10px] text-white/60 text-center">{funnel.description}</p>
-        )}
+        <div className="p-2.5 space-y-2.5">
+          {/* Funnel title */}
+          <h3 className="font-heading font-extrabold text-center text-[12px] leading-tight text-foreground">
+            {funnel.title || "Your Funnel Title"}
+          </h3>
 
-        {/* Private badge */}
-        {isPrivate && (
-          <div className="flex items-center justify-center gap-1 text-[10px] text-amber-400">
-            <Lock size={10} /> Private · Access Code Required
-          </div>
-        )}
+          {/* Private badge */}
+          {isPrivate && (
+            <div className="flex items-center justify-center gap-1 text-[9px] text-amber-400">
+              <Lock size={8} /> Private
+            </div>
+          )}
 
-        {/* Video placeholder */}
-        {!isMulti && (
-          <div className="aspect-video bg-white/5 rounded-lg flex items-center justify-center border border-white/10">
-            {selectedVideo?.url ? (
-              <video src={selectedVideo.url} className="w-full h-full object-contain rounded-lg" />
-            ) : (
-              <div className="text-center">
-                <Play size={24} className="text-white/30 mx-auto mb-1" />
-                <p className="text-[9px] text-white/30">
-                  {selectedVideo ? selectedVideo.title : "No video selected"}
+          {/* Video thumbnail area */}
+          <div className="aspect-video rounded-lg bg-muted/50 border border-border flex items-center justify-center relative overflow-hidden">
+            {selectedVideo?.thumbnail ? (
+              <img src={selectedVideo.thumbnail} alt="" className="w-full h-full object-cover rounded-lg opacity-60" />
+            ) : null}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+                <Play size={14} className="text-primary ml-0.5" fill="currentColor" />
+              </div>
+            </div>
+            {activeStep && (
+              <div className="absolute bottom-1.5 left-1.5 right-1.5">
+                <p className="text-[9px] font-semibold text-foreground truncate bg-background/70 backdrop-blur-sm rounded px-1.5 py-0.5">
+                  {activeStep.title || `Step ${(activeStep.step_order || 0) + 1}`}
                 </p>
               </div>
             )}
           </div>
-        )}
 
-        {/* Multi-step journey preview */}
-        {isMulti && flowSteps.length > 0 && (
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Layers size={11} className="text-primary" />
-              <span className="text-[10px] font-bold text-white/60 uppercase tracking-wider">Journey</span>
+          {/* Step progress list (multi only) */}
+          {isMulti && activeSteps.length > 0 && (
+            <div className="space-y-1">
+              {visibleSteps.map((step, idx) => {
+                const isActive = idx === activeIdx;
+                const isLocked = idx > activeIdx;
+                return (
+                  <div
+                    key={idx}
+                    className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-[10px] transition-all ${
+                      isActive
+                        ? "bg-primary/10 border-l-2 border-l-primary"
+                        : isLocked
+                        ? "opacity-40"
+                        : ""
+                    }`}
+                  >
+                    <span className="text-[8px] font-bold text-muted-foreground bg-muted rounded-full w-4 h-4 flex items-center justify-center shrink-0">
+                      {idx + 1}
+                    </span>
+                    {isActive ? (
+                      <Play size={8} className="text-primary shrink-0" fill="currentColor" />
+                    ) : (
+                      <Lock size={8} className="text-muted-foreground shrink-0" />
+                    )}
+                    <span className={`truncate flex-1 ${isActive ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                      {step.title || `Step ${idx + 1}`}
+                    </span>
+                    {step.access_code_enabled && (
+                      <span className="text-amber-400 shrink-0" title="Requires access code">
+                        <Lock size={8} />
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+              {hiddenCount > 0 && (
+                <p className="text-[9px] text-muted-foreground text-center py-1">+ {hiddenCount} more steps</p>
+              )}
             </div>
-            {flowSteps.map((step, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-[11px]"
-                style={{
-                  background: idx === 0 ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.04)",
-                  border: idx === 0 ? "1px solid rgba(34,197,94,0.25)" : "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                {idx === 0 ? (
-                  <Play size={10} className="text-green-400 shrink-0" />
-                ) : (
-                  <Lock size={10} className="text-white/30 shrink-0" />
-                )}
-                <span className={idx === 0 ? "text-white font-medium" : "text-white/40"}>
-                  {step.title || `Step ${idx + 1}`}
-                </span>
-                {step.access_code_enabled && (
-                  <span title="Locked with code" className="ml-auto text-amber-400 inline-flex items-center">
-                    <Lock size={9} />
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+          )}
 
-        {/* Lead form preview */}
-        {!isPrivate && leadForm.capture_enabled && (
-          <div className="rounded-lg p-3 space-y-2" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <p className="text-[10px] font-bold text-white/60 uppercase tracking-wider">Lead Form</p>
-            {leadForm.show_name && <div className="h-7 rounded bg-white/5 border border-white/10 px-2 flex items-center text-[10px] text-white/30">Full Name</div>}
-            {leadForm.show_phone && <div className="h-7 rounded bg-white/5 border border-white/10 px-2 flex items-center text-[10px] text-white/30">Phone Number</div>}
-            {leadForm.show_email && <div className="h-7 rounded bg-white/5 border border-white/10 px-2 flex items-center text-[10px] text-white/30">Email Address</div>}
-            {leadForm.show_city && <div className="h-7 rounded bg-white/5 border border-white/10 px-2 flex items-center text-[10px] text-white/30">City</div>}
-            {leadForm.show_custom && <div className="h-7 rounded bg-white/5 border border-white/10 px-2 flex items-center text-[10px] text-white/30">{leadForm.custom_field_label || "Custom Field"}</div>}
-          </div>
-        )}
+          {/* Lead form (conditional) */}
+          {leadForm.capture_enabled && !isPrivate && (
+            <div className="space-y-1.5 pt-1.5 border-t border-border">
+              <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-wider">Lead Form</p>
+              {leadForm.show_name && <div className="h-6 rounded bg-muted border border-border px-2 flex items-center text-[9px] text-muted-foreground">Full Name</div>}
+              {leadForm.show_phone && <div className="h-6 rounded bg-muted border border-border px-2 flex items-center text-[9px] text-muted-foreground">Phone Number</div>}
+              {leadForm.show_email && <div className="h-6 rounded bg-muted border border-border px-2 flex items-center text-[9px] text-muted-foreground">Email</div>}
+              {leadForm.show_city && <div className="h-6 rounded bg-muted border border-border px-2 flex items-center text-[9px] text-muted-foreground">City</div>}
+              {leadForm.show_custom && <div className="h-6 rounded bg-muted border border-border px-2 flex items-center text-[9px] text-muted-foreground">{leadForm.custom_field_label || "Custom"}</div>}
+            </div>
+          )}
 
-        {/* Private lead form preview */}
-        {isPrivate && (
-          <div className="rounded-lg p-3 space-y-2" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <p className="text-[10px] font-bold text-white/60 uppercase tracking-wider">Viewer Registration</p>
-            <div className="h-7 rounded bg-white/5 border border-white/10 px-2 flex items-center text-[10px] text-white/30">Full Name</div>
-            <div className="h-7 rounded bg-white/5 border border-white/10 px-2 flex items-center text-[10px] text-white/30">Phone Number</div>
-            {funnel.required_fields.email && <div className="h-7 rounded bg-white/5 border border-white/10 px-2 flex items-center text-[10px] text-white/30">Email Address</div>}
-            {funnel.required_fields.city && <div className="h-7 rounded bg-white/5 border border-white/10 px-2 flex items-center text-[10px] text-white/30">City</div>}
-            {funnel.required_fields.state && <div className="h-7 rounded bg-white/5 border border-white/10 px-2 flex items-center text-[10px] text-white/30">State</div>}
-            {funnel.required_fields.whatsapp && <div className="h-7 rounded bg-white/5 border border-white/10 px-2 flex items-center text-[10px] text-white/30">WhatsApp Number</div>}
-          </div>
-        )}
+          {/* Private registration */}
+          {isPrivate && (
+            <div className="space-y-1.5 pt-1.5 border-t border-border">
+              <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-wider">Registration</p>
+              <div className="h-6 rounded bg-muted border border-border px-2 flex items-center text-[9px] text-muted-foreground">Full Name</div>
+              <div className="h-6 rounded bg-muted border border-border px-2 flex items-center text-[9px] text-muted-foreground">Phone</div>
+              {funnel.required_fields.email && <div className="h-6 rounded bg-muted border border-border px-2 flex items-center text-[9px] text-muted-foreground">Email</div>}
+            </div>
+          )}
 
-        {/* CTA */}
-        {funnel.cta_enabled && !isMulti && (
-          <div className="w-full py-2.5 rounded-lg bg-primary text-center text-[11px] font-bold text-primary-foreground">
-            {funnel.cta_text || "Get Started"} →
-          </div>
-        )}
-
-        {/* Contact buttons */}
-        {funnel.show_contact_buttons && (funnel.contact_whatsapp || funnel.contact_phone) && (
-          <div className="flex gap-2">
-            {funnel.contact_whatsapp && (
-              <div className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-semibold" style={{ background: "rgba(37,211,102,0.15)", color: "#25d366", border: "1px solid rgba(37,211,102,0.2)" }}>
-                <MessageCircle size={11} /> WhatsApp
-              </div>
-            )}
-            {funnel.contact_phone && (
-              <div className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-semibold" style={{ background: "rgba(255,255,255,0.06)", color: "#fff", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <PhoneIcon size={11} /> Call
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Payment indicator */}
-        {funnel.payment_enabled && (
-          <div className="text-center py-2 rounded-lg text-[10px] text-amber-400" style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.15)" }}>
-            💳 Payment gate enabled
-          </div>
-        )}
+          {/* CTA */}
+          {funnel.cta_enabled && !isMulti && (
+            <div className="w-full py-1.5 rounded-md bg-primary text-center text-[10px] font-bold text-primary-foreground">
+              {funnel.cta_text || "Get Started"} →
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Bottom note */}
+      <p className="text-[9px] text-muted-foreground text-center pb-3 px-3">
+        Prospects see this exact experience
+      </p>
     </div>
   );
 };
