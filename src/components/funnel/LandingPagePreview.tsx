@@ -296,6 +296,11 @@ export const LandingPagePreview = ({
           <>
             {/* Page sections */}
             <div className="space-y-5">
+              {form.access_code_enabled && (
+                <div className="rounded-md border border-current/20 bg-current/5 px-2.5 py-1.5 text-[10px] flex items-center gap-1.5 opacity-80">
+                  <Lock size={11} /> Private page · viewers must enter access code
+                </div>
+              )}
               {sections.length > 0 ? (
                 sections.map(renderSection)
               ) : (
