@@ -629,6 +629,7 @@ export type Database = {
       }
       funnel_step_progress: {
         Row: {
+          access_code_unlocked: boolean
           completed_at: string | null
           created_at: string
           funnel_id: string
@@ -647,6 +648,7 @@ export type Database = {
           watched_percentage: number | null
         }
         Insert: {
+          access_code_unlocked?: boolean
           completed_at?: string | null
           created_at?: string
           funnel_id: string
@@ -665,6 +667,7 @@ export type Database = {
           watched_percentage?: number | null
         }
         Update: {
+          access_code_unlocked?: boolean
           completed_at?: string | null
           created_at?: string
           funnel_id?: string
@@ -708,6 +711,8 @@ export type Database = {
       }
       funnel_steps: {
         Row: {
+          access_code_enabled: boolean
+          access_code_plain: string | null
           between_step_audio_enabled: boolean | null
           between_step_audio_url: string | null
           between_step_message: string | null
@@ -720,6 +725,11 @@ export type Database = {
           funnel_id: string
           id: string
           is_active: boolean
+          speaker_bio: string | null
+          speaker_mode_step: string
+          speaker_name_custom: string | null
+          speaker_photo_url_custom: string | null
+          speaker_title: string | null
           step_order: number
           step_type: string
           title: string
@@ -731,6 +741,8 @@ export type Database = {
           video_asset_id: string | null
         }
         Insert: {
+          access_code_enabled?: boolean
+          access_code_plain?: string | null
           between_step_audio_enabled?: boolean | null
           between_step_audio_url?: string | null
           between_step_message?: string | null
@@ -743,6 +755,11 @@ export type Database = {
           funnel_id: string
           id?: string
           is_active?: boolean
+          speaker_bio?: string | null
+          speaker_mode_step?: string
+          speaker_name_custom?: string | null
+          speaker_photo_url_custom?: string | null
+          speaker_title?: string | null
           step_order?: number
           step_type?: string
           title?: string
@@ -754,6 +771,8 @@ export type Database = {
           video_asset_id?: string | null
         }
         Update: {
+          access_code_enabled?: boolean
+          access_code_plain?: string | null
           between_step_audio_enabled?: boolean | null
           between_step_audio_url?: string | null
           between_step_message?: string | null
@@ -766,6 +785,11 @@ export type Database = {
           funnel_id?: string
           id?: string
           is_active?: boolean
+          speaker_bio?: string | null
+          speaker_mode_step?: string
+          speaker_name_custom?: string | null
+          speaker_photo_url_custom?: string | null
+          speaker_title?: string | null
           step_order?: number
           step_type?: string
           title?: string
@@ -1263,6 +1287,8 @@ export type Database = {
       }
       landing_pages: {
         Row: {
+          access_code_enabled: boolean
+          access_code_plain: string | null
           allow_login: boolean | null
           allow_signup: boolean | null
           background_style: string | null
@@ -1324,6 +1350,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          access_code_enabled?: boolean
+          access_code_plain?: string | null
           allow_login?: boolean | null
           allow_signup?: boolean | null
           background_style?: string | null
@@ -1385,6 +1413,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          access_code_enabled?: boolean
+          access_code_plain?: string | null
           allow_login?: boolean | null
           allow_signup?: boolean | null
           background_style?: string | null
@@ -2151,6 +2181,39 @@ export type Database = {
           subscription_id?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      step_access_logs: {
+        Row: {
+          attempted_at: string
+          code_attempted: string | null
+          funnel_id: string
+          funnel_step_id: string
+          id: string
+          ip_address: string | null
+          session_id: string | null
+          success: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          code_attempted?: string | null
+          funnel_id: string
+          funnel_step_id: string
+          id?: string
+          ip_address?: string | null
+          session_id?: string | null
+          success?: boolean
+        }
+        Update: {
+          attempted_at?: string
+          code_attempted?: string | null
+          funnel_id?: string
+          funnel_step_id?: string
+          id?: string
+          ip_address?: string | null
+          session_id?: string | null
+          success?: boolean
         }
         Relationships: []
       }
