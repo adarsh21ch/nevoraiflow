@@ -16,7 +16,7 @@ interface FunnelLivePreviewProps {
     required_fields: { email: boolean; city: boolean; state: boolean; whatsapp: boolean };
   };
   selectedVideo: { title: string; url: string | null } | null;
-  flowSteps: { title: string; step_type: string; step_order: number }[];
+  flowSteps: { title: string; step_type: string; step_order: number; access_code_enabled?: boolean }[];
   leadForm: {
     capture_enabled: boolean;
     show_name: boolean;
