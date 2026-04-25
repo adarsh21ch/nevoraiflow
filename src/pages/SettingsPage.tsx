@@ -108,11 +108,45 @@ const SettingsPage = () => {
           <Link to="/kyc"><Button variant="outline" size="sm">Manage</Button></Link>
         </div>
 
+        <div className="premium-card p-5 space-y-3">
+          <div>
+            <p className="text-sm font-medium">Your data</p>
+            <p className="text-xs text-muted-foreground">Download a copy of everything we store about you, or permanently delete your account.</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="flex-1">
+              <Download size={14} className="mr-1.5" /> {exporting ? "Preparing…" : "Download my data"}
+            </Button>
+            <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)} className="flex-1">
+              <Trash2 size={14} className="mr-1.5" /> Delete account
+            </Button>
+          </div>
+        </div>
+
         <div className="premium-card p-5">
           <Button variant="destructive" className="w-full" onClick={async () => { await signOut(); navigate("/"); }}>
             <LogOut size={16} /> Sign Out
           </Button>
         </div>
+
+        <Dialog open={deleteOpen} onOpenChange={(o) => { setDeleteOpen(o); if (!o) setDeleteConfirm(""); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete account permanently?</DialogTitle>
+              <DialogDescription>
+                This will permanently remove your profile, funnels, leads, landing pages and all related data. This cannot be undone.
+                Type <span className="font-mono font-semibold">DELETE</span> to confirm.
+              </DialogDescription>
+            </DialogHeader>
+            <Input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} placeholder="DELETE" autoFocus />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={handleDelete} disabled={deleteConfirm !== "DELETE" || deleting}>
+                {deleting ? "Deleting…" : "Delete forever"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
