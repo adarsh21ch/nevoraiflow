@@ -1,10 +1,34 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
+import { toast } from "@/hooks/use-toast";
 
+/**
+ * AdminRoute — guards admin pages with continuous role verification.
+ *
+ * Security properties:
+ * - Fails closed: any loading/error state is treated as "not admin yet"
+ * - Continuous re-check via useAdmin (60s interval + on focus/reconnect)
+ * - If a logged-in admin is demoted while viewing admin pages, they are
+ *   immediately bounced to /dashboard with a notice.
+ */
 export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   const { isAdmin, isLoading } = useAdmin();
+  const location = useLocation();
+
+  // Notify user if they lose admin while viewing an admin page
+  useEffect(() => {
+    if (!loading && !isLoading && user && !isAdmin) {
+      toast({
+        title: "Access removed",
+        description: "Your administrator access is no longer active.",
+        variant: "destructive",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, loading, isLoading, user?.id]);
 
   if (loading || isLoading) {
     return (
@@ -14,7 +38,7 @@ export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user) return <Navigate to="/auth" replace state={{ from: location }} />;
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 };
