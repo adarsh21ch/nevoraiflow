@@ -32,6 +32,7 @@ interface FunnelStep {
   // Per-step access code (additive, optional)
   access_code_enabled?: boolean;
   access_code_plain?: string | null;
+  access_code_message?: string | null;
   // Per-step speaker override (additive, optional)
   speaker_mode_step?: string;
   speaker_name_custom?: string | null;
@@ -45,6 +46,9 @@ interface FunnelStep {
   timer_cta_text?: string | null;
   timer_cta_url?: string | null;
   timer_cta_style?: string | null;
+  // Per-step video topics (additive, optional)
+  video_topics_step_enabled?: boolean;
+  video_topics_step?: string[] | null;
 }
 
 interface StepProgress {
@@ -812,6 +816,7 @@ export const MultiStepViewer = ({
                   funnelId={funnel.id}
                   stepId={activeStep.id}
                   stepTitle={activeStep.title}
+                  message={activeStep.access_code_message ?? undefined}
                   sessionId={sessionId.current}
                   isDark={isDark}
                   onSuccess={() =>
@@ -837,6 +842,26 @@ export const MultiStepViewer = ({
                           <CopyNflowLinkButton videoId={activeStep.video_asset_id} />
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Per-step video topics — when scope is per_step */}
+                  {(funnel as any).video_topics_scope === "per_step"
+                    && activeStep.video_topics_step_enabled
+                    && Array.isArray(activeStep.video_topics_step)
+                    && activeStep.video_topics_step.filter((t) => (t || "").trim()).length > 0 && (
+                    <div className="rounded-2xl p-4 mt-3" style={{ background: sc.cardBg, border: `1px solid ${sc.cardBorder}` }}>
+                      <p className="font-heading font-bold text-sm mb-2" style={{ color: sc.text }}>What you'll learn in this step</p>
+                      <div className="space-y-2">
+                        {activeStep.video_topics_step!.filter((t) => (t || "").trim()).map((topic, i) => (
+                          <div key={i} className="flex items-start gap-2.5">
+                            <div className="w-5 h-5 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                              <Check size={11} className="text-emerald-500" />
+                            </div>
+                            <span className="text-sm" style={{ color: sc.text }}>{topic}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -967,6 +992,50 @@ export const MultiStepViewer = ({
                   )}
                 </div>
               )}
+
+              {/* Timer CTA banner — shown while next step is gated by time-delay */}
+              {(() => {
+                if (!activeStep) return null;
+                if (activeProgress?.status !== "completed") return null;
+                const nextIdx = activeStepIndex + 1;
+                if (nextIdx >= steps.length) return null;
+                const next = steps[nextIdx];
+                if (!next?.time_delay_enabled || !next?.time_delay_minutes) return null;
+                if (!next?.timer_cta_enabled || !next?.timer_cta_text) return null;
+                if (getStepStatus(next.id) !== "locked") return null;
+                const completedAt = activeProgress?.completed_at;
+                if (!completedAt) return null;
+                const remainingMs = next.time_delay_minutes * 60 * 1000 - (Date.now() - new Date(completedAt).getTime());
+                if (remainingMs <= 0) return null;
+                const mins = Math.ceil(remainingMs / 60000);
+                const isPrimary = (next.timer_cta_style || "primary") === "primary";
+                return (
+                  <a
+                    href={next.timer_cta_url || "#"}
+                    target={next.timer_cta_url ? "_blank" : undefined}
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-between transition-all"
+                    style={{
+                      background: isPrimary ? "hsl(var(--primary) / 0.12)" : "rgba(148,163,184,0.10)",
+                      border: `1px solid ${isPrimary ? "hsl(var(--primary) / 0.35)" : "rgba(148,163,184,0.25)"}`,
+                      borderRadius: "12px",
+                      padding: "14px 18px",
+                      marginTop: "16px",
+                      textDecoration: "none",
+                    }}
+                  >
+                    <span className="flex flex-col text-left">
+                      <span className="text-sm font-bold" style={{ color: isPrimary ? "hsl(var(--primary))" : (isDark ? "#e2e8f0" : "#0f172a") }}>
+                        {next.timer_cta_text}
+                      </span>
+                      <span className="text-xs mt-0.5" style={{ color: isDark ? "#94a3b8" : "#64748b" }}>
+                        Step {nextIdx + 1} unlocks in ~{mins}m
+                      </span>
+                    </span>
+                    <ChevronRight size={16} style={{ color: isPrimary ? "hsl(var(--primary))" : (isDark ? "#94a3b8" : "#64748b") }} />
+                  </a>
+                );
+              })()}
 
               {/* Next Step Banner */}
               {nextStepUnlocked && (
