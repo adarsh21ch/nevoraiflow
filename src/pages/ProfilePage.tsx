@@ -18,6 +18,7 @@ import { Link } from "react-router-dom";
 import { usePlan } from "@/hooks/usePlan";
 import { format } from "date-fns";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { sanitizeFields, normalizePhone } from "@/lib/sanitize";
 
 const ProfilePage = () => {
   useDocumentTitle("Profile");
@@ -43,8 +44,14 @@ const ProfilePage = () => {
 
   const handleSave = async () => {
     if (!user) return;
+    // Strip any HTML/JS injection from text fields before persisting.
+    const cleanForm = sanitizeFields(form, [
+      "full_name", "city", "bio", "company", "instagram_url",
+    ]);
+    cleanForm.phone = normalizePhone(form.phone);
+    cleanForm.whatsapp_number = normalizePhone(form.whatsapp_number);
     setLoading(true);
-    const { error } = await supabase.from("profiles").update(form).eq("id", user.id);
+    const { error } = await supabase.from("profiles").update(cleanForm).eq("id", user.id);
     setLoading(false);
     if (error) { toast.error("Failed to save"); return; }
     await refreshProfile();
