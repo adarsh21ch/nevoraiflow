@@ -935,7 +935,35 @@ const FunnelEditor = () => {
       <h2 className="text-lg font-heading font-semibold">Speaker</h2>
       <p className="text-sm text-muted-foreground">Choose how the speaker is shown on your funnel page.</p>
       <div className="space-y-5 mt-4">
-        {/* Mode selector */}
+        {/* Scope selector — multi-step only */}
+        {isMulti && (
+          <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+            <Label className="font-semibold">Speaker Mode</Label>
+            <div className="flex rounded-xl border border-border overflow-hidden">
+              {(["global", "per_step"] as const).map((scope) => (
+                <button
+                  key={scope}
+                  onClick={() => update("speaker_scope", scope)}
+                  className={`flex-1 py-2.5 text-sm font-semibold transition-all ${
+                    funnel.speaker_scope === scope
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {scope === "global" ? "🌍 One speaker for all steps" : "🎯 Different per step"}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {isMulti && funnel.speaker_scope === "per_step" && (
+          <PerStepSpeakerAssignment steps={flowSteps as any} setSteps={setFlowSteps as any} />
+        )}
+
+        {(funnel.speaker_scope === "global" || !isMulti) && (
+          <>
+            {/* Mode selector */}
         <div className="flex rounded-xl border border-border overflow-hidden">
           {(["none", "account", "custom"] as const).map((mode) => (
             <button
