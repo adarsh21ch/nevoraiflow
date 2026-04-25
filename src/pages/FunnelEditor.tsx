@@ -657,65 +657,109 @@ const FunnelEditor = () => {
               </Button>
             </div>
           ) : (
-            <div className="space-y-2.5">
+            <div className="space-y-0">
               {flowSteps.map((fs, idx) => {
                 const meta = getStepTypeMeta(fs.step_type);
+                const isEditing = editingStepIdx === idx;
+                const unlockBadge = fs.unlock_condition === "full_watch" ? "Full watch" :
+                  fs.unlock_condition === "percentage" ? `${fs.unlock_percentage || 80}%` :
+                  fs.unlock_condition === "time_spent" ? `${fs.unlock_percentage || 10} min` :
+                  UNLOCK_LABELS[fs.unlock_rule_type] || "Auto";
                 return (
-                  <div
-                    key={idx}
-                    className="group flex flex-col gap-2.5 p-4 rounded-[14px] border border-border hover:border-primary/30 bg-card/50 transition-all"
-                  >
-                    {/* Top row */}
-                    <div className="flex items-center gap-3">
-                      {/* Reorder */}
-                      <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => moveStep(idx, idx - 1)} disabled={idx === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors p-0.5"><ChevronUp size={12} /></button>
-                        <button onClick={() => moveStep(idx, idx + 1)} disabled={idx === flowSteps.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors p-0.5"><ChevronDown size={12} /></button>
-                      </div>
-
-                      {/* Icon */}
-                      <div className={`w-8 h-8 rounded-lg ${meta.bg} flex items-center justify-center shrink-0`}>
-                        <meta.icon size={16} className={meta.color} />
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">Step {idx + 1}</span>
-                          {!fs.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Inactive</span>}
+                  <div key={idx}>
+                    <div
+                      className={`group relative rounded-xl transition-all duration-150 ${
+                        isEditing
+                          ? "border-l-[3px] border-l-primary border-t border-r border-b border-border bg-card shadow-lg shadow-primary/5"
+                          : "border border-border bg-card hover:border-primary/30"
+                      }`}
+                      style={{ padding: "16px 20px" }}
+                    >
+                      {/* Top row */}
+                      <div className="flex items-center gap-3">
+                        {/* Reorder */}
+                        <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => moveStep(idx, idx - 1)} disabled={idx === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors p-0.5"><ChevronUp size={12} /></button>
+                          <button onClick={() => moveStep(idx, idx + 1)} disabled={idx === flowSteps.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors p-0.5"><ChevronDown size={12} /></button>
                         </div>
-                        <p className="text-[15px] font-semibold text-foreground truncate mt-0.5">
-                          {fs.title || <span className="text-muted-foreground italic">Untitled {meta.label}</span>}
-                        </p>
+
+                        <div className={`w-9 h-9 rounded-lg ${meta.bg} flex items-center justify-center shrink-0`}>
+                          <meta.icon size={16} className={meta.color} />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Step {idx + 1}</span>
+                            {!fs.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive">Inactive</span>}
+                          </div>
+                          <p className="text-[15px] font-semibold text-foreground truncate mt-1">
+                            {fs.title || <span className="text-muted-foreground italic">Untitled {meta.label}</span>}
+                          </p>
+                        </div>
+
+                        <Button
+                          variant={isEditing ? "default" : "outline"}
+                          size="sm"
+                          className="h-8 text-xs shrink-0 gap-1.5"
+                          onClick={() => setEditingStepIdx(isEditing ? null : idx)}
+                        >
+                          <Pencil size={12} />
+                          {isEditing ? "Editing" : "Edit"}
+                        </Button>
                       </div>
 
-                      {/* Edit button */}
-                      <Button variant="outline" size="sm" className="h-8 text-xs shrink-0" onClick={() => setEditingStepIdx(idx)}>
-                        Edit
-                      </Button>
-                    </div>
-
-                    {/* Bottom row: type badge + unlock rule + actions */}
-                    <div className="flex items-center justify-between pl-[52px]">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground">
-                          {meta.label}
-                        </span>
-                        {idx > 0 && (
-                          <span className="text-[12px] text-muted-foreground flex items-center gap-1">
-                            <Lock size={9} /> {UNLOCK_LABELS[fs.unlock_rule_type] || "Auto"}
+                      {/* Bottom row: badges */}
+                      <div className="flex items-center justify-between mt-3 pl-[52px]">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-primary/10 text-primary">
+                            {meta.label}
                           </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => duplicateStep(idx)}>
-                          <Copy size={13} />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeFlowStep(idx)}>
-                          <Trash2 size={13} />
-                        </Button>
+                          {idx > 0 && (
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-muted text-muted-foreground flex items-center gap-1">
+                              <Lock size={9} />
+                              {unlockBadge}
+                            </span>
+                          )}
+                          {fs.access_code_enabled && (
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-500 flex items-center gap-1">
+                              🔐 Code
+                            </span>
+                          )}
+                          {fs.time_delay_enabled && (fs.time_delay_minutes || 0) > 0 && (
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-600 flex items-center gap-1">
+                              ⏱ {fs.time_delay_minutes}m wait
+                            </span>
+                          )}
+                          {fs.speaker_mode_step && fs.speaker_mode_step !== "inherit" && fs.speaker_mode_step !== "none" && (
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-blue-500/10 text-blue-400 flex items-center gap-1">
+                              👤 {fs.speaker_mode_step === "account" ? "Account" : fs.speaker_mode_step === "override" || fs.speaker_mode_step === "custom" ? "Custom" : fs.speaker_mode_step}
+                            </span>
+                          )}
+                          {fs.video_topics_step_enabled && (fs.video_topics_step?.length || 0) > 0 && (
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-500 flex items-center gap-1">
+                              📋 {fs.video_topics_step?.length} topics
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => duplicateStep(idx)}>
+                            <Copy size={13} />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeFlowStep(idx)}>
+                            <Trash2 size={13} />
+                          </Button>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Vertical connector */}
+                    {idx < flowSteps.length - 1 && (
+                      <div className="flex justify-center py-1">
+                        <div className="w-px h-5 bg-border relative">
+                          <ChevronDown size={10} className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-muted-foreground" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
