@@ -944,6 +944,8 @@ export const MultiStepViewer = ({
                   Next Step <ChevronRight size={16} />
                 </Button>
               )}
+                </>
+              )}
             </div>
           )}
 
