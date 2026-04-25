@@ -781,7 +781,7 @@ const AuthPage = () => {
                     </button>
                   </div>
                   <p className="text-xs" style={{ color: "#8899AA" }}>
-                    Minimum 6 characters. You can change it anytime from Settings.
+                    Minimum 8 characters. You can change it anytime from Settings.
                   </p>
                 </div>
 
@@ -790,7 +790,7 @@ const AuthPage = () => {
                   variant="hero"
                   className="w-full"
                   size="lg"
-                  disabled={submitting || form.password.length < 6}
+                  disabled={submitting || form.password.length < 8}
                   style={{ borderRadius: "12px" }}
                 >
                   {submitting ? (
