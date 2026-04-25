@@ -1,153 +1,113 @@
-## Found it: [SMART INCOME FUNNEL](/projects/cb4e093e-0bcb-428f-b101-0f9ed06766a5)
+## Goal
 
-I scanned both codebases and identified what's new in Smart Income that nFlow doesn't have. Here's the concrete diff and the porting plan.
+Bring nFlow's Funnel Builder to feature parity with the upgraded **Smart Income Program** funnel builder — same UX, same options, same backend logic — without breaking any existing nFlow funnels (all changes additive).
 
----
-
-## What's actually new in Smart Income (worth porting)
-
-### A. Per-step access codes — biggest unlock
-**New files:** `StepCodeGate.tsx`, edge function `verify-step-access-code`
-**What it does:** Each step inside a multi-step funnel can have its own access code (not just the funnel itself). Viewer must enter the right code to unlock that specific step. Includes 5-attempt lockout, shake animation, show/hide eye toggle.
-
-### B. Per-step speakers
-**New file:** `PerStepSpeakerAssignment.tsx`
-**What it does:** Today nFlow has one speaker per funnel. Smart Income lets each step have its own speaker (name, title, bio, photo) — useful for masterclasses with multiple instructors. Includes "copy speaker from another step" shortcut.
-
-### C. Landing page access codes
-**New files:** `LandingPageCodeGate.tsx`, edge function `verify-landing-page-code`
-**What it does:** Lock an entire landing page behind a code (today nFlow only locks funnels).
-
-### D. Date-of-birth input field
-**New file:** `DateOfBirthInput.tsx`
-**What it does:** A proper 3-segment DD/MM/YYYY input with validation, used as a new lead-form/registration field option.
-
-### E. Better post-submit video player
-**New file:** `landing/PostSubmitVideoPlayer.tsx`
-**What it does:** Custom-built player for the "thank you" video after registration — autoplay-muted, unmute hint, custom seek bar, fullscreen, auto-hiding controls. Way more polished than the bare `<video>` tag nFlow uses today.
-
-### F. Editor UX improvements
-- `FunnelEditor.tsx` is **1,283 lines** in Smart Income vs nFlow's current size — likely refined wizard flow, better non-tech copy, clearer step labels
-- `LandingPageEditor.tsx` — same story
-- `TestimonialsBuilderStep.tsx` (386 lines) and `TestimonialsViewer.tsx` (233 lines) — refinements to the testimonial UX you already have
-
-### G. Misc utilities
-- `auth-email-hook` edge function (custom auth emails)
-- `verify-invite-code` (admin-issued invite codes — likely client-specific, will skip)
+I've already read both projects' `FunnelEditor.tsx`, `StepConfigPanel.tsx`, `FunnelLivePreview.tsx`, `PerStepSpeakerAssignment.tsx`, `StepTypeSelector.tsx`, and the live nFlow DB schema. Below is the exact gap and how to close it.
 
 ---
 
-## What I'm NOT porting (client-specific to Smart Income)
+## What's missing in nFlow (vs SIP)
 
-- Pages: `MemberHome.tsx`, `MemberProfile.tsx`, `SubAdminAccessPage.tsx`, `AdminProgramPage.tsx`, `AdminInviteCodesPage.tsx`, `AdminLandingPageManager.tsx`
-- Component: `WhySmartIncome.tsx` (branded landing section)
-- `get-member-content` and `verify-invite-code` edge functions (gated-program model, not nFlow's market)
-- The `logo.png` asset, brand colors, copy on landing pages
-- "Smart Income"-named tables/columns, if any
+### A. Step Config Panel (right-side sheet when editing a step)
+nFlow has access codes + speaker overrides only. SIP adds:
+- **Unlock Condition tabs** — "Full Watch / Percentage / Time Spent" (silently mapped to legacy `unlock_rule_type/value` so old funnels keep working)
+- **Extra Gates collapsible**:
+  - Waiting period after unlock (`time_delay_enabled`, `time_delay_minutes`)
+  - Timer CTA during wait (`timer_cta_enabled/text/url/style`)
+  - Access Code Gate with **hashed code** (SHA-256), show/hide eye, and viewer message
+- **Per-step Video Topics ("Key Points")** — array of `{icon, text}`, max 10
+- **Between Steps collapsible** (Audio Note + Text Message) — already in DB, needs UI
+- Section summaries shown when collapsed (e.g. "30m wait · Code")
 
----
+### B. Speaker tab
+- New **Speaker Scope** toggle (multi-step only): "🌍 One speaker for all steps" vs "🎯 Different per step"
+- When per-step is chosen, render the new **`PerStepSpeakerAssignment`** component (per-step cards with photo upload, name/title/bio, copy-from-step shortcut)
 
-## Database changes (additive only — won't touch existing data)
+### C. Video Topics tab
+- New **Topics Scope** toggle: "Same for all steps" vs "Different per step"
+- When "different per step" is chosen, the global topics editor is replaced with a hint pointing to per-step Key Points inside each step
 
-I'll add these to nFlow with safe defaults:
+### D. Build Journey screen (step list)
+- Redesigned step cards: thicker gold left-border when active, badge row (step type, unlock rule, 🔐 Code, ⏱ wait, 👤 speaker, 📋 topics)
+- Vertical connector line + chevron between cards
+- Reorder up/down buttons appear on hover
+- "Add Step" CTA card with subline copy
 
-```text
-funnel_steps:
-  + access_code_enabled  bool       DEFAULT false
-  + access_code_plain    text       NULL
-  + speaker_mode_step    text       DEFAULT 'inherit'
-  + speaker_name_custom  text       NULL
-  + speaker_title        text       NULL
-  + speaker_bio          text       NULL
-  + speaker_photo_url_custom  text  NULL
+### E. Live Preview panel (right side)
+- Replace nFlow's current dark panel with SIP's lighter card-style preview that:
+  - Mirrors the **currently edited step** (uses `editingStepIdx`)
+  - Shows mini navbar with "nFlow" + Share, "Open" link to public URL
+  - Shows video thumbnail + step progress list (highlights active step)
+  - Footer note: "Prospects see this exact experience"
 
-landing_pages:
-  + access_code_enabled  bool       DEFAULT false
-  + access_code_plain    text       NULL
+### F. Database
+nFlow already has all access-code + speaker-override columns from prior migrations. Missing columns to add (additive, all nullable/defaulted):
 
-funnel_step_progress:
-  + access_code_unlocked bool       DEFAULT false
-```
+`funnel_steps`:
+- `unlock_condition text default 'full_watch'`
+- `unlock_percentage int default 80`
+- `time_delay_enabled boolean default false`
+- `time_delay_minutes int default 0`
+- `video_topics_step_enabled boolean default false`
+- `video_topics_step jsonb default '[]'`
+- `timer_cta_enabled boolean default false`
+- `timer_cta_text text`, `timer_cta_url text`, `timer_cta_style text default 'gold'`
+- `access_code_hash text` (replace plaintext with SHA-256 hash; keep `access_code_plain` for back-compat read)
+- `access_code_message text`
 
-Plus 1 new tracking table for step-code attempts (rate-limit / audit), modeled on existing `funnel_access_logs`.
+`funnels`:
+- `speaker_scope text default 'global'` (`global` | `per_step`)
+- `video_topics_scope text default 'global'` (`global` | `per_step`)
 
-**No table drops. No column drops. No RLS changes to existing tables.** New tables get fresh RLS policies (commented inline as you requested).
-
----
-
-## Edge functions to add
-
-| Name | Purpose | Notes |
-|---|---|---|
-| `verify-step-access-code` | Validate per-step code, log attempt, mark progress unlocked | Mirrors existing `verify-funnel-code` pattern |
-| `verify-landing-page-code` | Validate landing-page-level code | Same pattern |
-
-Both reuse `verify_jwt = false` + the project's `corsHeaders` pattern. Inputs validated. Constant-time compare for codes.
-
----
-
-## Execution plan (in order)
-
-```text
-PHASE 1 — DB migrations (additive)
-  1.1 Add columns to funnel_steps, landing_pages, funnel_step_progress
-  1.2 Create step_access_logs table + RLS policies (with inline comments)
-
-PHASE 2 — Edge functions
-  2.1 verify-step-access-code
-  2.2 verify-landing-page-code
-
-PHASE 3 — Viewer-side components (port + restrip branding)
-  3.1 StepCodeGate.tsx       (uses nFlow design tokens, not Smart Income's #0a0a0a)
-  3.2 LandingPageCodeGate.tsx (uses nFlow logo, not Smart Income's logo.png)
-  3.3 DateOfBirthInput.tsx   (drop-in, no branding)
-  3.4 PostSubmitVideoPlayer.tsx (drop-in)
-
-PHASE 4 — Wire viewers
-  4.1 MultiStepViewer.tsx — show StepCodeGate when step.access_code_enabled
-  4.2 PublicLandingPage.tsx — show LandingPageCodeGate when page.access_code_enabled
-  4.3 PublicLandingPage.tsx (post-submit) — swap raw <video> for PostSubmitVideoPlayer
-  4.4 PrivateLeadForm + landing page form — add optional DOB field
-
-PHASE 5 — Editor-side (builder UX)
-  5.1 PerStepSpeakerAssignment.tsx — port + integrate into FunnelEditor multi-step flow
-  5.2 FunnelEditor — add "Access code for this step" toggle in StepConfigPanel
-  5.3 LandingPageEditor — add "Lock with access code" toggle
-  5.4 LandingPageEditor — add DOB to optional fields list
-  5.5 Funnel/Landing form configs — add "Date of Birth" field option
-
-PHASE 6 — Live preview parity
-  6.1 FunnelLivePreview — render lock icon on coded steps + per-step speaker badge
-  6.2 LandingPagePreview — render lock state when access_code_enabled
-
-PHASE 7 — Smoke test
-  7.1 Existing funnels still load (no access codes set → no gate shown)
-  7.2 Existing landing pages still load
-  7.3 Existing testimonials unchanged
-  7.4 Brand-new step code: create → publish → enter code → unlock → progress
-```
-
-**Pause point:** I will stop after **Phase 1.1** and show you the exact migration SQL before running it (per your standing rule about RLS / DB rewrites).
+### G. Public viewer (`MultiStepViewer`, `PublicFunnel`)
+- Honor new unlock conditions (`full_watch` / `percentage` / `time_spent`)
+- Show waiting-period countdown + Timer CTA when `time_delay_enabled`
+- Verify access code via SHA-256 hash (update existing `verify-step-access-code` edge function to hash-compare instead of plaintext compare; keep plaintext fallback for already-saved funnels)
+- Render per-step speaker override and per-step Key Points when present
 
 ---
 
-## What I will NOT touch (per your rules + recent security work)
+## Implementation order
 
-- Auth flow (just hardened)
-- Payment verification (just hardened)
-- Admin panel routing/RBAC (just hardened)
-- KYC, refunds, gateway settings
-- Testimonials core schema (already matches)
-- nFlow brand tokens (`#080C1A`, lime→blue gradient, Plus Jakarta Sans)
+1. **DB migration** — add the columns above to `funnel_steps` and `funnels` (additive, defaults safe).
+2. **Update `verify-step-access-code` edge function** — accept SHA-256 hash, fall back to plaintext for legacy rows.
+3. **Port `PerStepSpeakerAssignment.tsx`** as new file in `src/components/funnel/`.
+4. **Rewrite `StepConfigPanel.tsx`** to match SIP layout (Step Info → Unlock Condition → Extra Gates → Speaker per step → Key Points → Between Steps → Step Active). Hash access codes on save.
+5. **Update `FunnelEditor.tsx`**:
+   - Extend `FlowStep` interface + `funnel` state with new fields (`speaker_scope`, `video_topics_scope`, etc.)
+   - Hydrate from existing rows (defaults preserve old behavior)
+   - Add scope toggles in Speaker step + Video Topics step
+   - Redesigned step cards in Build Journey with badge row + connectors + hover actions
+   - Pass `editingStepIdx` and `userProfile` into preview/config
+   - On save: compute SHA-256 hash for any newly entered access codes
+6. **Replace `FunnelLivePreview.tsx`** with SIP's card-style preview (accepts `previewStepIndex`).
+7. **Update `MultiStepViewer.tsx`**:
+   - New unlock-condition logic (percentage / time-spent)
+   - Time-delay countdown + Timer CTA
+   - Per-step Key Points panel
+   - Per-step speaker override block
+8. **Smoke-test** existing (legacy) funnels load and play unchanged; new funnels can use all new gates and per-step features.
 
 ---
 
-## Estimated scope
+## What stays untouched
 
-- **2 new edge functions**
-- **1 new migration** (~6 columns + 1 small table)
-- **4 new components** ported & rebranded
-- **~6 existing files** modified (editor + viewer wiring)
-- **Zero** breaking changes to existing data, funnels, landing pages, leads, payments
+- Existing routes, auth, plan limits, Razorpay/UPI payment flow, KYC, daily view limiter
+- Landing pages, testimonials, live sessions
+- Database tables other than `funnels` / `funnel_steps`
+- nFlow branding (Plus Jakarta Sans, dark theme, brand gradient) — SIP's Smart-Income-specific styling is stripped; only generic UX upgrades are ported
 
-Approve and I'll start with Phase 1, pause for the migration review, then continue straight through.
+---
+
+## Technical notes
+
+- Access codes are SHA-256 hashed client-side (`crypto.subtle.digest`) before save — matches SIP exactly. Edge function does timing-safe hash comparison; legacy rows with only `access_code_plain` continue to work via fallback.
+- `unlock_condition` is the new source of truth; on every change we silently write the equivalent legacy `unlock_rule_type/value` so the existing viewer + analytics keep working without a flag day.
+- All new step columns are nullable / defaulted, so existing rows hydrate cleanly with no migration data backfill needed.
+- TypeScript types for the new columns will land automatically via `src/integrations/supabase/types.ts` after the migration runs.
+
+---
+
+## Outcome
+
+After this plan, opening any nFlow funnel will show the same upgraded builder you have in Smart Income Program — same wizard layout, same step-config sheet with collapsible sections, same per-step speaker assignment, same Live Preview panel that follows the step you're editing — and your existing funnels will continue to work without any change in behavior.
