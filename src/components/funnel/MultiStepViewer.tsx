@@ -816,6 +816,7 @@ export const MultiStepViewer = ({
                   funnelId={funnel.id}
                   stepId={activeStep.id}
                   stepTitle={activeStep.title}
+                  message={activeStep.access_code_message ?? undefined}
                   sessionId={sessionId.current}
                   isDark={isDark}
                   onSuccess={() =>
