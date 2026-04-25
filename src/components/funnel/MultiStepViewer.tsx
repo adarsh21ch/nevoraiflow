@@ -38,6 +38,13 @@ interface FunnelStep {
   speaker_title?: string | null;
   speaker_bio?: string | null;
   speaker_photo_url_custom?: string | null;
+  // Time-delay gate (additive, optional)
+  time_delay_enabled?: boolean;
+  time_delay_minutes?: number;
+  timer_cta_enabled?: boolean;
+  timer_cta_text?: string | null;
+  timer_cta_url?: string | null;
+  timer_cta_style?: string | null;
 }
 
 interface StepProgress {
@@ -132,6 +139,16 @@ export const MultiStepViewer = ({
     } catch {}
     return map;
   });
+
+  // Tick every 30s when any step has an active time-delay gate, so countdown
+  // hints stay accurate and the step auto-unlocks visually when the wait ends.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const hasDelay = steps.some((s) => s.time_delay_enabled && (s.time_delay_minutes || 0) > 0);
+    if (!hasDelay) return;
+    const id = setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => clearInterval(id);
+  }, [steps]);
 
   useEffect(() => {
     const loadProgress = async () => {
@@ -250,28 +267,51 @@ export const MultiStepViewer = ({
 
   const checkUnlockCondition = (step: FunnelStep, prevIndex: number): boolean => {
     const rule = step.unlock_rule_type;
-    if (rule === "auto") return true;
     if (rule === "manual") return false;
 
     const prevStep = steps[prevIndex];
     const prevProgress = progressMap[prevStep.id];
-    if (!prevProgress) return false;
 
-    switch (rule) {
-      case "watch_complete":
-        return prevProgress.status === "completed";
-      case "watch_seconds":
-        return prevProgress.max_watched_seconds >= parseInt(step.unlock_rule_value || "0");
-      case "watch_percent":
-        return prevProgress.watched_percentage >= parseInt(step.unlock_rule_value || "0");
-      case "cta_click":
-      case "lead_submitted":
-      case "payment_submitted":
-      case "booking_done":
-        return prevProgress.status === "completed";
-      default:
-        return true;
+    // Evaluate the watch/CTA condition first
+    let conditionMet = false;
+    if (rule === "auto") {
+      conditionMet = true;
+    } else if (!prevProgress) {
+      conditionMet = false;
+    } else {
+      switch (rule) {
+        case "watch_complete":
+          conditionMet = prevProgress.status === "completed";
+          break;
+        case "watch_seconds":
+          conditionMet = prevProgress.max_watched_seconds >= parseInt(step.unlock_rule_value || "0");
+          break;
+        case "watch_percent":
+          conditionMet = prevProgress.watched_percentage >= parseInt(step.unlock_rule_value || "0");
+          break;
+        case "cta_click":
+        case "lead_submitted":
+        case "payment_submitted":
+        case "booking_done":
+          conditionMet = prevProgress.status === "completed";
+          break;
+        default:
+          conditionMet = true;
+      }
     }
+
+    if (!conditionMet) return false;
+
+    // Time-delay gate (additive): wait N minutes after previous step completion
+    if (step.time_delay_enabled && step.time_delay_minutes && step.time_delay_minutes > 0) {
+      const completedAt = prevProgress?.completed_at;
+      if (!completedAt) return false;
+      const delayMs = step.time_delay_minutes * 60 * 1000;
+      const elapsed = Date.now() - new Date(completedAt).getTime();
+      if (elapsed < delayMs) return false;
+    }
+
+    return true;
   };
 
   const handleVideoTimeUpdate = useCallback((stepIndex: number, currentTime: number, duration: number) => {
@@ -391,6 +431,22 @@ export const MultiStepViewer = ({
     const status = getStepStatus(step.id);
     if (status === "completed") return null;
     if (status === "locked") {
+      // Time-delay countdown takes priority when active and the prior step is done
+      if (step.time_delay_enabled && step.time_delay_minutes && idx > 0) {
+        const prevStep = steps[idx - 1];
+        const prevProgress = progressMap[prevStep.id];
+        if (prevProgress?.completed_at) {
+          const delayMs = step.time_delay_minutes * 60 * 1000;
+          const elapsed = Date.now() - new Date(prevProgress.completed_at).getTime();
+          const remainingMs = delayMs - elapsed;
+          if (remainingMs > 0) {
+            const mins = Math.ceil(remainingMs / 60000);
+            return `Unlocks in ${mins}m`;
+          }
+        } else {
+          return `Wait ${step.time_delay_minutes}m after previous step`;
+        }
+      }
       const hintFn = UNLOCK_HINTS[step.unlock_rule_type];
       return hintFn ? hintFn(step.unlock_rule_value) : null;
     }

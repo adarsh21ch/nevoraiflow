@@ -16,6 +16,14 @@ function timingSafeEqual(a: string, b: string): boolean {
   return result === 0;
 }
 
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -68,10 +76,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch step config
+    // Fetch step config (include hash field — falls back to plaintext for legacy funnels)
     const { data: step, error } = await supabase
       .from("funnel_steps")
-      .select("id, access_code_enabled, access_code_plain")
+      .select("id, access_code_enabled, access_code_plain, access_code_hash")
       .eq("id", step_id)
       .eq("funnel_id", funnel_id)
       .maybeSingle();
@@ -83,7 +91,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!step.access_code_enabled || !step.access_code_plain) {
+    if (!step.access_code_enabled || (!step.access_code_plain && !step.access_code_hash)) {
       // No code required — succeed silently
       return new Response(
         JSON.stringify({ success: true, no_code_required: true }),
@@ -91,9 +99,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    const expected = String(step.access_code_plain).trim().toUpperCase();
     const provided = code.trim().toUpperCase();
-    const isValid = timingSafeEqual(expected, provided);
+    let isValid = false;
+
+    if (step.access_code_hash) {
+      // Hashed comparison (preferred)
+      const providedHash = await sha256Hex(provided);
+      isValid = timingSafeEqual(String(step.access_code_hash), providedHash);
+    } else if (step.access_code_plain) {
+      // Legacy plaintext fallback
+      const expected = String(step.access_code_plain).trim().toUpperCase();
+      isValid = timingSafeEqual(expected, provided);
+    }
 
     // Audit log every attempt
     await supabase.from("step_access_logs").insert({
