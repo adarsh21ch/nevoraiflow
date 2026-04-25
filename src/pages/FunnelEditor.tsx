@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { VideoPickerModal } from "@/components/VideoPickerModal";
 import { StepTypeSelector, getStepTypeMeta } from "@/components/funnel/StepTypeSelector";
-import { StepConfigPanel } from "@/components/funnel/StepConfigPanel";
+import { StepConfigPanel, type FlowStep as PanelFlowStep } from "@/components/funnel/StepConfigPanel";
 import { JourneyPreview } from "@/components/funnel/JourneyPreview";
 import { PrivacySettings } from "@/components/funnel/PrivacySettings";
 import { FunnelLivePreview } from "@/components/funnel/FunnelLivePreview";
@@ -31,35 +31,7 @@ import { StepLockOverlay } from "@/components/funnel/StepLockOverlay";
 import { Crown } from "lucide-react";
 import { sanitizeText } from "@/lib/sanitize";
 
-interface FlowStep {
-  id?: string;
-  step_order: number;
-  title: string;
-  description: string;
-  step_type: string;
-  video_asset_id: string | null;
-  is_active: boolean;
-  unlock_rule_type: string;
-  unlock_rule_value: string;
-  cta_text: string;
-  cta_url: string;
-  booking_url: string;
-  unlock_timer_minutes?: number;
-  between_step_audio_url?: string;
-  between_step_audio_enabled?: boolean;
-  between_step_message?: string;
-  between_step_message_enabled?: boolean;
-  unlock_after_percent?: number;
-  // Per-step access code (additive)
-  access_code_enabled?: boolean;
-  access_code_plain?: string;
-  // Per-step speaker override (additive)
-  speaker_mode_step?: string;
-  speaker_name_custom?: string;
-  speaker_title?: string;
-  speaker_bio?: string;
-  speaker_photo_url_custom?: string;
-}
+type FlowStep = PanelFlowStep;
 
 const createEmptyStep = (order: number, type: string = "video"): FlowStep => ({
   step_order: order,
