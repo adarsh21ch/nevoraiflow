@@ -151,6 +151,17 @@ export const PrivateLeadForm = ({
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
+            {/* Honeypot — hidden from real users; bots typically fill it */}
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }}
+              aria-hidden="true"
+            />
             <div>
               <Label className="text-xs font-medium" style={{ color: textMuted }}>Full Name *</Label>
               <Input
