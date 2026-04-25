@@ -642,12 +642,14 @@ const PublicFunnel = () => {
 
   const submitLead = useMutation({
     mutationFn: async () => {
+      // Honeypot — silently no-op for bots.
       if (leadForm.website) return;
+      const s = (v: string | null | undefined) => (v ? sanitizeText(v) : null);
       await supabase.from("funnel_leads").insert({
         funnel_id: funnel!.id,
-        name: leadForm.name || null, phone: leadForm.phone || null,
-        email: leadForm.email || null, city: leadForm.city || null,
-        custom_value: leadForm.custom_value || null,
+        name: s(leadForm.name), phone: leadForm.phone ? normalizePhone(leadForm.phone) : null,
+        email: s(leadForm.email), city: s(leadForm.city),
+        custom_value: s(leadForm.custom_value),
         watch_progress_at_submit: watchSeconds,
         device_type: /Mobi/.test(navigator.userAgent) ? "mobile" : "desktop",
         user_agent: navigator.userAgent,

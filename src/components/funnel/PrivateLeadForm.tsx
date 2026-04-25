@@ -6,6 +6,7 @@ import { Loader2, Check, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import logoImg from "@/assets/nevorai-flow-logo.png";
+import { sanitizeText, normalizePhone, isValidPhone } from "@/lib/sanitize";
 
 interface PrivateLeadFormProps {
   funnelId: string;
@@ -34,20 +35,28 @@ export const PrivateLeadForm = ({
       toast.error("Name and phone are required");
       return;
     }
-    if (form.phone.replace(/\D/g, "").length < 10) {
+    if (!isValidPhone(form.phone)) {
       toast.error("Please enter a valid phone number");
       return;
     }
+
+    // Sanitize all text fields before persisting (XSS prevention).
+    const cleanName = sanitizeText(form.name);
+    const cleanCity = sanitizeText(form.city);
+    const cleanState = sanitizeText(form.state);
+    const cleanPhone = normalizePhone(form.phone);
+    const cleanWhatsapp = normalizePhone(form.whatsapp);
+    const cleanEmail = form.email ? sanitizeText(form.email) : null;
 
     setLoading(true);
     try {
       const { error } = await supabase.from("funnel_leads").insert({
         funnel_id: funnelId,
-        name: form.name,
-        phone: form.phone,
-        email: form.email || null,
-        city: form.city || null,
-        custom_value: JSON.stringify({ state: form.state, whatsapp: form.whatsapp }),
+        name: cleanName,
+        phone: cleanPhone,
+        email: cleanEmail,
+        city: cleanCity || null,
+        custom_value: JSON.stringify({ state: cleanState, whatsapp: cleanWhatsapp }),
         device_type: /Mobi/.test(navigator.userAgent) ? "mobile" : "desktop",
         user_agent: navigator.userAgent,
         status: "new",
@@ -57,7 +66,7 @@ export const PrivateLeadForm = ({
 
       localStorage.setItem(
         `nf_lead_${funnelId}`,
-        JSON.stringify({ name: form.name, phone: form.phone, submittedAt: Date.now() })
+        JSON.stringify({ name: cleanName, phone: cleanPhone, submittedAt: Date.now() })
       );
 
       setShowSuccess(true);
@@ -65,7 +74,9 @@ export const PrivateLeadForm = ({
         onSuccess();
       }, 2500);
     } catch (err: any) {
-      toast.error(err.message || "Something went wrong");
+      // Generic message — never leak DB error details to viewers.
+      console.error("[PrivateLeadForm] insert failed", err);
+      toast.error("Something went wrong. Please try again.");
       setLoading(false);
     }
   };
