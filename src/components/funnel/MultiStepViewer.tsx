@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { CopyNflowLinkButton } from "@/components/CopyNflowLinkButton";
+import { sanitizeText, normalizePhone } from "@/lib/sanitize";
 
 interface FunnelStep {
   id: string;
@@ -318,14 +319,16 @@ export const MultiStepViewer = ({
   };
 
   const handleLeadSubmit = async (stepIndex: number) => {
+    // Honeypot — bots fill the hidden field; silently no-op.
     if (leadForm.website) return;
+    const s = (v: string | null | undefined) => (v ? sanitizeText(v) : null);
     await supabase.from("funnel_leads").insert({
       funnel_id: funnel.id,
-      name: leadForm.name || null,
-      phone: leadForm.phone || null,
-      email: leadForm.email || null,
-      city: leadForm.city || null,
-      custom_value: leadForm.custom_value || null,
+      name: s(leadForm.name),
+      phone: leadForm.phone ? normalizePhone(leadForm.phone) : null,
+      email: s(leadForm.email),
+      city: s(leadForm.city),
+      custom_value: s(leadForm.custom_value),
       device_type: /Mobi/.test(navigator.userAgent) ? "mobile" : "desktop",
       user_agent: navigator.userAgent,
     });

@@ -1,101 +1,78 @@
+# Plan — Comprehensive Security Audit & Hardening (5 Phases)
 
-
-# Plan — Free Users Can Add Videos via nFlow Link + "Borrow This Video" Button on Public Funnels
-
-Two related changes that together let free users participate without uploading:
-1. Free users get the "Add by nFlow Link" capability (currently Pro-only).
-2. Every public funnel video shows a **Copy nFlow Link** button (creator-controlled toggle) so any viewer can grab the video ID and reuse it via the link flow.
-
-Daily view limits already exist (10/day for free via `increment_user_daily_view`) — no changes there.
+Approved scope: execute Phase 1 → 5 in order. Pause before any RLS rewrites and show the diff first.
 
 ---
 
-## 1. Free tier: enable "Add by nFlow Link"
+## Phase 1 — Input Sanitization (XSS) + Error Handling
 
-Currently `video_link` sits in `PREMIUM_FEATURES` in `src/hooks/usePlan.tsx`, blocking free users.
+- Install `dompurify` + `@types/dompurify`.
+- New `src/lib/sanitize.ts`: `sanitizeText`, `sanitizeRichText`, `sanitizeFilename`, `isValidEmail`, `isValidPhone`, `normalizePhone`.
+- New `supabase/functions/_shared/sanitize.ts`: regex-based mirror for Deno (no DOM).
+- Wire `sanitizeText` into save handlers (NOT onChange — preserve typing UX) in:
+  `FunnelEditor`, `LandingPageEditor`, `ProfilePage`, `VideoUploadModal`, `VideoRenameModal`, `VideoLinkModal`, `PrivateLeadForm`, `PublicFunnel` lead capture, `PublicLandingPage` form, `EnterpriseInquiryPage`, `KYCPage`.
+- Server mirror in: `submit-landing-page-registration`, `submit-enterprise-inquiry`, `verify-funnel-code`, `refund-request`.
+- Audit `dangerouslySetInnerHTML` (only one in shadcn `chart.tsx` for CSS — safe, leave alone).
+- Harden `ErrorBoundary`: never show stack traces; replace user-facing `error.message` with generic copy; keep `console.error` for diagnostics.
 
-**Change:** Remove `"video_link"` from the `PREMIUM_FEATURES` array. Free users keep the 3-video gallery cap (already enforced by `video_limit: 3`), but those 3 slots can now be **either** uploads (still Pro-only) **or** linked nFlow videos.
+## Phase 2 — Admin Panel Protection + Audit Trail
 
-The existing `VideoLinkModal` flow already:
-- Validates the video exists and is `is_shared = true`
-- Inserts into `video_asset_access` (no storage cost — pure pointer)
-- Shows up in the user's gallery with the "Added via Link" badge
+- `AdminRoute`: re-check role every 60s (`refetchInterval`) + on `visibilitychange`. Redirect to `/` if it flips false.
+- Defense-in-depth role gate inside `AdminLayout`.
+- New `supabase/functions/_shared/requireAdmin.ts` helper. Apply to `member-gateway-admin` and other admin-only functions.
+- **Migration**: new `admin_audit_logs` table (action, actor_id, target_type, target_id, ip, user_agent, payload jsonb, created_at). RLS: admins SELECT, service role INSERT.
+- `logAdminAction()` helper called from KYC, subscriptions, users, settings, member gateway pages.
+- "Recent admin activity" widget on `AdminDashboard`.
 
-No DB or modal changes needed.
+## Phase 3 — Payment + File Upload Security
 
-**On VideosPage** (`src/pages/VideosPage.tsx`): the "Upload Video" button stays gated for free users (existing behavior via `feature_video_upload`), but "Add by nFlow Link" becomes always-visible. Free users see it as their primary option.
+- Verify Razorpay HMAC in `payments-webhook`/`razorpay-webhook` BEFORE any DB write; log signature failures to `payment_audit_logs`.
+- **Migration**: partial unique index on `funnel_payments.upi_transaction_id` and `live_registrations.upi_transaction_id` (WHERE NOT NULL).
+- Frontend pre-check duplicate transaction IDs with friendly error.
+- Video uploads: extension/MIME match check, block double extensions, sanitize filename, server-side re-validate in `get-r2-upload-url`.
+- KYC docs: allowlist (PDF/JPG/PNG only), 5MB cap, signed URLs (1h) for viewing — never expose raw storage path.
 
----
+## Phase 4 — Auth, Session, Abuse Prevention
 
-## 2. Creator-controlled "Allow viewers to reuse this video" toggle
+- **Migration**: `auth_attempts (email, ip, success, attempted_at)` + `lead_submission_attempts (ip, funnel_id, created_at)`. Service-role-only RLS.
+- New edge function `check-auth-rate-limit`: 5 fails / 30 min / (email+IP) → locked. Wired into `AuthPage` login.
+- Password policy: 8+ chars + must contain a digit. New `PasswordStrengthMeter` component on signup, set-password, reset-password.
+- OTP: invalidate prior unconsumed OTPs on resend; lock after 3 failed verifies.
+- `useAuth.signOut()`: clear `localStorage`/`sessionStorage` (preserve theme key).
+- 7-day idle auto-logout via `last_activity` heartbeat.
+- Honeypot field on all lead/inquiry forms; server silently 200s if filled.
+- Lead rate limit: 10/hour/IP via new edge function check.
+- `verify-funnel-code`: enforce ≥6 char codes; 5 fails / 1h lockout per IP+funnel using existing `funnel_access_logs`.
+- Exclude funnel-owner self-views from view counts in `get-funnel-data`/increment fn.
 
-**New field on `video_assets`:** `allow_copy_link boolean DEFAULT true` (migration). Creator chooses per-video whether the public viewer sees the Copy nFlow Link button.
+## Phase 5 — Data Masking, GDPR, Headers, Account Takeover
 
-**Where the creator toggles it:**
-- `VideoUploadModal` — checkbox "Allow others to reuse this video via nFlow Link" (default on)
-- `VideoRenameModal` — same checkbox so existing videos can be updated
-- Toggle is also visible on each video card in `VideosPage` (small switch under actions)
-
----
-
-## 3. "Copy nFlow Link" button on public viewers
-
-Three surfaces show the public video:
-
-**a) `PublicVideoPage` (`/video/:id`)** — directly under the video, add a button:
-> 📋 Copy nFlow Link · Use this video in your own funnel
-
-Only renders when `video.allow_copy_link === true`. Clicking copies `${origin}/video/${id}`. Toast: "Link copied. Paste it into nFlow → Videos → Add by nFlow Link."
-
-**b) `PublicFunnel` (`/f/:slug`)** — single-video funnel viewer. The selected `video_assets` row already loads via `get-funnel-data`. Add the same Copy nFlow Link button below the video player area, gated on `allow_copy_link`.
-
-**c) `MultiStepViewer`** — same button rendered per video step, gated on each step's video `allow_copy_link`.
-
-The button is **viewer-facing** (not creator-only) — the whole point is that any visitor can grab the link.
-
----
-
-## 4. How a free user discovers and uses an nFlow link
-
-End-to-end flow this enables:
-
-```text
-Creator A (Pro)
-  └─ uploads video → marks "allow reuse" ON → embeds in funnel
-
-Visitor B (free user, signed up later)
-  ├─ watches Creator A's funnel
-  ├─ sees [📋 Copy nFlow Link] under video
-  ├─ clicks → /video/<uuid> copied
-  ├─ goes to nFlow → Videos → Add by nFlow Link
-  ├─ pastes → video appears in B's gallery (no storage used)
-  └─ B uses it in their own funnel
-        └─ capped at 10 views/day (existing free limit)
-```
-
-No admin involvement. No file storage cost. Daily view cap already enforces fair use.
+- New `src/lib/mask.ts` (`maskPan`, `maskAadhaar`, `maskBank`, `maskPhone`). Apply in `AdminKYCPage`, `KYCPage`, `ProfilePage`, `PaymentsPage`.
+- Account takeover:
+  - Require current-password re-auth before password change in `SettingsPage`.
+  - New edge function `notify-credential-change` — emails OLD address on password/email change.
+  - Log device fingerprint hash; new-device login → email notification.
+- GDPR:
+  - New edge function `export-user-data` → JSON download. "Download my data" button in Settings.
+  - New edge function `delete-user-account` → soft-delete + anonymize, type-DELETE confirmation.
+  - "Delete lead" button in `LeadsPage` (verify RLS allows it).
+- **PAUSE POINT**: Run `supabase--linter`, present findings, and show proposed RLS rewrites for your approval BEFORE executing.
+- Security headers via `public/_headers` + `<meta>` CSP fallback in `index.html`:
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: DENY`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+  - CSP allowlist: self, `*.supabase.co`, `cdn.nevorai.com`, `*.razorpay.com`, `*.stripe.com`, `accounts.google.com`.
 
 ---
 
-## Files touched
+## Cross-cutting
 
-| File | Change |
-|------|--------|
-| `supabase/migrations/<new>.sql` | Add `allow_copy_link boolean default true` to `video_assets` |
-| `src/hooks/usePlan.tsx` | Remove `"video_link"` from `PREMIUM_FEATURES` |
-| `src/components/VideoUploadModal.tsx` | Add "Allow reuse" checkbox; persist on insert |
-| `src/components/VideoRenameModal.tsx` | Add same checkbox; update on save |
-| `src/pages/VideosPage.tsx` | Add per-card reuse toggle; ensure Add-by-Link button always shown |
-| `src/pages/PublicVideoPage.tsx` | Add Copy nFlow Link button |
-| `src/pages/PublicFunnel.tsx` | Add Copy nFlow Link button below player |
-| `src/components/funnel/MultiStepViewer.tsx` | Add Copy nFlow Link per video step |
-| `supabase/functions/get-funnel-data/index.ts` | Include `allow_copy_link` in selected video columns |
+- All new edge functions: `verify_jwt = false` default + in-code `getClaims()` validation per project pattern.
+- All new tables: RLS enabled at creation, explicit policies with SQL comments.
+- No breaking changes — all schema additions are additive.
+- Smoke-test each affected flow after every phase.
 
-## Not changing
+## Out of scope
 
-- Upload capability (still Pro-only — free users only link, not upload)
-- Free 3-video gallery cap (linked + uploaded counted together)
-- Daily view limit (10/day free, already enforced)
-- `video_asset_access` mechanism (already perfect for this)
-- Pricing, plans, UI design system
-
+- 2FA/TOTP, WAF/DDoS (infra), pen-test report, key rotation (manual op).

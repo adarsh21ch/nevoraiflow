@@ -17,6 +17,7 @@ import { CodeGateScreen } from "@/components/funnel/CodeGateScreen";
 import { PrivateLeadForm } from "@/components/funnel/PrivateLeadForm";
 import { FunnelDailyLimitGate } from "@/components/funnel/FunnelDailyLimitGate";
 import { CopyNflowLinkButton } from "@/components/CopyNflowLinkButton";
+import { sanitizeText, normalizePhone } from "@/lib/sanitize";
 /* ─── Speed Popover ─── */
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
 
@@ -642,12 +643,14 @@ const PublicFunnel = () => {
 
   const submitLead = useMutation({
     mutationFn: async () => {
+      // Honeypot — silently no-op for bots.
       if (leadForm.website) return;
+      const s = (v: string | null | undefined) => (v ? sanitizeText(v) : null);
       await supabase.from("funnel_leads").insert({
         funnel_id: funnel!.id,
-        name: leadForm.name || null, phone: leadForm.phone || null,
-        email: leadForm.email || null, city: leadForm.city || null,
-        custom_value: leadForm.custom_value || null,
+        name: s(leadForm.name), phone: leadForm.phone ? normalizePhone(leadForm.phone) : null,
+        email: s(leadForm.email), city: s(leadForm.city),
+        custom_value: s(leadForm.custom_value),
         watch_progress_at_submit: watchSeconds,
         device_type: /Mobi/.test(navigator.userAgent) ? "mobile" : "desktop",
         user_agent: navigator.userAgent,

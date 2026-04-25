@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Upload, X, FileVideo, Loader2, Info, AlertCircle, RotateCcw, ChevronDown, AlertTriangle, Copy } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { sanitizeText, sanitizeFilename } from "@/lib/sanitize";
 
 interface Props {
   open: boolean;
@@ -105,7 +106,9 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
   };
 
   const runUpload = async () => {
-    if (!user || !file || !title.trim()) return;
+    const cleanTitle = sanitizeText(title);
+    const cleanDescription = sanitizeText(description);
+    if (!user || !file || !cleanTitle) return;
     setUploading(true);
     setProcessing(false);
     setProgress(0);
@@ -116,7 +119,7 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
     try {
       const result = await uploadVideoToR2({
         file,
-        title: title.trim(),
+        title: cleanTitle,
         onProgress: (percent, meta) => {
           setProgress(percent);
           if (meta && meta.loaded > 0) {
@@ -139,7 +142,7 @@ export const VideoUploadModal = ({ open, onClose, onSuccess }: Props) => {
       if (result?.videoId) {
         await supabase
           .from("video_assets")
-          .update({ allow_copy_link: allowCopyLink, description: description.trim() || null })
+          .update({ allow_copy_link: allowCopyLink, description: cleanDescription || null })
           .eq("id", result.videoId);
       }
 

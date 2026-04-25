@@ -20,6 +20,27 @@ import {
 } from "lucide-react";
 import { TestimonialsBuilderStep } from "@/components/funnel/TestimonialsBuilderStep";
 import { toast } from "sonner";
+import { sanitizeText } from "@/lib/sanitize";
+
+// Strip HTML/JS from every user-typed text field on a landing page payload
+// before persisting. Booleans, IDs, JSON sections, and image URLs pass through
+// untouched.
+const TEXT_FIELDS = [
+  "title", "description", "form_title", "form_subtitle", "form_button_text",
+  "speaker_name", "speaker_role", "speaker_bio",
+  "email_subject", "email_heading", "email_body", "email_footer_text",
+  "sender_display_name", "post_submit_video_title", "post_submit_video_description",
+  "testimonials_section_title", "field_custom_1_label", "field_custom_2_label",
+  "og_title", "og_description",
+] as const;
+
+const sanitizeLandingPagePayload = (payload: Record<string, any>) => {
+  const out = { ...payload };
+  for (const k of TEXT_FIELDS) {
+    if (typeof out[k] === "string") out[k] = sanitizeText(out[k]);
+  }
+  return out;
+};
 
 const generateSlug = (title: string) =>
   title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
@@ -182,7 +203,7 @@ const LandingPageEditor = () => {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = { ...form, owner_id: user!.id };
+      const payload = sanitizeLandingPagePayload({ ...form, owner_id: user!.id });
       if (isEdit) {
         const { error } = await supabase.from("landing_pages").update(payload as any).eq("id", id!);
         if (error) throw error;

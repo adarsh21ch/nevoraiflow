@@ -29,6 +29,7 @@ import { usePlan } from "@/hooks/usePlan";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { StepLockOverlay } from "@/components/funnel/StepLockOverlay";
 import { Crown } from "lucide-react";
+import { sanitizeText } from "@/lib/sanitize";
 
 interface FlowStep {
   id?: string;
@@ -273,31 +274,34 @@ const FunnelEditor = () => {
   const buildPayload = useCallback(() => {
     if (!user) return null;
     const slug = funnel.slug || generateSlug(funnel.title);
+    // Strip HTML/JS from every user-typed text field before sending to the DB.
+    const s = sanitizeText;
     return {
-      owner_id: user.id, title: funnel.title, slug, description: funnel.description,
+      owner_id: user.id, title: s(funnel.title), slug, description: s(funnel.description),
       visibility: funnel.visibility, intent_type: funnel.intent_type, funnel_mode: funnel.funnel_mode,
       allow_seek: funnel.allow_seek, allow_speed_change: funnel.allow_speed_change,
       lock_cta: funnel.lock_cta, cta_enabled: funnel.cta_enabled,
-      cta_text: funnel.cta_text, cta_timing_seconds: funnel.cta_timing_seconds,
+      cta_text: s(funnel.cta_text), cta_timing_seconds: funnel.cta_timing_seconds,
       cta_url: funnel.cta_url || null, video_access_minutes: funnel.video_access_minutes,
       show_contact_buttons: funnel.show_contact_buttons,
       contact_whatsapp: funnel.contact_whatsapp || null, contact_phone: funnel.contact_phone || null,
       contact_instagram: funnel.contact_instagram || null, show_contact_after_cta: funnel.show_contact_after_cta,
       whatsapp_auto_message: funnel.whatsapp_auto_message,
-      whatsapp_message_template: funnel.whatsapp_message_template || null,
+      whatsapp_message_template: funnel.whatsapp_message_template ? s(funnel.whatsapp_message_template) : null,
       payment_enabled: funnel.payment_enabled, upi_id: funnel.upi_id || null,
-      qr_code_url: funnel.qr_code_url || null, payment_instructions: funnel.payment_instructions || null,
+      qr_code_url: funnel.qr_code_url || null,
+      payment_instructions: funnel.payment_instructions ? s(funnel.payment_instructions) : null,
       is_live_broadcast: funnel.is_live_broadcast, broadcast_scheduled_at: funnel.broadcast_scheduled_at || null,
       broadcast_password: funnel.broadcast_password || null, broadcast_replay_enabled: funnel.broadcast_replay_enabled,
       is_published: funnel.is_published, video_asset_id: selectedVideo?.id || null,
       access_code_plain: funnel.access_code_plain || null,
       required_fields: funnel.required_fields,
       speaker_mode: funnel.speaker_mode,
-      speaker_name: funnel.speaker_name || null,
+      speaker_name: funnel.speaker_name ? s(funnel.speaker_name) : null,
       speaker_photo_url: funnel.speaker_photo_url || null,
-      speaker_about: funnel.speaker_about || null,
+      speaker_about: funnel.speaker_about ? s(funnel.speaker_about) : null,
       video_topics_enabled: funnel.video_topics_enabled,
-      video_topics: funnel.video_topics.filter((t: string) => t.trim() !== ""),
+      video_topics: funnel.video_topics.filter((t: string) => t.trim() !== "").map((t: string) => s(t)),
     };
   }, [user, funnel, selectedVideo]);
 
@@ -320,10 +324,13 @@ const FunnelEditor = () => {
       if (funnel.funnel_mode === "multi" && flowSteps.length > 0) {
         await supabase.from("funnel_steps").delete().eq("funnel_id", funnelId);
         const stepsPayload = flowSteps.map((s, i) => ({
-          funnel_id: funnelId, step_order: i, title: s.title, description: s.description || null,
+          funnel_id: funnelId, step_order: i,
+          title: sanitizeText(s.title),
+          description: s.description ? sanitizeText(s.description) : null,
           step_type: s.step_type, video_asset_id: s.video_asset_id || null, is_active: s.is_active,
           unlock_rule_type: s.unlock_rule_type, unlock_rule_value: s.unlock_rule_value || null,
-          cta_text: s.cta_text || null, cta_url: s.cta_url || null, booking_url: s.booking_url || null,
+          cta_text: s.cta_text ? sanitizeText(s.cta_text) : null,
+          cta_url: s.cta_url || null, booking_url: s.booking_url || null,
         }));
         const { error: stepErr } = await supabase.from("funnel_steps").insert(stepsPayload);
         if (stepErr) throw stepErr;

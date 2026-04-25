@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizeFilename, hasDoubleExtension } from "@/lib/sanitize";
 
 interface UploadVideoToR2Options {
   file: File;
@@ -39,13 +40,18 @@ export const uploadVideoToR2 = async ({
   let videoId: string | null = null;
 
   try {
+    // Block double-extension tricks like video.mp4.exe
+    if (hasDoubleExtension(file.name)) {
+      throw new Error("This filename looks unsafe — please rename and try again.");
+    }
+    const safeName = sanitizeFilename(file.name);
     const contentType = resolveContentType(file);
 
     const { data, error } = await supabase.functions.invoke("get-r2-upload-url", {
       body: {
-        filename: file.name,
+        filename: safeName,
         contentType,
-        title: title || file.name,
+        title: title || safeName,
       },
     });
 

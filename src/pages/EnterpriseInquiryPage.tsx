@@ -17,6 +17,7 @@ import { Crown, CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { sanitizeText, normalizePhone } from "@/lib/sanitize";
 
 const TEAM_SIZES = ["100-500", "500-1000", "1000-5000", "5000+"];
 
@@ -70,9 +71,19 @@ const EnterpriseInquiryPage = () => {
 
     setSubmitting(true);
     try {
+      // Sanitize all text fields client-side; server mirror will re-sanitize.
+      const cleanForm = {
+        full_name: sanitizeText(form.full_name),
+        whatsapp_phone: normalizePhone(form.whatsapp_phone),
+        email: sanitizeText(form.email),
+        network_name: sanitizeText(form.network_name),
+        team_size: form.team_size,
+        platform: sanitizeText(form.platform),
+        custom_needs: sanitizeText(form.custom_needs),
+      };
       const { data, error } = await supabase.functions.invoke(
         "submit-enterprise-inquiry",
-        { body: form },
+        { body: cleanForm },
       );
       if (error || !data?.ok) {
         const fields = (data as any)?.fields;
@@ -80,7 +91,7 @@ const EnterpriseInquiryPage = () => {
           setErrors(fields);
           toast.error("Please check the highlighted fields.");
         } else {
-          toast.error((error as any)?.message || "Could not submit. Please try again.");
+          toast.error("Could not submit. Please try again.");
         }
         return;
       }
