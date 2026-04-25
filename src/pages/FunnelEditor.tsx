@@ -340,6 +340,15 @@ const FunnelEditor = () => {
           unlock_rule_type: s.unlock_rule_type, unlock_rule_value: s.unlock_rule_value || null,
           cta_text: s.cta_text ? sanitizeText(s.cta_text) : null,
           cta_url: s.cta_url || null, booking_url: s.booking_url || null,
+          // Per-step access code
+          access_code_enabled: !!s.access_code_enabled,
+          access_code_plain: s.access_code_enabled ? (s.access_code_plain || null) : null,
+          // Per-step speaker override
+          speaker_mode_step: s.speaker_mode_step || "inherit",
+          speaker_name_custom: s.speaker_mode_step === "override" ? (s.speaker_name_custom || null) : null,
+          speaker_title: s.speaker_mode_step === "override" ? (s.speaker_title || null) : null,
+          speaker_bio: s.speaker_mode_step === "override" ? (s.speaker_bio || null) : null,
+          speaker_photo_url_custom: s.speaker_mode_step === "override" ? (s.speaker_photo_url_custom || null) : null,
         }));
         const { error: stepErr } = await supabase.from("funnel_steps").insert(stepsPayload);
         if (stepErr) throw stepErr;
