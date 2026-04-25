@@ -264,6 +264,13 @@ const FunnelEditor = () => {
         step_type: s.step_type || "video", video_asset_id: s.video_asset_id, is_active: s.is_active ?? true,
         unlock_rule_type: s.unlock_rule_type || "auto", unlock_rule_value: s.unlock_rule_value || "",
         cta_text: s.cta_text || "", cta_url: s.cta_url || "", booking_url: s.booking_url || "",
+        access_code_enabled: !!s.access_code_enabled,
+        access_code_plain: s.access_code_plain || "",
+        speaker_mode_step: s.speaker_mode_step || "inherit",
+        speaker_name_custom: s.speaker_name_custom || "",
+        speaker_title: s.speaker_title || "",
+        speaker_bio: s.speaker_bio || "",
+        speaker_photo_url_custom: s.speaker_photo_url_custom || "",
       })));
     }
   }, [existingSteps]);
