@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizeFilename, hasDoubleExtension } from "@/lib/sanitize";
 
 interface UploadVideoToR2Options {
   file: File;
