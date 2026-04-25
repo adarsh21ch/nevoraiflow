@@ -17,6 +17,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import {
   FileText, Palette, ClipboardList, Mail, Video, Link2, Rocket, Mic,
   Save, ArrowLeft, Check, X, Plus, Trash2, GripVertical, Eye, Edit3, Search, Star,
+  Lock as LockIcon,
 } from "lucide-react";
 import { TestimonialsBuilderStep } from "@/components/funnel/TestimonialsBuilderStep";
 import { toast } from "sonner";
