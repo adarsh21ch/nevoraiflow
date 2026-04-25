@@ -15,6 +15,9 @@ import {
 import { Loader2, Check, Lock, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { TestimonialsViewer } from "@/components/funnel/TestimonialsViewer";
+import { LandingPageCodeGate } from "@/components/funnel/LandingPageCodeGate";
+import { DateOfBirthInput } from "@/components/funnel/DateOfBirthInput";
+import { PostSubmitVideoPlayer } from "@/components/landing/PostSubmitVideoPlayer";
 
 const PublicLandingPage = () => {
   const { slug } = useParams();
@@ -26,6 +29,7 @@ const PublicLandingPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [honeypot, setHoneypot] = useState("");
+  const [pageUnlocked, setPageUnlocked] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
