@@ -29,6 +29,15 @@ interface FunnelStep {
   video_url?: string | null;
   video_thumbnail?: string | null;
   video_allow_copy_link?: boolean;
+  // Per-step access code (additive, optional)
+  access_code_enabled?: boolean;
+  access_code_plain?: string | null;
+  // Per-step speaker override (additive, optional)
+  speaker_mode_step?: string;
+  speaker_name_custom?: string | null;
+  speaker_title?: string | null;
+  speaker_bio?: string | null;
+  speaker_photo_url_custom?: string | null;
 }
 
 interface StepProgress {
@@ -109,6 +118,20 @@ export const MultiStepViewer = ({
   const [loading, setLoading] = useState(true);
   const sessionId = useRef(getSessionId(funnel.id));
   const progressSaveTimer = useRef<ReturnType<typeof setInterval>>();
+  // Tracks which step IDs have been unlocked via access code in THIS browser session.
+  // Hydrated from localStorage so reload doesn't re-prompt.
+  const [stepCodeUnlocked, setStepCodeUnlocked] = useState<Record<string, boolean>>(() => {
+    const map: Record<string, boolean> = {};
+    try {
+      const sid = sessionId.current;
+      for (const s of steps) {
+        if (s.access_code_enabled && localStorage.getItem(`nf_step_code_${s.id}_${sid}`) === "true") {
+          map[s.id] = true;
+        }
+      }
+    } catch {}
+    return map;
+  });
 
   useEffect(() => {
     const loadProgress = async () => {
