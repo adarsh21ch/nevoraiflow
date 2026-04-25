@@ -38,6 +38,13 @@ interface FunnelStep {
   speaker_title?: string | null;
   speaker_bio?: string | null;
   speaker_photo_url_custom?: string | null;
+  // Time-delay gate (additive, optional)
+  time_delay_enabled?: boolean;
+  time_delay_minutes?: number;
+  timer_cta_enabled?: boolean;
+  timer_cta_text?: string | null;
+  timer_cta_url?: string | null;
+  timer_cta_style?: string | null;
 }
 
 interface StepProgress {
