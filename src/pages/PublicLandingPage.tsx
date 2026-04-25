@@ -369,6 +369,12 @@ const PublicLandingPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                      ) : (f as any).fieldType === "dob" ? (
+                        <DateOfBirthInput
+                          value={formData[f.key] || ""}
+                          onChange={(val) => setFormData((prev) => ({ ...prev, [f.key]: val }))}
+                          required={f.required}
+                        />
                       ) : (
                         <Input
                           type={(f as any).type || "text"}
