@@ -160,20 +160,44 @@ const AdminKYCPage = () => {
             <DialogHeader>
               <DialogTitle className="font-heading text-sm sm:text-base">Verification Details</DialogTitle>
             </DialogHeader>
-            {selectedKyc && (
+            {selectedKyc && (() => {
+              const rawId = selectedKyc.pan_number || selectedKyc.aadhar_number || "";
+              const maskedId = !rawId
+                ? "—"
+                : selectedKyc.doc_type === "pan"
+                  ? maskPan(rawId)
+                  : maskAadhaar(rawId);
+              return (
               <div className="space-y-3 text-sm">
                 <div className="divide-y divide-border rounded-lg border border-border">
                   {[
                     { label: "Full Name", value: selectedKyc.full_name },
                     { label: "Location", value: [selectedKyc.city, selectedKyc.state].filter(Boolean).join(", ") || "—" },
                     { label: "Document", value: selectedKyc.doc_type === "pan" ? "PAN Card" : selectedKyc.doc_type === "aadhaar" ? "Aadhaar Card" : "—" },
-                    { label: "Number", value: selectedKyc.pan_number || selectedKyc.aadhar_number || "—" },
                   ].map((row) => (
                     <div key={row.label} className="flex items-start justify-between gap-3 px-3 py-2.5">
                       <span className="text-[11px] text-muted-foreground">{row.label}</span>
                       <span className="max-w-[60%] break-words text-right text-xs font-medium">{row.value}</span>
                     </div>
                   ))}
+                  <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                    <span className="text-[11px] text-muted-foreground">Number</span>
+                    <div className="flex items-center gap-2">
+                      <span className="break-all text-right text-xs font-medium font-mono">
+                        {revealId ? rawId || "—" : maskedId}
+                      </span>
+                      {rawId && (
+                        <button
+                          type="button"
+                          onClick={() => setRevealId((r) => !r)}
+                          className="text-muted-foreground hover:text-foreground"
+                          aria-label={revealId ? "Hide number" : "Reveal number"}
+                        >
+                          {revealId ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {docPreviewUrl && (
