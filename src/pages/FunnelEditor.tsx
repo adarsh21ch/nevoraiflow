@@ -1114,11 +1114,11 @@ const FunnelEditor = () => {
             </div>
           )}
 
-          {!funnel.video_topics_enabled && (
+          {(funnel.video_topics_scope === "global" || !isMulti) && !funnel.video_topics_enabled && (
             <p className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-xl">Video topics section will be hidden on the funnel page.</p>
           )}
 
-          {funnel.video_topics_enabled && (
+          {(funnel.video_topics_scope === "global" || !isMulti) && funnel.video_topics_enabled && (
             <div className="space-y-3">
               <Label className="text-sm font-medium">Topics / Key Points</Label>
               <p className="text-xs text-muted-foreground">Add what your prospects will learn from this video.</p>
