@@ -61,12 +61,20 @@ export const JourneyPreview = ({ steps, className = "" }: JourneyPreviewProps) =
               </div>
               {/* Content */}
               <div className={`pb-4 min-w-0 ${!step.is_active ? "opacity-40" : ""}`}>
-                <p className="text-sm font-medium text-foreground leading-tight truncate">
+                <p className="text-sm font-medium text-foreground leading-tight truncate flex items-center gap-1.5">
                   {step.title || `Step ${idx + 1}`}
+                  {step.access_code_enabled && (
+                    <span title="Locked with access code" className="inline-flex items-center text-amber-500">
+                      <Lock size={11} />
+                    </span>
+                  )}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   {meta.label}
                   {idx > 0 && ` · ${UNLOCK_LABELS[step.unlock_rule_type] || "Auto"}`}
+                  {step.speaker_mode_step === "override" && step.speaker_name_custom && (
+                    <> · 🎤 {step.speaker_name_custom}</>
+                  )}
                 </p>
               </div>
             </div>
