@@ -17,6 +17,7 @@ import { CodeGateScreen } from "@/components/funnel/CodeGateScreen";
 import { PrivateLeadForm } from "@/components/funnel/PrivateLeadForm";
 import { FunnelDailyLimitGate } from "@/components/funnel/FunnelDailyLimitGate";
 import { CopyNflowLinkButton } from "@/components/CopyNflowLinkButton";
+import { sanitizeText, normalizePhone } from "@/lib/sanitize";
 /* ─── Speed Popover ─── */
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
 
