@@ -750,25 +750,39 @@ export const MultiStepViewer = ({
                 </div>
               )}
 
-              {/* Step type content */}
-              {activeStep.step_type === "video" && activeStep.video_url && (
-                <div className="space-y-3">
-                  <VideoPlayer
-                    src={activeStep.video_url}
-                    poster={activeStep.video_thumbnail || undefined}
-                    allowSeek={funnel.allow_seek !== false}
-                    allowSpeed={funnel.allow_speed_change !== false}
-                    autoplay={true}
-                    initialTime={activeProgress?.last_position_seconds || 0}
-                    onTimeUpdate={(ct: number, dur: number) => handleVideoTimeUpdate(activeStepIndex, ct, dur)}
-                  />
-                  {activeStep.video_asset_id && activeStep.video_allow_copy_link !== false && (
-                    <div className="flex justify-end">
-                      <CopyNflowLinkButton videoId={activeStep.video_asset_id} />
+              {/* Per-step access code gate — wraps the step content when enabled and not yet unlocked */}
+              {activeStep.access_code_enabled && !stepCodeUnlocked[activeStep.id] ? (
+                <StepCodeGate
+                  funnelId={funnel.id}
+                  stepId={activeStep.id}
+                  stepTitle={activeStep.title}
+                  sessionId={sessionId.current}
+                  isDark={isDark}
+                  onSuccess={() =>
+                    setStepCodeUnlocked((prev) => ({ ...prev, [activeStep.id]: true }))
+                  }
+                />
+              ) : (
+                <>
+                  {/* Step type content */}
+                  {activeStep.step_type === "video" && activeStep.video_url && (
+                    <div className="space-y-3">
+                      <VideoPlayer
+                        src={activeStep.video_url}
+                        poster={activeStep.video_thumbnail || undefined}
+                        allowSeek={funnel.allow_seek !== false}
+                        allowSpeed={funnel.allow_speed_change !== false}
+                        autoplay={true}
+                        initialTime={activeProgress?.last_position_seconds || 0}
+                        onTimeUpdate={(ct: number, dur: number) => handleVideoTimeUpdate(activeStepIndex, ct, dur)}
+                      />
+                      {activeStep.video_asset_id && activeStep.video_allow_copy_link !== false && (
+                        <div className="flex justify-end">
+                          <CopyNflowLinkButton videoId={activeStep.video_asset_id} />
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              )}
 
               {activeStep.step_type === "video" && !activeStep.video_url && (
                 <div className="aspect-video rounded-2xl flex items-center justify-center" style={{ background: sc.cardBg, border: `1px solid ${sc.border}` }}>
