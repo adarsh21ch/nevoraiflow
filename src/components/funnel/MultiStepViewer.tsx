@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { CopyNflowLinkButton } from "@/components/CopyNflowLinkButton";
+import { sanitizeText, normalizePhone } from "@/lib/sanitize";
 
 interface FunnelStep {
   id: string;
