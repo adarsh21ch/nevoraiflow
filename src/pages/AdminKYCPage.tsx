@@ -14,6 +14,7 @@ const AdminKYCPage = () => {
   const [selectedKyc, setSelectedKyc] = useState<any>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [docPreviewUrl, setDocPreviewUrl] = useState<string | null>(null);
+  const [revealId, setRevealId] = useState(false);
 
   const { data: submissions = [], isLoading } = useQuery({
     queryKey: ["admin-kyc-all"],
