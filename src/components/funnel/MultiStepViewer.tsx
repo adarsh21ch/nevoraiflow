@@ -11,6 +11,7 @@ import {
 
 import { CopyNflowLinkButton } from "@/components/CopyNflowLinkButton";
 import { sanitizeText, normalizePhone } from "@/lib/sanitize";
+import { StepCodeGate } from "@/components/funnel/StepCodeGate";
 
 interface FunnelStep {
   id: string;
