@@ -24,6 +24,7 @@ import { JourneyPreview } from "@/components/funnel/JourneyPreview";
 import { PrivacySettings } from "@/components/funnel/PrivacySettings";
 import { FunnelLivePreview } from "@/components/funnel/FunnelLivePreview";
 import { SpeakerPhotoUpload } from "@/components/funnel/SpeakerPhotoUpload";
+import { PerStepSpeakerAssignment } from "@/components/funnel/PerStepSpeakerAssignment";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { usePlan } from "@/hooks/usePlan";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
@@ -138,6 +139,8 @@ const FunnelEditor = () => {
     speaker_name: "", speaker_photo_url: "", speaker_about: "",
     video_topics_enabled: false,
     video_topics: [] as string[],
+    speaker_scope: "global" as "global" | "per_step",
+    video_topics_scope: "global" as "global" | "per_step",
   });
 
   const [leadForm, setLeadForm] = useState({
@@ -203,6 +206,8 @@ const FunnelEditor = () => {
         speaker_about: (f as any).speaker_about || "",
         video_topics_enabled: (f as any).video_topics_enabled ?? false,
         video_topics: Array.isArray((f as any).video_topics) ? (f as any).video_topics : [],
+        speaker_scope: (f as any).speaker_scope || "global",
+        video_topics_scope: (f as any).video_topics_scope || "global",
       }));
       setModeChosen(true);
       if (f.audio_note_url) setAudioNoteEnabled(true);
