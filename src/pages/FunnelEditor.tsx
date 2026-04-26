@@ -458,6 +458,11 @@ const FunnelEditor = () => {
   const totalSteps = visibleSteps.length;
   const lastStepIdx = totalSteps - 1;
 
+  // Clamp wizardStep when visible-step count shrinks (e.g. user disables Payment).
+  useEffect(() => {
+    if (wizardStep > lastStepIdx && lastStepIdx >= 0) setWizardStep(lastStepIdx);
+  }, [lastStepIdx, wizardStep]);
+
   // ── Plan-based step gating ──
   // Map wizard step labels to required feature flags from plan_config.
   // Pro/Enterprise unlock everything (all flags true). Basic unlocks most. Free locks all of these.
