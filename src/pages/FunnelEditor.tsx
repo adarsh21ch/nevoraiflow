@@ -493,24 +493,22 @@ const FunnelEditor = () => {
 
   const currentStepLock = modeChosen ? getStepLock(visibleSteps[wizardStep]?.label ?? "") : null;
 
-  // ── Render helper for common steps ──
-  // Single: 0=Controls, 1=Speaker, 2=VideoTopics, 3=LeadForm, 4=Whatsapp, 5=Payment, 6=Privacy, 7=Publish
-  // Multi:  0=Controls, 1=Speaker, 2=VideoTopics, 3=Whatsapp, 4=Payment, 5=Privacy, 6=Publish
-  const renderCommonStep = (offset: number) => {
-    const idx = wizardStep - offset;
-    if (idx === 0) return renderControlsStep();
-    if (idx === 1) return renderSpeakerStep();
-    if (idx === 2) return renderVideoTopicsStep();
-    if (!isMulti && idx === 3) return renderLeadFormStep();
-    const whatsappIdx = isMulti ? 3 : 4;
-    const paymentIdx = isMulti ? 4 : 5;
-    const privacyIdx = isMulti ? 5 : 6;
-    const publishIdx = isMulti ? 6 : 7;
-    if (idx === whatsappIdx) return renderWhatsappStep();
-    if (idx === paymentIdx) return renderPaymentStep();
-    if (idx === privacyIdx) return renderPrivacyStep();
-    if (idx === publishIdx) return renderPublishStep();
-    return null;
+  // ── Render dispatch by label (adaptive — works even when steps are hidden) ──
+  const renderByLabel = (label: string) => {
+    switch (label) {
+      case "Name & Info": return renderBasicInfo();
+      case "Video": return renderVideoStep();
+      case "Build Journey": return renderFlowStepsBuilder();
+      case "Video Settings": return renderControlsStep();
+      case "Speaker": return renderSpeakerStep();
+      case "Video Topics": return renderVideoTopicsStep();
+      case "Lead Capture": return renderLeadFormStep();
+      case "Contact Info": return renderWhatsappStep();
+      case "Payment": return renderPaymentStep();
+      case "Privacy": return renderPrivacyStep();
+      case "Publish": return renderPublishStep();
+      default: return null;
+    }
   };
 
   // ── Step renderers ──
