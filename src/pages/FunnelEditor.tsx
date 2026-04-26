@@ -1323,7 +1323,14 @@ const FunnelEditor = () => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex-1 min-w-0">
                 <h1 className="text-lg sm:text-xl font-heading font-bold truncate">{funnel.title || "New Funnel"}</h1>
-                {lastSavedAt && <p className="text-xs text-muted-foreground">Auto-saved {lastSavedAt.toLocaleTimeString()}</p>}
+                {isAutoSaving ? (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    Saving…
+                  </p>
+                ) : lastSavedAt ? (
+                  <p className="text-xs text-muted-foreground">Auto-saved {lastSavedAt.toLocaleTimeString()}</p>
+                ) : null}
               </div>
               {modeChosen && (
                 <Button variant="hero" size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !funnel.title} className="shrink-0 ml-2">
