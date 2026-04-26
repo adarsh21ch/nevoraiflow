@@ -878,14 +878,51 @@ const LandingPageEditor = () => {
   );
 
   const renderTestimonialsStep = () => (
-    <TestimonialsBuilderStep
-      landingPageId={id}
-      userId={user!.id}
-      testimonialsEnabled={form.testimonials_enabled ?? false}
-      testimonialsSectionTitle={form.testimonials_section_title ?? "What our members say"}
-      onToggleEnabled={(v) => updateField("testimonials_enabled", v)}
-      onTitleChange={(v) => updateField("testimonials_section_title", v)}
-    />
+    <div className="space-y-6">
+      <TestimonialsBuilderStep
+        landingPageId={id}
+        userId={user!.id}
+        testimonialsEnabled={form.testimonials_enabled ?? false}
+        testimonialsSectionTitle={form.testimonials_section_title ?? "What our members say"}
+        onToggleEnabled={(v) => updateField("testimonials_enabled", v)}
+        onTitleChange={(v) => updateField("testimonials_section_title", v)}
+      />
+
+      {form.testimonials_enabled && (
+        <div className="p-4 rounded-xl border border-border bg-muted/30 space-y-3">
+          <div>
+            <Label className="font-semibold">Where should testimonials appear?</Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              Choose where on the public page testimonials will be shown relative to the registration form.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-3 gap-2">
+            {[
+              { v: "before_registration", label: "Before form", desc: "Build trust upfront" },
+              { v: "after_registration", label: "After form", desc: "Reassure post-submit" },
+              { v: "both", label: "Both", desc: "Maximum exposure" },
+            ].map((opt) => {
+              const active = (form.testimonials_display_position || "after_registration") === opt.v;
+              return (
+                <button
+                  key={opt.v}
+                  type="button"
+                  onClick={() => updateField("testimonials_display_position", opt.v)}
+                  className={`text-left p-3 rounded-lg border transition ${
+                    active
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-card hover:border-primary/40"
+                  }`}
+                >
+                  <div className="font-medium text-sm">{opt.label}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">{opt.desc}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 
   const renderWizardContent = () => {
