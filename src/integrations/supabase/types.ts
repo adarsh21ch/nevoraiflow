@@ -631,6 +631,7 @@ export type Database = {
         Row: {
           access_code_unlocked: boolean
           completed_at: string | null
+          condition_met_at: string | null
           created_at: string
           funnel_id: string
           funnel_step_id: string
@@ -639,8 +640,10 @@ export type Database = {
           lead_id: string | null
           manually_unlocked: boolean | null
           max_watched_seconds: number | null
+          permanently_unlocked: boolean
           session_id: string | null
           status: string
+          time_spent_seconds: number
           unlock_scheduled_at: string | null
           unlocked_at: string | null
           unlocked_by: string | null
@@ -650,6 +653,7 @@ export type Database = {
         Insert: {
           access_code_unlocked?: boolean
           completed_at?: string | null
+          condition_met_at?: string | null
           created_at?: string
           funnel_id: string
           funnel_step_id: string
@@ -658,8 +662,10 @@ export type Database = {
           lead_id?: string | null
           manually_unlocked?: boolean | null
           max_watched_seconds?: number | null
+          permanently_unlocked?: boolean
           session_id?: string | null
           status?: string
+          time_spent_seconds?: number
           unlock_scheduled_at?: string | null
           unlocked_at?: string | null
           unlocked_by?: string | null
@@ -669,6 +675,7 @@ export type Database = {
         Update: {
           access_code_unlocked?: boolean
           completed_at?: string | null
+          condition_met_at?: string | null
           created_at?: string
           funnel_id?: string
           funnel_step_id?: string
@@ -677,8 +684,10 @@ export type Database = {
           lead_id?: string | null
           manually_unlocked?: boolean | null
           max_watched_seconds?: number | null
+          permanently_unlocked?: boolean
           session_id?: string | null
           status?: string
+          time_spent_seconds?: number
           unlock_scheduled_at?: string | null
           unlocked_at?: string | null
           unlocked_by?: string | null

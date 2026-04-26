@@ -59,6 +59,9 @@ interface StepProgress {
   last_position_seconds: number;
   completed_at: string | null;
   manually_unlocked?: boolean;
+  time_spent_seconds?: number;
+  permanently_unlocked?: boolean;
+  condition_met_at?: string | null;
 }
 
 interface MultiStepViewerProps {
@@ -158,7 +161,7 @@ export const MultiStepViewer = ({
     const loadProgress = async () => {
       const { data } = await supabase
         .from("funnel_step_progress")
-        .select("funnel_step_id, status, max_watched_seconds, watched_percentage, last_position_seconds, completed_at")
+        .select("funnel_step_id, status, max_watched_seconds, watched_percentage, last_position_seconds, completed_at, time_spent_seconds, permanently_unlocked, condition_met_at")
         .eq("funnel_id", funnel.id)
         .eq("session_id", sessionId.current);
 
@@ -234,9 +237,12 @@ export const MultiStepViewer = ({
 
   const completeStep = useCallback(async (stepIndex: number) => {
     const step = steps[stepIndex];
+    const nowIso = new Date().toISOString();
     const completedUpdate = {
       status: "completed" as const,
-      completed_at: new Date().toISOString(),
+      completed_at: nowIso,
+      permanently_unlocked: true,
+      condition_met_at: nowIso,
     };
     await updateStepProgress(step.id, completedUpdate);
 
@@ -263,7 +269,11 @@ export const MultiStepViewer = ({
       if (shouldUnlock) {
         const nextStatus = progressMap[nextStep.id]?.status;
         if (nextStatus === "locked") {
-          await updateStepProgress(nextStep.id, { status: "unlocked" });
+          await updateStepProgress(nextStep.id, {
+            status: "unlocked",
+            permanently_unlocked: true,
+            condition_met_at: nowIso,
+          });
         }
       }
     }
@@ -350,7 +360,11 @@ export const MultiStepViewer = ({
         if (rule === "watch_seconds" && maxWatched >= parseInt(nextStep.unlock_rule_value || "0")) shouldUnlock = true;
         if (rule === "watch_percent" && pct >= parseInt(nextStep.unlock_rule_value || "0")) shouldUnlock = true;
         if (shouldUnlock) {
-          updateStepProgress(nextStep.id, { status: "unlocked" });
+          updateStepProgress(nextStep.id, {
+            status: "unlocked",
+            permanently_unlocked: true,
+            condition_met_at: new Date().toISOString(),
+          });
         }
       }
     }
@@ -362,6 +376,12 @@ export const MultiStepViewer = ({
       if (!activeStep) return;
       const p = progressMap[activeStep.id];
       if (!p || p.status === "locked") return;
+      const newTimeSpent = (p.time_spent_seconds || 0) + 5;
+      // Update local state so accumulated value persists between ticks
+      setProgressMap((prev) => ({
+        ...prev,
+        [activeStep.id]: { ...prev[activeStep.id], time_spent_seconds: newTimeSpent },
+      }));
       supabase
         .from("funnel_step_progress")
         .update({
@@ -369,7 +389,8 @@ export const MultiStepViewer = ({
           watched_percentage: p.watched_percentage,
           last_position_seconds: p.last_position_seconds,
           status: p.status,
-        })
+          time_spent_seconds: newTimeSpent,
+        } as any)
         .eq("funnel_id", funnel.id)
         .eq("funnel_step_id", activeStep.id)
         .eq("session_id", sessionId.current)
