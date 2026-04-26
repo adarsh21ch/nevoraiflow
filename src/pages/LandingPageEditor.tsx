@@ -215,12 +215,37 @@ const LandingPageEditor = () => {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = sanitizeLandingPagePayload({ ...form, owner_id: user!.id });
+      const payload: any = sanitizeLandingPagePayload({ ...form, owner_id: user!.id });
+
+      // Hash the access code before persisting; keep plaintext for legacy back-compat.
+      // We only re-hash when the editor actually has a non-empty plain code typed in.
+      if (payload.access_code_enabled && payload.access_code_plain) {
+        try {
+          const enc = new TextEncoder().encode(
+            String(payload.access_code_plain).trim().toUpperCase(),
+          );
+          const buf = await crypto.subtle.digest("SHA-256", enc);
+          payload.access_code_hash = Array.from(new Uint8Array(buf))
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+        } catch {
+          // If hashing fails for any reason, edge function will fall back to plaintext.
+        }
+      }
+      if (!payload.access_code_enabled) {
+        payload.access_code_hash = null;
+      }
+
+      // Defensive cap on FAQ items to match server-side validation.
+      if (Array.isArray(payload.faq_items) && payload.faq_items.length > 10) {
+        payload.faq_items = payload.faq_items.slice(0, 10);
+      }
+
       if (isEdit) {
-        const { error } = await supabase.from("landing_pages").update(payload as any).eq("id", id!);
+        const { error } = await supabase.from("landing_pages").update(payload).eq("id", id!);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("landing_pages").insert(payload as any);
+        const { error } = await supabase.from("landing_pages").insert(payload);
         if (error) throw error;
       }
     },
