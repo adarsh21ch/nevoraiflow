@@ -59,6 +59,9 @@ interface StepProgress {
   last_position_seconds: number;
   completed_at: string | null;
   manually_unlocked?: boolean;
+  time_spent_seconds?: number;
+  permanently_unlocked?: boolean;
+  condition_met_at?: string | null;
 }
 
 interface MultiStepViewerProps {
