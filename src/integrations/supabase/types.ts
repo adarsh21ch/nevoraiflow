@@ -1339,6 +1339,8 @@ export type Database = {
       landing_pages: {
         Row: {
           access_code_enabled: boolean
+          access_code_hash: string | null
+          access_code_message: string | null
           access_code_plain: string | null
           allow_login: boolean | null
           allow_signup: boolean | null
@@ -1349,6 +1351,7 @@ export type Database = {
           email_footer_text: string | null
           email_heading: string | null
           email_subject: string | null
+          faq_items: Json
           field_age_enabled: boolean | null
           field_age_required: boolean | null
           field_city_enabled: boolean | null
@@ -1378,6 +1381,8 @@ export type Database = {
           invite_code: string | null
           invite_code_required: boolean | null
           linked_funnel_id: string | null
+          min_age: number
+          min_age_enabled: boolean
           og_description: string | null
           og_image_url: string | null
           og_title: string | null
@@ -1394,6 +1399,7 @@ export type Database = {
           speaker_photo_url: string | null
           speaker_role: string | null
           status: string
+          testimonials_display_position: string
           testimonials_enabled: boolean | null
           testimonials_section_title: string | null
           theme_color: string | null
@@ -1404,6 +1410,8 @@ export type Database = {
         }
         Insert: {
           access_code_enabled?: boolean
+          access_code_hash?: string | null
+          access_code_message?: string | null
           access_code_plain?: string | null
           allow_login?: boolean | null
           allow_signup?: boolean | null
@@ -1414,6 +1422,7 @@ export type Database = {
           email_footer_text?: string | null
           email_heading?: string | null
           email_subject?: string | null
+          faq_items?: Json
           field_age_enabled?: boolean | null
           field_age_required?: boolean | null
           field_city_enabled?: boolean | null
@@ -1443,6 +1452,8 @@ export type Database = {
           invite_code?: string | null
           invite_code_required?: boolean | null
           linked_funnel_id?: string | null
+          min_age?: number
+          min_age_enabled?: boolean
           og_description?: string | null
           og_image_url?: string | null
           og_title?: string | null
@@ -1459,6 +1470,7 @@ export type Database = {
           speaker_photo_url?: string | null
           speaker_role?: string | null
           status?: string
+          testimonials_display_position?: string
           testimonials_enabled?: boolean | null
           testimonials_section_title?: string | null
           theme_color?: string | null
@@ -1469,6 +1481,8 @@ export type Database = {
         }
         Update: {
           access_code_enabled?: boolean
+          access_code_hash?: string | null
+          access_code_message?: string | null
           access_code_plain?: string | null
           allow_login?: boolean | null
           allow_signup?: boolean | null
@@ -1479,6 +1493,7 @@ export type Database = {
           email_footer_text?: string | null
           email_heading?: string | null
           email_subject?: string | null
+          faq_items?: Json
           field_age_enabled?: boolean | null
           field_age_required?: boolean | null
           field_city_enabled?: boolean | null
@@ -1508,6 +1523,8 @@ export type Database = {
           invite_code?: string | null
           invite_code_required?: boolean | null
           linked_funnel_id?: string | null
+          min_age?: number
+          min_age_enabled?: boolean
           og_description?: string | null
           og_image_url?: string | null
           og_title?: string | null
@@ -1524,6 +1541,7 @@ export type Database = {
           speaker_photo_url?: string | null
           speaker_role?: string | null
           status?: string
+          testimonials_display_position?: string
           testimonials_enabled?: boolean | null
           testimonials_section_title?: string | null
           theme_color?: string | null

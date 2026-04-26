@@ -7,6 +7,7 @@ import logoImg from "@/assets/nevorai-flow-logo.png";
 interface LandingPageCodeGateProps {
   pageId: string;
   pageTitle: string;
+  message?: string | null;
   onSuccess: () => void;
 }
 
@@ -17,6 +18,7 @@ interface LandingPageCodeGateProps {
 export const LandingPageCodeGate = ({
   pageId,
   pageTitle,
+  message,
   onSuccess,
 }: LandingPageCodeGateProps) => {
   const [code, setCode] = useState("");
@@ -116,7 +118,7 @@ export const LandingPageCodeGate = ({
             This page is private
           </p>
           <p className="text-xs mb-6" style={{ color: "#94a3b8" }}>
-            Enter the access code to continue.
+            {message || "Enter the access code to continue."}
           </p>
 
           {attempts >= 5 ? (

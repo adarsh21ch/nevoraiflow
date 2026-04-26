@@ -15,6 +15,14 @@ function timingSafeEqual(a: string, b: string): boolean {
   return result === 0;
 }
 
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -44,7 +52,7 @@ Deno.serve(async (req) => {
 
     const { data: page, error } = await supabase
       .from("landing_pages")
-      .select("id, access_code_enabled, access_code_plain")
+      .select("id, access_code_enabled, access_code_plain, access_code_hash")
       .eq("id", page_id)
       .maybeSingle();
 
@@ -55,16 +63,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!page.access_code_enabled || !page.access_code_plain) {
+    if (!page.access_code_enabled || (!page.access_code_plain && !page.access_code_hash)) {
       return new Response(
         JSON.stringify({ success: true, no_code_required: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const expected = String(page.access_code_plain).trim().toUpperCase();
     const provided = code.trim().toUpperCase();
-    const isValid = timingSafeEqual(expected, provided);
+    let isValid = false;
+
+    if (page.access_code_hash) {
+      // Hashed comparison (preferred)
+      const providedHash = await sha256Hex(provided);
+      isValid = timingSafeEqual(String(page.access_code_hash), providedHash);
+    } else if (page.access_code_plain) {
+      // Legacy plaintext fallback for rows saved before hashing was introduced
+      const expected = String(page.access_code_plain).trim().toUpperCase();
+      isValid = timingSafeEqual(expected, provided);
+    }
 
     if (isValid) {
       return new Response(

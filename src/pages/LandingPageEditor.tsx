@@ -100,6 +100,11 @@ We look forward to having you there.`,
   speaker_photo_url: "",
   testimonials_enabled: false,
   testimonials_section_title: "What our members say",
+  testimonials_display_position: "after_registration" as string,
+  min_age_enabled: false,
+  min_age: 18,
+  access_code_message: "",
+  faq_items: [] as { question: string; answer: string }[],
 };
 
 const sectionTypes = [
@@ -195,25 +200,52 @@ const LandingPageEditor = () => {
 
   useEffect(() => {
     if (existing) {
+      const ex = existing as any;
       setForm({
         ...defaultFormState,
-        ...existing,
-        sections: (existing.sections as any[]) || [],
+        ...ex,
+        sections: (ex.sections as any[]) || [],
+        faq_items: Array.isArray(ex.faq_items) ? ex.faq_items : [],
       });
       setSlugEdited(true);
-      setVideoToggle(!!existing.post_submit_video_asset_id);
-      setFunnelToggle(!!existing.linked_funnel_id);
+      setVideoToggle(!!ex.post_submit_video_asset_id);
+      setFunnelToggle(!!ex.linked_funnel_id);
     }
   }, [existing]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = sanitizeLandingPagePayload({ ...form, owner_id: user!.id });
+      const payload: any = sanitizeLandingPagePayload({ ...form, owner_id: user!.id });
+
+      // Hash the access code before persisting; keep plaintext for legacy back-compat.
+      // We only re-hash when the editor actually has a non-empty plain code typed in.
+      if (payload.access_code_enabled && payload.access_code_plain) {
+        try {
+          const enc = new TextEncoder().encode(
+            String(payload.access_code_plain).trim().toUpperCase(),
+          );
+          const buf = await crypto.subtle.digest("SHA-256", enc);
+          payload.access_code_hash = Array.from(new Uint8Array(buf))
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+        } catch {
+          // If hashing fails for any reason, edge function will fall back to plaintext.
+        }
+      }
+      if (!payload.access_code_enabled) {
+        payload.access_code_hash = null;
+      }
+
+      // Defensive cap on FAQ items to match server-side validation.
+      if (Array.isArray(payload.faq_items) && payload.faq_items.length > 10) {
+        payload.faq_items = payload.faq_items.slice(0, 10);
+      }
+
       if (isEdit) {
-        const { error } = await supabase.from("landing_pages").update(payload as any).eq("id", id!);
+        const { error } = await supabase.from("landing_pages").update(payload).eq("id", id!);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("landing_pages").insert(payload as any);
+        const { error } = await supabase.from("landing_pages").insert(payload);
         if (error) throw error;
       }
     },
@@ -800,17 +832,129 @@ const LandingPageEditor = () => {
             />
           </div>
           {form.access_code_enabled && (
-            <div className="space-y-1.5">
-              <Label className="text-xs">Access code</Label>
-              <Input
-                value={form.access_code_plain || ""}
-                onChange={(e) => updateField("access_code_plain", e.target.value.toUpperCase().slice(0, 32))}
-                placeholder="e.g. SESSION-2025"
-                className="font-mono uppercase tracking-wider"
-              />
-              <p className="text-[11px] text-muted-foreground">Share this code only with invited viewers.</p>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Access code</Label>
+                <Input
+                  value={form.access_code_plain || ""}
+                  onChange={(e) => updateField("access_code_plain", e.target.value.toUpperCase().slice(0, 32))}
+                  placeholder="e.g. SESSION-2025"
+                  className="font-mono uppercase tracking-wider"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Share this code only with invited viewers. Saved as a secure hash.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Hint message (optional)</Label>
+                <Input
+                  value={form.access_code_message || ""}
+                  onChange={(e) => updateField("access_code_message", e.target.value.slice(0, 200))}
+                  placeholder="e.g. Use the code from your invite email"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Shown above the code input on the gate screen.
+                </p>
+              </div>
             </div>
           )}
+        </div>
+
+        {/* Age gate */}
+        <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <Label className="font-semibold">Minimum age requirement</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Visitors must confirm their date of birth before submitting the registration form.
+              </p>
+            </div>
+            <Switch
+              checked={!!form.min_age_enabled}
+              onCheckedChange={(v) => updateField("min_age_enabled", v)}
+            />
+          </div>
+          {form.min_age_enabled && (
+            <div className="flex items-center gap-2">
+              <Label className="text-xs">Must be at least</Label>
+              <Input
+                type="number"
+                min={1}
+                max={120}
+                value={form.min_age ?? 18}
+                onChange={(e) => {
+                  const n = parseInt(e.target.value, 10);
+                  updateField("min_age", isNaN(n) ? 18 : Math.max(1, Math.min(120, n)));
+                }}
+                className="w-20"
+              />
+              <span className="text-xs text-muted-foreground">years old</span>
+            </div>
+          )}
+        </div>
+
+        {/* FAQ editor */}
+        <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+          <div>
+            <Label className="font-semibold">Frequently Asked Questions</Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              Add up to 10 FAQ items. Shown as an expandable accordion on the public page.
+            </p>
+          </div>
+          <div className="space-y-3">
+            {(form.faq_items || []).map((item, idx) => (
+              <div key={idx} className="p-3 rounded-lg border border-border bg-card space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">FAQ #{idx + 1}</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-destructive hover:text-destructive"
+                    onClick={() => {
+                      const next = [...(form.faq_items || [])];
+                      next.splice(idx, 1);
+                      updateField("faq_items", next);
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+                <Input
+                  placeholder="Question"
+                  value={item.question}
+                  onChange={(e) => {
+                    const next = [...(form.faq_items || [])];
+                    next[idx] = { ...next[idx], question: e.target.value.slice(0, 200) };
+                    updateField("faq_items", next);
+                  }}
+                />
+                <textarea
+                  placeholder="Answer"
+                  value={item.answer}
+                  onChange={(e) => {
+                    const next = [...(form.faq_items || [])];
+                    next[idx] = { ...next[idx], answer: e.target.value.slice(0, 1000) };
+                    updateField("faq_items", next);
+                  }}
+                  className="w-full min-h-[72px] rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </div>
+            ))}
+            {(form.faq_items?.length || 0) < 10 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  updateField("faq_items", [
+                    ...(form.faq_items || []),
+                    { question: "", answer: "" },
+                  ])
+                }
+              >
+                + Add FAQ item
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="border border-border rounded-xl p-4 space-y-2.5">
@@ -846,14 +990,51 @@ const LandingPageEditor = () => {
   );
 
   const renderTestimonialsStep = () => (
-    <TestimonialsBuilderStep
-      landingPageId={id}
-      userId={user!.id}
-      testimonialsEnabled={form.testimonials_enabled ?? false}
-      testimonialsSectionTitle={form.testimonials_section_title ?? "What our members say"}
-      onToggleEnabled={(v) => updateField("testimonials_enabled", v)}
-      onTitleChange={(v) => updateField("testimonials_section_title", v)}
-    />
+    <div className="space-y-6">
+      <TestimonialsBuilderStep
+        landingPageId={id}
+        userId={user!.id}
+        testimonialsEnabled={form.testimonials_enabled ?? false}
+        testimonialsSectionTitle={form.testimonials_section_title ?? "What our members say"}
+        onToggleEnabled={(v) => updateField("testimonials_enabled", v)}
+        onTitleChange={(v) => updateField("testimonials_section_title", v)}
+      />
+
+      {form.testimonials_enabled && (
+        <div className="p-4 rounded-xl border border-border bg-muted/30 space-y-3">
+          <div>
+            <Label className="font-semibold">Where should testimonials appear?</Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              Choose where on the public page testimonials will be shown relative to the registration form.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-3 gap-2">
+            {[
+              { v: "before_registration", label: "Before form", desc: "Build trust upfront" },
+              { v: "after_registration", label: "After form", desc: "Reassure post-submit" },
+              { v: "both", label: "Both", desc: "Maximum exposure" },
+            ].map((opt) => {
+              const active = (form.testimonials_display_position || "after_registration") === opt.v;
+              return (
+                <button
+                  key={opt.v}
+                  type="button"
+                  onClick={() => updateField("testimonials_display_position", opt.v)}
+                  className={`text-left p-3 rounded-lg border transition ${
+                    active
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-card hover:border-primary/40"
+                  }`}
+                >
+                  <div className="font-medium text-sm">{opt.label}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">{opt.desc}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 
   const renderWizardContent = () => {
