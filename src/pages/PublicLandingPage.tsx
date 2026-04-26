@@ -140,6 +140,7 @@ const PublicLandingPage = () => {
       <LandingPageCodeGate
         pageId={page.id}
         pageTitle={page.title || "Private page"}
+        message={(page as any).access_code_message}
         onSuccess={() => setPageUnlocked(true)}
       />
     );
