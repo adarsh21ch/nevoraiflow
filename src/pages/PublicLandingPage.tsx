@@ -315,7 +315,9 @@ const PublicLandingPage = () => {
               </Card>
             )}
             {/* Testimonials section */}
-            {page.testimonials_enabled && testimonials.length > 0 && (
+            {/* Testimonials — after form */}
+            {page.testimonials_enabled && testimonials.length > 0 &&
+              ((page as any).testimonials_display_position !== "before_registration") && (
               <div className="mt-10">
                 <TestimonialsViewer
                   testimonials={testimonials}
