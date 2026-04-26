@@ -343,17 +343,52 @@ const PublicLandingPage = () => {
                 </div>
               )}
 
-              {/* Speaker section from top-level fields */}
+              {/* Speaker / Mentor section */}
               {(page.speaker_name || page.speaker_photo_url) && (
-                <Card className="p-6 flex flex-col sm:flex-row gap-4 items-center">
+                <Card className="p-6 flex flex-col sm:flex-row gap-4 items-start">
                   {page.speaker_photo_url && (
-                    <img src={page.speaker_photo_url} alt={page.speaker_name || "Speaker"} className="w-24 h-24 rounded-full object-cover shrink-0" />
+                    <img src={page.speaker_photo_url} alt={page.speaker_name || "Speaker"} className="w-24 h-24 rounded-full object-cover shrink-0 ring-2 ring-primary/30" />
                   )}
-                  <div>
+                  <div className="flex-1">
                     <h3 className="text-xl font-bold">{page.speaker_name}</h3>
                     {page.speaker_role && <p className="text-sm text-muted-foreground">{page.speaker_role}</p>}
-                    {page.speaker_bio && <p className="mt-2 text-sm">{page.speaker_bio}</p>}
+                    {page.speaker_bio && (
+                      <details className="mt-2 group">
+                        <summary className="text-sm cursor-pointer text-primary list-none [&::-webkit-details-marker]:hidden">
+                          <span className="group-open:hidden">Read bio →</span>
+                          <span className="hidden group-open:inline">Hide bio ↑</span>
+                        </summary>
+                        <p className="mt-2 text-sm whitespace-pre-line">{page.speaker_bio}</p>
+                      </details>
+                    )}
                   </div>
+                </Card>
+              )}
+
+              {/* Testimonials — before form */}
+              {page.testimonials_enabled && testimonials.length > 0 &&
+                ((page as any).testimonials_display_position === "before_registration" ||
+                 (page as any).testimonials_display_position === "both") && (
+                <TestimonialsViewer
+                  testimonials={testimonials}
+                  sectionTitle={page.testimonials_section_title || "What our members say"}
+                />
+              )}
+
+              {/* FAQ accordion */}
+              {Array.isArray((page as any).faq_items) && (page as any).faq_items.length > 0 && (
+                <Card className="p-6">
+                  <h3 className="text-xl font-bold mb-4">Frequently Asked Questions</h3>
+                  <Accordion type="single" collapsible className="w-full">
+                    {(page as any).faq_items.map((f: any, idx: number) =>
+                      f?.question ? (
+                        <AccordionItem key={idx} value={`top-faq-${idx}`}>
+                          <AccordionTrigger className="text-left">{f.question}</AccordionTrigger>
+                          <AccordionContent className="whitespace-pre-line">{f.answer}</AccordionContent>
+                        </AccordionItem>
+                      ) : null,
+                    )}
+                  </Accordion>
                 </Card>
               )}
             </div>
