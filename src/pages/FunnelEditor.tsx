@@ -448,8 +448,13 @@ const FunnelEditor = () => {
     });
   };
 
-  // ── Wizard steps for current mode ──
-  const visibleSteps = isMulti ? MULTI_STEPS : SINGLE_STEPS;
+  // ── Wizard steps for current mode (adaptive: hide unused) ──
+  const baseSteps = isMulti ? MULTI_STEPS : SINGLE_STEPS;
+  const visibleSteps = baseSteps.filter((s) => {
+    if (s.label === "Lead Capture" && !leadForm.capture_enabled) return false;
+    if (s.label === "Payment" && !funnel.payment_enabled) return false;
+    return true;
+  });
   const totalSteps = visibleSteps.length;
   const lastStepIdx = totalSteps - 1;
 
