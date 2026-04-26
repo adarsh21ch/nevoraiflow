@@ -161,7 +161,7 @@ export const MultiStepViewer = ({
     const loadProgress = async () => {
       const { data } = await supabase
         .from("funnel_step_progress")
-        .select("funnel_step_id, status, max_watched_seconds, watched_percentage, last_position_seconds, completed_at")
+        .select("funnel_step_id, status, max_watched_seconds, watched_percentage, last_position_seconds, completed_at, time_spent_seconds, permanently_unlocked, condition_met_at")
         .eq("funnel_id", funnel.id)
         .eq("session_id", sessionId.current);
 
