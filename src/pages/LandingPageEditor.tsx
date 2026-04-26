@@ -100,6 +100,14 @@ We look forward to having you there.`,
   speaker_photo_url: "",
   testimonials_enabled: false,
   testimonials_section_title: "What our members say",
+  testimonials_display_position: "after_registration" as
+    | "before_registration"
+    | "after_registration"
+    | "both",
+  min_age_enabled: false,
+  min_age: 18,
+  access_code_message: "",
+  faq_items: [] as { question: string; answer: string }[],
 };
 
 const sectionTypes = [
