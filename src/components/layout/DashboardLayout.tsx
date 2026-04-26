@@ -135,7 +135,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
             collapsed ? "w-16" : "w-60"
           )}
         >
-          <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #7EE83A, #00D4C8, #00AAFF, #1A4FD6)", marginTop: 'env(safe-area-inset-top)' }} />
+          <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #F4D77A, #E0B84A, #D4AF37, #1A4FD6)", marginTop: 'env(safe-area-inset-top)' }} />
           <div className="flex h-16 items-center justify-between border-b border-border px-4 shrink-0">
             {!collapsed && <Logo size="sm" showByline />}
             <div className="flex items-center gap-1">
