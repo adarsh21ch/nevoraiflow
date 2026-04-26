@@ -1266,18 +1266,9 @@ const FunnelEditor = () => {
 
   // ── Determine which content to render ──
   const renderWizardContent = () => {
-    // Gate: if mode not chosen yet, show mode picker as the FIRST screen
     if (!modeChosen) return renderModePicker();
-
-    if (wizardStep === 0) return renderBasicInfo();
-
-    if (isMulti) {
-      if (wizardStep === 1) return renderFlowStepsBuilder();
-      return renderCommonStep(2);
-    } else {
-      if (wizardStep === 1) return renderVideoStep();
-      return renderCommonStep(2);
-    }
+    const label = visibleSteps[wizardStep]?.label;
+    return renderByLabel(label) ?? renderBasicInfo();
   };
 
   return (
