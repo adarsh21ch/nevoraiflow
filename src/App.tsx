@@ -19,6 +19,7 @@ import FunnelsPage from "./pages/FunnelsPage";
 import FunnelEditor from "./pages/FunnelEditor";
 import FunnelDetail from "./pages/FunnelDetail";
 import PublicFunnel from "./pages/PublicFunnel";
+import MemberDashboard from "./pages/MemberDashboard";
 import LandingPagesPage from "./pages/LandingPagesPage";
 import LandingPageEditor from "./pages/LandingPageEditor";
 import LandingPageDetail from "./pages/LandingPageDetail";
@@ -86,6 +87,7 @@ const App = () => (
               <Route path="/install" element={<InstallApp />} />
               <Route path="/checkout/return" element={<CheckoutReturn />} />
               <Route path="/f/:slug" element={<PublicFunnel />} />
+              <Route path="/f/:slug/member" element={<MemberDashboard />} />
               <Route path="/l/:slug" element={<PublicLandingPage />} />
               <Route path="/video/:id" element={<PublicVideoPage />} />
               <Route path="/s/:slug" element={<PublicLivePage />} />
