@@ -7,6 +7,7 @@ import logoImg from "@/assets/nevorai-flow-logo.png";
 interface LandingPageCodeGateProps {
   pageId: string;
   pageTitle: string;
+  message?: string | null;
   onSuccess: () => void;
 }
 
@@ -17,6 +18,7 @@ interface LandingPageCodeGateProps {
 export const LandingPageCodeGate = ({
   pageId,
   pageTitle,
+  message,
   onSuccess,
 }: LandingPageCodeGateProps) => {
   const [code, setCode] = useState("");
