@@ -15,17 +15,17 @@ import {
   FileText, Video, Settings, ClipboardList, Mic, MessageCircle, IndianRupee,
   Radio, Rocket, Check, Copy, Plus, Trash2, GripVertical, Lock, ExternalLink,
   Play, CreditCard, UserCheck, Calendar, Layers, ChevronDown, ChevronUp, Pencil,
-  User, ListChecks, X, MoreVertical
+  User, ListChecks, X
 } from "lucide-react";
 import { VideoPickerModal } from "@/components/VideoPickerModal";
 import { StepTypeSelector, getStepTypeMeta } from "@/components/funnel/StepTypeSelector";
 import { StepConfigPanel, type FlowStep as PanelFlowStep } from "@/components/funnel/StepConfigPanel";
-// JourneyPreview is no longer rendered inside the editor — right-rail FunnelLivePreview covers it.
+import { JourneyPreview } from "@/components/funnel/JourneyPreview";
 import { PrivacySettings } from "@/components/funnel/PrivacySettings";
 import { FunnelLivePreview } from "@/components/funnel/FunnelLivePreview";
 import { SpeakerPhotoUpload } from "@/components/funnel/SpeakerPhotoUpload";
 import { PerStepSpeakerAssignment } from "@/components/funnel/PerStepSpeakerAssignment";
-// Collapsible no longer needed (mobile journey preview removed alongside inline preview).
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { usePlan } from "@/hooks/usePlan";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { StepLockOverlay } from "@/components/funnel/StepLockOverlay";
@@ -111,17 +111,14 @@ const FunnelEditor = () => {
   const [stepVideoPickerIdx, setStepVideoPickerIdx] = useState<number | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<{ id: string; title: string; url: string | null; thumbnail?: string | null } | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-  const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isFirstAutoSaveRun = useRef(true);
+  const autoSaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Step type selector & config panel
   const [stepTypeSelectorOpen, setStepTypeSelectorOpen] = useState(false);
   const [editingStepIdx, setEditingStepIdx] = useState<number | null>(null);
-  const [stepMenuOpenIdx, setStepMenuOpenIdx] = useState<number | null>(null);
 
   // Journey preview collapsible (mobile)
-  // (mobile journey preview state removed — right-rail Live Preview is the single source of truth)
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [audioNoteEnabled, setAudioNoteEnabled] = useState(false);
 
   const [funnel, setFunnel] = useState({
@@ -397,27 +394,20 @@ const FunnelEditor = () => {
     onError: (err: any) => toast.error(err.message || "Failed to save"),
   });
 
-  // Debounced auto-save (existing funnels only). Fires ~1.5s after last change.
+  // Auto-save
   useEffect(() => {
     if (!isEdit || !id) return;
-    if (isFirstAutoSaveRun.current) { isFirstAutoSaveRun.current = false; return; }
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(async () => {
+    autoSaveTimer.current = setInterval(async () => {
       const payload = buildPayload();
       if (!payload || !payload.title) return;
       try {
-        setIsAutoSaving(true);
         await supabase.from("funnels").update(payload).eq("id", id);
         await supabase.from("funnel_lead_form_config").upsert({ funnel_id: id, ...leadForm }, { onConflict: "funnel_id" });
         setLastSavedAt(new Date());
-      } catch {
-        // Silent — manual save remains as fallback.
-      } finally {
-        setIsAutoSaving(false);
-      }
-    }, 1500);
-    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  }, [isEdit, id, funnel, leadForm, selectedVideo, buildPayload]);
+      } catch {}
+    }, 30000);
+    return () => { if (autoSaveTimer.current) clearInterval(autoSaveTimer.current); };
+  }, [isEdit, id, buildPayload, leadForm]);
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
@@ -457,20 +447,10 @@ const FunnelEditor = () => {
     });
   };
 
-  // ── Wizard steps for current mode (adaptive: hide unused) ──
-  const baseSteps = isMulti ? MULTI_STEPS : SINGLE_STEPS;
-  const visibleSteps = baseSteps.filter((s) => {
-    if (s.label === "Lead Capture" && !leadForm.capture_enabled) return false;
-    if (s.label === "Payment" && !funnel.payment_enabled) return false;
-    return true;
-  });
+  // ── Wizard steps for current mode ──
+  const visibleSteps = isMulti ? MULTI_STEPS : SINGLE_STEPS;
   const totalSteps = visibleSteps.length;
   const lastStepIdx = totalSteps - 1;
-
-  // Clamp wizardStep when visible-step count shrinks (e.g. user disables Payment).
-  useEffect(() => {
-    if (wizardStep > lastStepIdx && lastStepIdx >= 0) setWizardStep(lastStepIdx);
-  }, [lastStepIdx, wizardStep]);
 
   // ── Plan-based step gating ──
   // Map wizard step labels to required feature flags from plan_config.
@@ -507,22 +487,24 @@ const FunnelEditor = () => {
 
   const currentStepLock = modeChosen ? getStepLock(visibleSteps[wizardStep]?.label ?? "") : null;
 
-  // ── Render dispatch by label (adaptive — works even when steps are hidden) ──
-  const renderByLabel = (label: string) => {
-    switch (label) {
-      case "Name & Info": return renderBasicInfo();
-      case "Video": return renderVideoStep();
-      case "Build Journey": return renderFlowStepsBuilder();
-      case "Video Settings": return renderControlsStep();
-      case "Speaker": return renderSpeakerStep();
-      case "Video Topics": return renderVideoTopicsStep();
-      case "Lead Capture": return renderLeadFormStep();
-      case "Contact Info": return renderWhatsappStep();
-      case "Payment": return renderPaymentStep();
-      case "Privacy": return renderPrivacyStep();
-      case "Publish": return renderPublishStep();
-      default: return null;
-    }
+  // ── Render helper for common steps ──
+  // Single: 0=Controls, 1=Speaker, 2=VideoTopics, 3=LeadForm, 4=Whatsapp, 5=Payment, 6=Privacy, 7=Publish
+  // Multi:  0=Controls, 1=Speaker, 2=VideoTopics, 3=Whatsapp, 4=Payment, 5=Privacy, 6=Publish
+  const renderCommonStep = (offset: number) => {
+    const idx = wizardStep - offset;
+    if (idx === 0) return renderControlsStep();
+    if (idx === 1) return renderSpeakerStep();
+    if (idx === 2) return renderVideoTopicsStep();
+    if (!isMulti && idx === 3) return renderLeadFormStep();
+    const whatsappIdx = isMulti ? 3 : 4;
+    const paymentIdx = isMulti ? 4 : 5;
+    const privacyIdx = isMulti ? 5 : 6;
+    const publishIdx = isMulti ? 6 : 7;
+    if (idx === whatsappIdx) return renderWhatsappStep();
+    if (idx === paymentIdx) return renderPaymentStep();
+    if (idx === privacyIdx) return renderPrivacyStep();
+    if (idx === publishIdx) return renderPublishStep();
+    return null;
   };
 
   // ── Step renderers ──
@@ -662,150 +644,165 @@ const FunnelEditor = () => {
         </div>
       </div>
 
-      <div className="mt-4">
-        {flowSteps.length === 0 ? (
-          <div className="border-2 border-dashed border-border rounded-[14px] p-10 text-center">
-            <Layers size={36} className="text-muted-foreground mx-auto mb-3" />
-            <p className="text-sm font-semibold text-foreground mb-1">No steps yet</p>
-            <p className="text-xs text-muted-foreground mb-4">Start building your journey by adding the first step.</p>
-            <Button variant="hero" size="sm" onClick={() => setStepTypeSelectorOpen(true)}>
-              <Plus size={14} /> Add First Step
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-0">
-            {flowSteps.map((fs, idx) => {
-              const meta = getStepTypeMeta(fs.step_type);
-              const isEditing = editingStepIdx === idx;
-              const unlockBadge = fs.unlock_condition === "full_watch" ? "Full watch" :
-                fs.unlock_condition === "percentage" ? `${fs.unlock_percentage || 80}%` :
-                fs.unlock_condition === "time_spent" ? `${fs.unlock_percentage || 10} min` :
-                UNLOCK_LABELS[fs.unlock_rule_type] || "Auto";
-              const menuOpen = stepMenuOpenIdx === idx;
-              return (
-                <div key={idx}>
-                  <div
-                    className={`group relative rounded-xl transition-all duration-150 ${
-                      isEditing
-                        ? "border-l-[3px] border-l-primary border-t border-r border-b border-border bg-card shadow-lg shadow-primary/5"
-                        : "border border-border bg-card hover:border-primary/30"
-                    }`}
-                    style={{ padding: "16px 20px" }}
-                  >
-                    <div className="flex items-center gap-3">
-                      {/* Play icon */}
-                      <div className={`w-9 h-9 rounded-lg ${meta.bg} flex items-center justify-center shrink-0`}>
-                        <meta.icon size={16} className={meta.color} />
+      <div className="lg:grid lg:grid-cols-[1fr_240px] lg:gap-5 mt-4">
+        {/* Left: Steps list */}
+        <div>
+          {flowSteps.length === 0 ? (
+            <div className="border-2 border-dashed border-border rounded-[14px] p-10 text-center">
+              <Layers size={36} className="text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm font-semibold text-foreground mb-1">No steps yet</p>
+              <p className="text-xs text-muted-foreground mb-4">Start building your journey by adding the first step.</p>
+              <Button variant="hero" size="sm" onClick={() => setStepTypeSelectorOpen(true)}>
+                <Plus size={14} /> Add First Step
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-0">
+              {flowSteps.map((fs, idx) => {
+                const meta = getStepTypeMeta(fs.step_type);
+                const isEditing = editingStepIdx === idx;
+                const unlockBadge = fs.unlock_condition === "full_watch" ? "Full watch" :
+                  fs.unlock_condition === "percentage" ? `${fs.unlock_percentage || 80}%` :
+                  fs.unlock_condition === "time_spent" ? `${fs.unlock_percentage || 10} min` :
+                  UNLOCK_LABELS[fs.unlock_rule_type] || "Auto";
+                return (
+                  <div key={idx}>
+                    <div
+                      className={`group relative rounded-xl transition-all duration-150 ${
+                        isEditing
+                          ? "border-l-[3px] border-l-primary border-t border-r border-b border-border bg-card shadow-lg shadow-primary/5"
+                          : "border border-border bg-card hover:border-primary/30"
+                      }`}
+                      style={{ padding: "16px 20px" }}
+                    >
+                      {/* Top row */}
+                      <div className="flex items-center gap-3">
+                        {/* Reorder */}
+                        <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => moveStep(idx, idx - 1)} disabled={idx === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors p-0.5"><ChevronUp size={12} /></button>
+                          <button onClick={() => moveStep(idx, idx + 1)} disabled={idx === flowSteps.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors p-0.5"><ChevronDown size={12} /></button>
+                        </div>
+
+                        <div className={`w-9 h-9 rounded-lg ${meta.bg} flex items-center justify-center shrink-0`}>
+                          <meta.icon size={16} className={meta.color} />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Step {idx + 1}</span>
+                            {!fs.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive">Inactive</span>}
+                          </div>
+                          <p className="text-[15px] font-semibold text-foreground truncate mt-1 uppercase tracking-wide">
+                            {fs.title || <span className="text-muted-foreground italic normal-case tracking-normal">Untitled {meta.label}</span>}
+                          </p>
+                        </div>
+
+                        <Button
+                          variant={isEditing ? "default" : "outline"}
+                          size="sm"
+                          className="h-8 text-xs shrink-0 gap-1.5"
+                          onClick={() => setEditingStepIdx(isEditing ? null : idx)}
+                        >
+                          <Pencil size={12} />
+                          {isEditing ? "Editing" : "Edit"}
+                        </Button>
                       </div>
 
-                      {/* Title block */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">STEP {idx + 1}</span>
-                          {!fs.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive">Inactive</span>}
-                        </div>
-                        <p className="text-[15px] font-semibold text-foreground truncate mt-0.5 uppercase tracking-wide">
-                          {fs.title || <span className="text-muted-foreground italic normal-case tracking-normal">Untitled {meta.label}</span>}
-                        </p>
-                        {/* Compact pills row */}
-                        <div className="flex items-center gap-1.5 flex-wrap mt-2">
-                          <span className="text-[11px] px-2 py-0.5 rounded-md font-medium bg-background/60 border border-border text-foreground">
+                      {/* Bottom row: badges */}
+                      <div className="flex items-center justify-between mt-3 pl-[52px]">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-background/80 border border-border text-foreground">
                             {meta.label}
                           </span>
                           {idx > 0 && (
-                            <span className="text-[11px] px-2 py-0.5 rounded-md font-medium bg-muted text-muted-foreground flex items-center gap-1">
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-muted text-muted-foreground flex items-center gap-1">
                               <Lock size={9} />
                               {unlockBadge}
                             </span>
                           )}
+                          {fs.access_code_enabled && (
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-500 flex items-center gap-1">
+                              🔐 Code
+                            </span>
+                          )}
+                          {fs.time_delay_enabled && (fs.time_delay_minutes || 0) > 0 && (
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-600 flex items-center gap-1">
+                              ⏱ {fs.time_delay_minutes}m wait
+                            </span>
+                          )}
+                          {fs.speaker_mode_step && fs.speaker_mode_step !== "inherit" && fs.speaker_mode_step !== "none" && (
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-blue-500/10 text-blue-400 flex items-center gap-1">
+                              👤 {fs.speaker_mode_step === "account" ? "Account" : fs.speaker_mode_step === "override" || fs.speaker_mode_step === "custom" ? "Custom" : fs.speaker_mode_step}
+                            </span>
+                          )}
+                          {fs.video_topics_step_enabled && (fs.video_topics_step?.length || 0) > 0 && (
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-500 flex items-center gap-1">
+                              📋 {fs.video_topics_step?.length} topics
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => duplicateStep(idx)}>
+                            <Copy size={13} />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeFlowStep(idx)}>
+                            <Trash2 size={13} />
+                          </Button>
                         </div>
                       </div>
-
-                      {/* Edit button — always visible */}
-                      <Button
-                        variant={isEditing ? "default" : "outline"}
-                        size="sm"
-                        className="h-8 text-xs shrink-0 gap-1.5"
-                        onClick={() => setEditingStepIdx(isEditing ? null : idx)}
-                      >
-                        <Pencil size={12} />
-                        {isEditing ? "Editing" : "Edit"}
-                      </Button>
-
-                      {/* Overflow menu — reorder/duplicate/delete */}
-                      <div className="relative shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                          onClick={() => setStepMenuOpenIdx(menuOpen ? null : idx)}
-                          aria-label="Step options"
-                        >
-                          <MoreVertical size={14} />
-                        </Button>
-                        {menuOpen && (
-                          <>
-                            <div className="fixed inset-0 z-30" onClick={() => setStepMenuOpenIdx(null)} />
-                            <div className="absolute right-0 top-9 z-40 w-44 rounded-lg border border-border bg-popover shadow-lg overflow-hidden">
-                              <button
-                                onClick={() => { moveStep(idx, idx - 1); setStepMenuOpenIdx(null); }}
-                                disabled={idx === 0}
-                                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                <ChevronUp size={13} /> Move up
-                              </button>
-                              <button
-                                onClick={() => { moveStep(idx, idx + 1); setStepMenuOpenIdx(null); }}
-                                disabled={idx === flowSteps.length - 1}
-                                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                <ChevronDown size={13} /> Move down
-                              </button>
-                              <button
-                                onClick={() => { duplicateStep(idx); setStepMenuOpenIdx(null); }}
-                                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted"
-                              >
-                                <Copy size={13} /> Duplicate
-                              </button>
-                              <button
-                                onClick={() => { removeFlowStep(idx); setStepMenuOpenIdx(null); }}
-                                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 border-t border-border"
-                              >
-                                <Trash2 size={13} /> Delete
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
                     </div>
+
+                    {/* Vertical connector */}
+                    {idx < flowSteps.length - 1 && (
+                      <div className="flex justify-center py-1">
+                        <div className="w-px h-5 bg-border relative">
+                          <ChevronDown size={10} className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-muted-foreground" />
+                        </div>
+                      </div>
+                    )}
                   </div>
+                );
+              })}
+            </div>
+          )}
 
-                  {/* Vertical connector */}
-                  {idx < flowSteps.length - 1 && (
-                    <div className="flex justify-center py-1">
-                      <div className="w-px h-5 bg-border relative">
-                        <ChevronDown size={10} className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-muted-foreground" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          {/* Add Step button */}
+          {flowSteps.length > 0 && (
+            <button
+              onClick={() => setStepTypeSelectorOpen(true)}
+              className="w-full mt-3 rounded-[14px] py-5 text-center transition-all border-2 border-dashed border-border text-muted-foreground font-semibold text-sm hover:border-primary/40 hover:text-primary hover:bg-primary/5"
+            >
+              <Plus size={16} className="inline mr-1.5" />
+              Add Step
+              <span className="block text-[11px] font-normal mt-0.5 opacity-60">Add a video, form, call booking, or payment step</span>
+            </button>
+          )}
+        </div>
+
+        {/* Right: Live Preview (desktop) */}
+        {flowSteps.length > 0 && (
+          <div className="hidden lg:block">
+            <div className="sticky top-24 p-4 border border-border rounded-xl bg-card/50">
+              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">Live Preview</p>
+              <JourneyPreview steps={flowSteps} />
+              <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">Prospects see this exact order.</p>
+            </div>
           </div>
         )}
-
-        {/* Add Step button */}
-        {flowSteps.length > 0 && (
-          <button
-            onClick={() => setStepTypeSelectorOpen(true)}
-            className="w-full mt-3 rounded-[14px] py-5 text-center transition-all border-2 border-dashed border-border text-muted-foreground font-semibold text-sm hover:border-primary/40 hover:text-primary hover:bg-primary/5"
-          >
-            <Plus size={16} className="inline mr-1.5" />
-            Add Step
-            <span className="block text-[11px] font-normal mt-0.5 opacity-60">Add a video, form, call booking, or payment step</span>
-          </button>
-        )}
       </div>
+
+      {/* Mobile journey preview */}
+      {flowSteps.length > 0 && (
+        <Collapsible open={previewOpen} onOpenChange={setPreviewOpen} className="lg:hidden mt-4 border border-border rounded-xl overflow-hidden">
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            Journey Preview
+            <ChevronDown size={14} className={`transition-transform ${previewOpen ? "rotate-180" : ""}`} />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="p-3 pt-0">
+            <JourneyPreview steps={flowSteps} />
+          </CollapsibleContent>
+        </Collapsible>
+      )}
 
       {/* Modals */}
       <StepTypeSelector open={stepTypeSelectorOpen} onClose={() => setStepTypeSelectorOpen(false)} onSelect={addFlowStep} />
@@ -1280,9 +1277,18 @@ const FunnelEditor = () => {
 
   // ── Determine which content to render ──
   const renderWizardContent = () => {
+    // Gate: if mode not chosen yet, show mode picker as the FIRST screen
     if (!modeChosen) return renderModePicker();
-    const label = visibleSteps[wizardStep]?.label;
-    return renderByLabel(label) ?? renderBasicInfo();
+
+    if (wizardStep === 0) return renderBasicInfo();
+
+    if (isMulti) {
+      if (wizardStep === 1) return renderFlowStepsBuilder();
+      return renderCommonStep(2);
+    } else {
+      if (wizardStep === 1) return renderVideoStep();
+      return renderCommonStep(2);
+    }
   };
 
   return (
@@ -1323,14 +1329,7 @@ const FunnelEditor = () => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex-1 min-w-0">
                 <h1 className="text-lg sm:text-xl font-heading font-bold truncate">{funnel.title || "New Funnel"}</h1>
-                {isAutoSaving ? (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    Saving…
-                  </p>
-                ) : lastSavedAt ? (
-                  <p className="text-xs text-muted-foreground">Auto-saved {lastSavedAt.toLocaleTimeString()}</p>
-                ) : null}
+                {lastSavedAt && <p className="text-xs text-muted-foreground">Auto-saved {lastSavedAt.toLocaleTimeString()}</p>}
               </div>
               {modeChosen && (
                 <Button variant="hero" size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !funnel.title} className="shrink-0 ml-2">
