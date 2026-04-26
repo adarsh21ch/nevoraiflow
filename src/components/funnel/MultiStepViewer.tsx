@@ -237,9 +237,12 @@ export const MultiStepViewer = ({
 
   const completeStep = useCallback(async (stepIndex: number) => {
     const step = steps[stepIndex];
+    const nowIso = new Date().toISOString();
     const completedUpdate = {
       status: "completed" as const,
-      completed_at: new Date().toISOString(),
+      completed_at: nowIso,
+      permanently_unlocked: true,
+      condition_met_at: nowIso,
     };
     await updateStepProgress(step.id, completedUpdate);
 
@@ -266,7 +269,11 @@ export const MultiStepViewer = ({
       if (shouldUnlock) {
         const nextStatus = progressMap[nextStep.id]?.status;
         if (nextStatus === "locked") {
-          await updateStepProgress(nextStep.id, { status: "unlocked" });
+          await updateStepProgress(nextStep.id, {
+            status: "unlocked",
+            permanently_unlocked: true,
+            condition_met_at: nowIso,
+          });
         }
       }
     }
