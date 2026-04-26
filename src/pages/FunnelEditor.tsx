@@ -397,20 +397,27 @@ const FunnelEditor = () => {
     onError: (err: any) => toast.error(err.message || "Failed to save"),
   });
 
-  // Auto-save
+  // Debounced auto-save (existing funnels only). Fires ~1.5s after last change.
   useEffect(() => {
     if (!isEdit || !id) return;
-    autoSaveTimer.current = setInterval(async () => {
+    if (isFirstAutoSaveRun.current) { isFirstAutoSaveRun.current = false; return; }
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
       const payload = buildPayload();
       if (!payload || !payload.title) return;
       try {
+        setIsAutoSaving(true);
         await supabase.from("funnels").update(payload).eq("id", id);
         await supabase.from("funnel_lead_form_config").upsert({ funnel_id: id, ...leadForm }, { onConflict: "funnel_id" });
         setLastSavedAt(new Date());
-      } catch {}
-    }, 30000);
-    return () => { if (autoSaveTimer.current) clearInterval(autoSaveTimer.current); };
-  }, [isEdit, id, buildPayload, leadForm]);
+      } catch {
+        // Silent — manual save remains as fallback.
+      } finally {
+        setIsAutoSaving(false);
+      }
+    }, 1500);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [isEdit, id, funnel, leadForm, selectedVideo, buildPayload]);
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
