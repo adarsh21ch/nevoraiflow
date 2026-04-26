@@ -83,6 +83,32 @@ const PublicLandingPage = () => {
     if (!page || submitting) return;
     if (honeypot) { setSubmitted(true); return; }
 
+    // Age gate — verify the supplied DOB meets the minimum.
+    const minAgeEnabled = !!(page as any).min_age_enabled;
+    const minAge = Number((page as any).min_age) || 0;
+    if (minAgeEnabled && minAge > 0) {
+      const dob: string = formData.dob || "";
+      if (!dob) {
+        toast.error(`Please enter your date of birth (${minAge}+ required).`);
+        return;
+      }
+      const dobDate = new Date(dob);
+      if (isNaN(dobDate.getTime())) {
+        toast.error("Please enter a valid date of birth.");
+        return;
+      }
+      const today = new Date();
+      let age = today.getFullYear() - dobDate.getFullYear();
+      const monthDiff = today.getMonth() - dobDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobDate.getDate())) {
+        age--;
+      }
+      if (age < minAge) {
+        toast.error(`Sorry, you must be ${minAge}+ to register.`);
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       const payload: any = {
