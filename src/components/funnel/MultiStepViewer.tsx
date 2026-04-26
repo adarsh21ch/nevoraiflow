@@ -360,7 +360,11 @@ export const MultiStepViewer = ({
         if (rule === "watch_seconds" && maxWatched >= parseInt(nextStep.unlock_rule_value || "0")) shouldUnlock = true;
         if (rule === "watch_percent" && pct >= parseInt(nextStep.unlock_rule_value || "0")) shouldUnlock = true;
         if (shouldUnlock) {
-          updateStepProgress(nextStep.id, { status: "unlocked" });
+          updateStepProgress(nextStep.id, {
+            status: "unlocked",
+            permanently_unlocked: true,
+            condition_met_at: new Date().toISOString(),
+          });
         }
       }
     }
