@@ -841,6 +841,18 @@ const PublicFunnel = () => {
           {funnel.description && <p style={{ fontSize: "15px", color: tc.textDim, lineHeight: "1.6" }} className="mt-3 max-w-xl mx-auto">{funnel.description}</p>}
         </div>
           <>
+        {/* Member-area shortcut once a lead exists */}
+        {(leadSubmitted || privateLeadSubmitted) && (
+          <div className="max-w-4xl mx-auto mb-4 flex justify-end">
+            <Link
+              to={`/f/${funnel.slug}/member`}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-slate-200 transition"
+            >
+              👤 Member area
+            </Link>
+          </div>
+        )}
+
         {/* Lead form before video */}
         {showLeadFormNow && <LeadFormCard className="max-w-md mx-auto mb-8" />}
 
