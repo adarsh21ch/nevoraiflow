@@ -376,6 +376,12 @@ export const MultiStepViewer = ({
       if (!activeStep) return;
       const p = progressMap[activeStep.id];
       if (!p || p.status === "locked") return;
+      const newTimeSpent = (p.time_spent_seconds || 0) + 5;
+      // Update local state so accumulated value persists between ticks
+      setProgressMap((prev) => ({
+        ...prev,
+        [activeStep.id]: { ...prev[activeStep.id], time_spent_seconds: newTimeSpent },
+      }));
       supabase
         .from("funnel_step_progress")
         .update({
@@ -383,7 +389,8 @@ export const MultiStepViewer = ({
           watched_percentage: p.watched_percentage,
           last_position_seconds: p.last_position_seconds,
           status: p.status,
-        })
+          time_spent_seconds: newTimeSpent,
+        } as any)
         .eq("funnel_id", funnel.id)
         .eq("funnel_step_id", activeStep.id)
         .eq("session_id", sessionId.current)
