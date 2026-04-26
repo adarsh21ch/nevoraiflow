@@ -692,8 +692,8 @@ const FunnelEditor = () => {
                             <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Step {idx + 1}</span>
                             {!fs.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive">Inactive</span>}
                           </div>
-                          <p className="text-[15px] font-semibold text-foreground truncate mt-1">
-                            {fs.title || <span className="text-muted-foreground italic">Untitled {meta.label}</span>}
+                          <p className="text-[15px] font-semibold text-foreground truncate mt-1 uppercase tracking-wide">
+                            {fs.title || <span className="text-muted-foreground italic normal-case tracking-normal">Untitled {meta.label}</span>}
                           </p>
                         </div>
 
@@ -711,7 +711,7 @@ const FunnelEditor = () => {
                       {/* Bottom row: badges */}
                       <div className="flex items-center justify-between mt-3 pl-[52px]">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-primary/10 text-primary">
+                          <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-background/80 border border-border text-foreground">
                             {meta.label}
                           </span>
                           {idx > 0 && (
@@ -834,25 +834,6 @@ const FunnelEditor = () => {
       <h2 className="text-lg font-heading font-semibold">Video Controls</h2>
       <p className="text-sm text-muted-foreground">Configure playback behavior for your viewers.</p>
       <div className="space-y-4 mt-4">
-        {!isMulti && (
-          <div className="p-4 bg-muted/50 rounded-xl space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="font-semibold">Show CTA Button</Label>
-                <p className="text-xs text-muted-foreground mt-0.5">Call-to-action button on the funnel page</p>
-              </div>
-              <Switch checked={funnel.cta_enabled} onCheckedChange={(v) => update("cta_enabled", v)} />
-            </div>
-            {funnel.cta_enabled && (
-              <div className="border-t border-border pt-4 space-y-3">
-                <div><Label className="text-sm">Button Text</Label><Input value={funnel.cta_text} onChange={(e) => update("cta_text", e.target.value)} className="mt-1 bg-muted border-border" /></div>
-                <div><Label className="text-sm">Show After (seconds)</Label><Input type="number" value={funnel.cta_timing_seconds} onChange={(e) => update("cta_timing_seconds", parseInt(e.target.value) || 0)} className="mt-1 bg-muted border-border" /></div>
-                <div className="flex items-center justify-between"><Label className="text-sm">Lock Until Timer</Label><Switch checked={funnel.lock_cta} onCheckedChange={(v) => update("lock_cta", v)} /></div>
-                <div><Label className="text-sm">CTA Link <span className="text-muted-foreground font-normal">(optional)</span></Label><Input value={funnel.cta_url} onChange={(e) => update("cta_url", e.target.value)} placeholder="https://..." className="mt-1 bg-muted border-border" /></div>
-              </div>
-            )}
-          </div>
-        )}
         <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl"><div><Label className="font-semibold">Allow Speed Control</Label><p className="text-xs text-muted-foreground mt-0.5">Let viewers change playback speed</p></div><Switch checked={funnel.allow_speed_change} onCheckedChange={(v) => update("allow_speed_change", v)} /></div>
         <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl"><div><Label className="font-semibold">Allow Forward Seek</Label><p className="text-xs text-muted-foreground mt-0.5">Let viewers skip ahead in the video</p></div><Switch checked={funnel.allow_seek} onCheckedChange={(v) => update("allow_seek", v)} /></div>
         <div className="p-4 bg-muted/50 rounded-xl">
@@ -860,7 +841,14 @@ const FunnelEditor = () => {
           <p className="text-xs text-muted-foreground mt-0.5 mb-2">Auto-expire access after a set time</p>
           <Select value={funnel.video_access_minutes?.toString() || "unlimited"} onValueChange={(v) => update("video_access_minutes", v === "unlimited" ? null : parseInt(v))}>
             <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
-            <SelectContent className="bg-card border-border"><SelectItem value="unlimited">No limit</SelectItem><SelectItem value="30">30 minutes</SelectItem><SelectItem value="60">1 hour</SelectItem><SelectItem value="120">2 hours</SelectItem></SelectContent>
+            <SelectContent className="bg-card border-border">
+              <SelectItem value="unlimited">No limit</SelectItem>
+              <SelectItem value="1440">24 hours</SelectItem>
+              <SelectItem value="2880">48 hours</SelectItem>
+              <SelectItem value="4320">72 hours</SelectItem>
+              <SelectItem value="10080">1 week</SelectItem>
+              <SelectItem value="20160">2 weeks</SelectItem>
+            </SelectContent>
           </Select>
         </div>
       </div>
