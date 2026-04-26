@@ -15,7 +15,7 @@ import {
   FileText, Video, Settings, ClipboardList, Mic, MessageCircle, IndianRupee,
   Radio, Rocket, Check, Copy, Plus, Trash2, GripVertical, Lock, ExternalLink,
   Play, CreditCard, UserCheck, Calendar, Layers, ChevronDown, ChevronUp, Pencil,
-  User, ListChecks, X
+  User, ListChecks, X, MoreVertical
 } from "lucide-react";
 import { VideoPickerModal } from "@/components/VideoPickerModal";
 import { StepTypeSelector, getStepTypeMeta } from "@/components/funnel/StepTypeSelector";
@@ -116,6 +116,7 @@ const FunnelEditor = () => {
   // Step type selector & config panel
   const [stepTypeSelectorOpen, setStepTypeSelectorOpen] = useState(false);
   const [editingStepIdx, setEditingStepIdx] = useState<number | null>(null);
+  const [stepMenuOpenIdx, setStepMenuOpenIdx] = useState<number | null>(null);
 
   // Journey preview collapsible (mobile)
   const [previewOpen, setPreviewOpen] = useState(false);
