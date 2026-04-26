@@ -832,17 +832,129 @@ const LandingPageEditor = () => {
             />
           </div>
           {form.access_code_enabled && (
-            <div className="space-y-1.5">
-              <Label className="text-xs">Access code</Label>
-              <Input
-                value={form.access_code_plain || ""}
-                onChange={(e) => updateField("access_code_plain", e.target.value.toUpperCase().slice(0, 32))}
-                placeholder="e.g. SESSION-2025"
-                className="font-mono uppercase tracking-wider"
-              />
-              <p className="text-[11px] text-muted-foreground">Share this code only with invited viewers.</p>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Access code</Label>
+                <Input
+                  value={form.access_code_plain || ""}
+                  onChange={(e) => updateField("access_code_plain", e.target.value.toUpperCase().slice(0, 32))}
+                  placeholder="e.g. SESSION-2025"
+                  className="font-mono uppercase tracking-wider"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Share this code only with invited viewers. Saved as a secure hash.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Hint message (optional)</Label>
+                <Input
+                  value={form.access_code_message || ""}
+                  onChange={(e) => updateField("access_code_message", e.target.value.slice(0, 200))}
+                  placeholder="e.g. Use the code from your invite email"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Shown above the code input on the gate screen.
+                </p>
+              </div>
             </div>
           )}
+        </div>
+
+        {/* Age gate */}
+        <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <Label className="font-semibold">Minimum age requirement</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Visitors must confirm their date of birth before submitting the registration form.
+              </p>
+            </div>
+            <Switch
+              checked={!!form.min_age_enabled}
+              onCheckedChange={(v) => updateField("min_age_enabled", v)}
+            />
+          </div>
+          {form.min_age_enabled && (
+            <div className="flex items-center gap-2">
+              <Label className="text-xs">Must be at least</Label>
+              <Input
+                type="number"
+                min={1}
+                max={120}
+                value={form.min_age ?? 18}
+                onChange={(e) => {
+                  const n = parseInt(e.target.value, 10);
+                  updateField("min_age", isNaN(n) ? 18 : Math.max(1, Math.min(120, n)));
+                }}
+                className="w-20"
+              />
+              <span className="text-xs text-muted-foreground">years old</span>
+            </div>
+          )}
+        </div>
+
+        {/* FAQ editor */}
+        <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+          <div>
+            <Label className="font-semibold">Frequently Asked Questions</Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              Add up to 10 FAQ items. Shown as an expandable accordion on the public page.
+            </p>
+          </div>
+          <div className="space-y-3">
+            {(form.faq_items || []).map((item, idx) => (
+              <div key={idx} className="p-3 rounded-lg border border-border bg-card space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">FAQ #{idx + 1}</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-destructive hover:text-destructive"
+                    onClick={() => {
+                      const next = [...(form.faq_items || [])];
+                      next.splice(idx, 1);
+                      updateField("faq_items", next);
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+                <Input
+                  placeholder="Question"
+                  value={item.question}
+                  onChange={(e) => {
+                    const next = [...(form.faq_items || [])];
+                    next[idx] = { ...next[idx], question: e.target.value.slice(0, 200) };
+                    updateField("faq_items", next);
+                  }}
+                />
+                <textarea
+                  placeholder="Answer"
+                  value={item.answer}
+                  onChange={(e) => {
+                    const next = [...(form.faq_items || [])];
+                    next[idx] = { ...next[idx], answer: e.target.value.slice(0, 1000) };
+                    updateField("faq_items", next);
+                  }}
+                  className="w-full min-h-[72px] rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </div>
+            ))}
+            {(form.faq_items?.length || 0) < 10 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  updateField("faq_items", [
+                    ...(form.faq_items || []),
+                    { question: "", answer: "" },
+                  ])
+                }
+              >
+                + Add FAQ item
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="border border-border rounded-xl p-4 space-y-2.5">
