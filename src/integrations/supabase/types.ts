@@ -1749,6 +1749,42 @@ export type Database = {
         }
         Relationships: []
       }
+      member_activity_log: {
+        Row: {
+          activity_date: string
+          created_at: string
+          funnel_id: string
+          id: string
+          lead_id: string | null
+          session_id: string | null
+          steps_completed: number
+          updated_at: string
+          videos_watched: number
+        }
+        Insert: {
+          activity_date?: string
+          created_at?: string
+          funnel_id: string
+          id?: string
+          lead_id?: string | null
+          session_id?: string | null
+          steps_completed?: number
+          updated_at?: string
+          videos_watched?: number
+        }
+        Update: {
+          activity_date?: string
+          created_at?: string
+          funnel_id?: string
+          id?: string
+          lead_id?: string | null
+          session_id?: string | null
+          steps_completed?: number
+          updated_at?: string
+          videos_watched?: number
+        }
+        Relationships: []
+      }
       member_gateway_settings: {
         Row: {
           access_duration_days: number | null
