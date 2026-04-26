@@ -20,12 +20,12 @@ import {
 import { VideoPickerModal } from "@/components/VideoPickerModal";
 import { StepTypeSelector, getStepTypeMeta } from "@/components/funnel/StepTypeSelector";
 import { StepConfigPanel, type FlowStep as PanelFlowStep } from "@/components/funnel/StepConfigPanel";
-import { JourneyPreview } from "@/components/funnel/JourneyPreview";
+// JourneyPreview is no longer rendered inside the editor — right-rail FunnelLivePreview covers it.
 import { PrivacySettings } from "@/components/funnel/PrivacySettings";
 import { FunnelLivePreview } from "@/components/funnel/FunnelLivePreview";
 import { SpeakerPhotoUpload } from "@/components/funnel/SpeakerPhotoUpload";
 import { PerStepSpeakerAssignment } from "@/components/funnel/PerStepSpeakerAssignment";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+// Collapsible no longer needed (mobile journey preview removed alongside inline preview).
 import { usePlan } from "@/hooks/usePlan";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { StepLockOverlay } from "@/components/funnel/StepLockOverlay";
@@ -121,7 +121,7 @@ const FunnelEditor = () => {
   const [stepMenuOpenIdx, setStepMenuOpenIdx] = useState<number | null>(null);
 
   // Journey preview collapsible (mobile)
-  const [previewOpen, setPreviewOpen] = useState(false);
+  // (mobile journey preview state removed — right-rail Live Preview is the single source of truth)
   const [audioNoteEnabled, setAudioNoteEnabled] = useState(false);
 
   const [funnel, setFunnel] = useState({
