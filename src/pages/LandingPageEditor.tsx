@@ -200,14 +200,16 @@ const LandingPageEditor = () => {
 
   useEffect(() => {
     if (existing) {
+      const ex = existing as any;
       setForm({
         ...defaultFormState,
-        ...existing,
-        sections: (existing.sections as any[]) || [],
+        ...ex,
+        sections: (ex.sections as any[]) || [],
+        faq_items: Array.isArray(ex.faq_items) ? ex.faq_items : [],
       });
       setSlugEdited(true);
-      setVideoToggle(!!existing.post_submit_video_asset_id);
-      setFunnelToggle(!!existing.linked_funnel_id);
+      setVideoToggle(!!ex.post_submit_video_asset_id);
+      setFunnelToggle(!!ex.linked_funnel_id);
     }
   }, [existing]);
 
