@@ -102,6 +102,7 @@ const CustomVideoPlayer = ({
   const [duration, setDuration] = useState(0);
   const [buffered, setBuffered] = useState(0);
   const [muted, setMuted] = useState(false);
+  const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isBuffering, setIsBuffering] = useState(false);
@@ -111,11 +112,23 @@ const CustomVideoPlayer = ({
   const [autoplayMuted, setAutoplayMuted] = useState(false);
   const [seekToast, setSeekToast] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  // Fix 2: center play/pause flash key for re-mount animation
+  const [centerFlash, setCenterFlash] = useState<{ kind: "play" | "pause"; key: number } | null>(null);
+  // Fix 3: double-tap ripple
+  const [seekRipple, setSeekRipple] = useState<{ side: "left" | "right"; key: number } | null>(null);
+  // Fix 1: track explicit user pause intent (no auto-resume)
+  const userPaused = useRef(false);
+
   const seekToastTimer = useRef<ReturnType<typeof setTimeout>>();
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
+  const flashTimer = useRef<ReturnType<typeof setTimeout>>();
+  const rippleTimer = useRef<ReturnType<typeof setTimeout>>();
+  const singleTapTimer = useRef<ReturnType<typeof setTimeout>>();
+  const lastTapInfo = useRef<{ time: number; side: "left" | "right" | null }>({ time: 0, side: null });
   const autoplayAttempted = useRef(false);
 
   const fmt = (s: number) => {
+    if (!isFinite(s) || s < 0) s = 0;
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
     const sec = Math.floor(s % 60);
@@ -124,13 +137,12 @@ const CustomVideoPlayer = ({
       : `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
-  // Autoplay logic: try unmuted first, fallback to muted
+  // Autoplay logic — fires once on mount only. Never re-triggered after user pause.
   useEffect(() => {
     if (!autoplay || autoplayAttempted.current || !videoRef.current) return;
     autoplayAttempted.current = true;
     const v = videoRef.current;
-    
-    // Try unmuted autoplay first
+
     v.muted = false;
     setMuted(false);
     const playPromise = v.play();
@@ -142,7 +154,6 @@ const CustomVideoPlayer = ({
           onPlay?.();
         })
         .catch(() => {
-          // Fallback: muted autoplay
           v.muted = true;
           setMuted(true);
           setAutoplayMuted(true);
@@ -152,13 +163,16 @@ const CustomVideoPlayer = ({
               setPlaying(true);
               onPlay?.();
             })
-            .catch(() => {
-              // Autoplay completely blocked, user must click
-              setAutoplayMuted(false);
-            });
+            .catch(() => setAutoplayMuted(false));
         });
     }
-  }, [autoplay, src]);
+  }, [autoplay, src, onPlay]);
+
+  const flashCenter = (kind: "play" | "pause") => {
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    setCenterFlash({ kind, key: Date.now() });
+    flashTimer.current = setTimeout(() => setCenterFlash(null), 600);
+  };
 
   const togglePlay = useCallback(() => {
     const v = videoRef.current;
@@ -166,12 +180,18 @@ const CustomVideoPlayer = ({
     if (!started) {
       setIsLoading(true);
       setStarted(true);
+      userPaused.current = false;
       v.play().catch(() => {});
       onPlay?.();
+      flashCenter("play");
     } else if (v.paused) {
+      userPaused.current = false; // user pressed play
       v.play();
+      flashCenter("play");
     } else {
+      userPaused.current = true; // user pressed pause
       v.pause();
+      flashCenter("pause");
     }
   }, [started, onPlay]);
 
@@ -193,6 +213,57 @@ const CustomVideoPlayer = ({
     setSeekToast(true);
     seekToastTimer.current = setTimeout(() => setSeekToast(false), 2500);
   }, []);
+
+  // Helper: seek by delta with restrictions
+  const seekBy = useCallback((delta: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    let target = v.currentTime + delta;
+    if (target < 0) target = 0;
+    if (!allowSeek && delta > 0 && target > maxWatched.current + 0.5) {
+      showSeekDisabledToast();
+      return;
+    }
+    if (v.duration && target > v.duration) target = v.duration;
+    v.currentTime = target;
+  }, [allowSeek, showSeekDisabledToast]);
+
+  const flashRipple = (side: "left" | "right") => {
+    if (rippleTimer.current) clearTimeout(rippleTimer.current);
+    setSeekRipple({ side, key: Date.now() });
+    rippleTimer.current = setTimeout(() => setSeekRipple(null), 600);
+  };
+
+  // Fix 2 + Fix 3: surface tap handler — single = play/pause (delayed); double = seek
+  const onSurfaceTap = (clientX: number, rect: DOMRect) => {
+    if (!started) {
+      togglePlay();
+      return;
+    }
+    const half = rect.left + rect.width / 2;
+    const side: "left" | "right" = clientX < half ? "left" : "right";
+    const now = Date.now();
+    const last = lastTapInfo.current;
+    const isDouble = last.side === side && now - last.time < 300;
+
+    if (isDouble) {
+      if (singleTapTimer.current) {
+        clearTimeout(singleTapTimer.current);
+        singleTapTimer.current = undefined;
+      }
+      lastTapInfo.current = { time: 0, side: null };
+      if (side === "left") { seekBy(-10); flashRipple("left"); }
+      else { seekBy(10); flashRipple("right"); }
+      return;
+    }
+
+    lastTapInfo.current = { time: now, side };
+    if (singleTapTimer.current) clearTimeout(singleTapTimer.current);
+    singleTapTimer.current = setTimeout(() => {
+      togglePlay();
+      singleTapTimer.current = undefined;
+    }, 260);
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -217,11 +288,13 @@ const CustomVideoPlayer = ({
             }
           }
         }
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        seekBy(10);
       }
       if (e.key === "ArrowLeft") {
         e.preventDefault();
-        const v = videoRef.current;
-        if (v) v.currentTime = Math.max(0, v.currentTime - 5);
+        seekBy(-10);
       }
       if (e.key === "m" || e.key === "M") {
         setMuted((p) => { if (videoRef.current) videoRef.current.muted = !p; return !p; });
@@ -231,7 +304,7 @@ const CustomVideoPlayer = ({
     };
     window.addEventListener("keydown", handler, true);
     return () => window.removeEventListener("keydown", handler, true);
-  }, [allowSeek, togglePlay, showSeekDisabledToast]);
+  }, [allowSeek, togglePlay, showSeekDisabledToast, seekBy]);
 
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
@@ -251,14 +324,10 @@ const CustomVideoPlayer = ({
   const handleTimeUpdate = () => {
     const v = videoRef.current;
     if (!v || isSeeking.current) return;
-    if (v.currentTime > maxWatched.current) {
-      maxWatched.current = v.currentTime;
-    }
+    if (v.currentTime > maxWatched.current) maxWatched.current = v.currentTime;
     setCurrent(v.currentTime);
     onTimeUpdate?.(v.currentTime, v.duration);
-    if (v.buffered.length > 0) {
-      setBuffered(v.buffered.end(v.buffered.length - 1));
-    }
+    if (v.buffered.length > 0) setBuffered(v.buffered.end(v.buffered.length - 1));
   };
 
   const handleSeeking = () => {
@@ -272,31 +341,54 @@ const CustomVideoPlayer = ({
     }
   };
 
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  // Fix 4: drag-to-seek on progress bar
+  const seekToClientX = (clientX: number, rect: DOMRect) => {
     const v = videoRef.current;
     if (!v || !duration) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const targetTime = pct * duration;
-    if (!allowSeek && targetTime > maxWatched.current + 0.5) {
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const target = pct * duration;
+    if (!allowSeek && target > maxWatched.current + 0.5) {
       v.currentTime = maxWatched.current;
       showSeekDisabledToast();
     } else {
-      v.currentTime = targetTime;
+      v.currentTime = target;
     }
+  };
+
+  const handleProgressPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    const el = e.currentTarget;
+    try { el.setPointerCapture(e.pointerId); } catch {}
+    seekToClientX(e.clientX, el.getBoundingClientRect());
+    const onMove = (ev: PointerEvent) => seekToClientX(ev.clientX, el.getBoundingClientRect());
+    const onUp = () => {
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerup", onUp);
+      el.removeEventListener("pointercancel", onUp);
+      try { el.releasePointerCapture(e.pointerId); } catch {}
+    };
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", onUp);
   };
 
   const resetHideTimer = () => {
     setShowControls(true);
     if (hideTimer.current) clearTimeout(hideTimer.current);
-    if (playing) {
-      hideTimer.current = setTimeout(() => setShowControls(false), 3000);
-    }
+    if (playing) hideTimer.current = setTimeout(() => setShowControls(false), 3000);
   };
 
   const watchedPct = duration ? (currentTime / duration) * 100 : 0;
   const bufferedPct = duration ? (buffered / duration) * 100 : 0;
   const maxWatchedPct = duration ? (maxWatched.current / duration) * 100 : 0;
+
+  // Fix 5: Speed cycle pill
+  const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
+  const cycleSpeed = () => {
+    const idx = SPEEDS.indexOf(speed);
+    const next = SPEEDS[(idx + 1) % SPEEDS.length];
+    handleSpeedChange(next);
+  };
 
   return (
     <div
@@ -305,7 +397,6 @@ const CustomVideoPlayer = ({
       style={{ aspectRatio: "16 / 9", minHeight: 0 }}
       onMouseMove={resetHideTimer}
       onTouchStart={resetHideTimer}
-      onClick={() => { if (started) togglePlay(); }}
       onContextMenu={(e) => e.preventDefault()}
       tabIndex={0}
     >
@@ -330,14 +421,17 @@ const CustomVideoPlayer = ({
       {loadError && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center text-center bg-black/80 backdrop-blur-sm px-4 gap-2">
           <div className="text-destructive text-sm font-medium">⚠️ Video format not supported.</div>
-          <div className="text-white/70 text-xs">Please re-upload as MP4 format.</div>
+          <div className="text-white/80 text-xs">Please re-upload as MP4 format.</div>
         </div>
       )}
 
-      {/* Watermark — bottom-right, subtle */}
+      {/* Fix 6: Watermark text — exact wording */}
       {started && (
-        <div className="absolute bottom-14 right-4 text-[11px] text-white/50 font-medium pointer-events-none select-none z-10 tracking-wide">
-          Powered by nFlow
+        <div
+          className="absolute top-3 right-3 text-[11px] text-white/75 font-medium pointer-events-none select-none z-10 tracking-wide"
+          style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}
+        >
+          nflow by Nevrai
         </div>
       )}
 
@@ -351,7 +445,7 @@ const CustomVideoPlayer = ({
         </button>
       )}
 
-      {/* Center play button (only when autoplay failed or not enabled) */}
+      {/* Initial big play button (autoplay disabled) */}
       {!started && !autoplay && (
         <div
           className="absolute inset-0 flex items-center justify-center cursor-pointer z-20"
@@ -394,75 +488,159 @@ const CustomVideoPlayer = ({
       {/* Loading / Buffering spinner */}
       {(isLoading || isBuffering) && started && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          <Loader2 size={40} className="text-white/80 animate-spin" />
+          <Loader2 size={40} className="text-white/90 animate-spin" />
         </div>
       )}
 
-      {/* Center pause indicator */}
-      {started && !playing && !isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          <div className="w-16 h-16 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
+      {/* Fix 2: center play/pause flash */}
+      {centerFlash && (
+        <div key={centerFlash.key} className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+          <div className="w-20 h-20 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center nf-center-flash">
+            {centerFlash.kind === "play"
+              ? <Play size={36} className="ml-1 text-white" />
+              : <Pause size={36} className="text-white" />}
+          </div>
+        </div>
+      )}
+
+      {/* Fix 3: Double-tap seek ripple */}
+      {seekRipple && (
+        <div
+          key={seekRipple.key}
+          className={`absolute inset-y-0 ${seekRipple.side === "left" ? "left-0" : "right-0"} w-1/2 flex items-center justify-center pointer-events-none z-30 overflow-hidden`}
+        >
+          <div className="nf-ripple flex flex-col items-center gap-1 text-white" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
+            <div className="text-3xl font-bold leading-none">{seekRipple.side === "left" ? "«" : "»"}</div>
+            <div className="text-xs font-semibold tracking-wide">10s</div>
+          </div>
+        </div>
+      )}
+
+      {/* Subtle persistent paused indicator */}
+      {started && !playing && !isLoading && !centerFlash && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+          <div className="w-16 h-16 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center">
             <Play size={28} className="ml-1 text-white" />
           </div>
         </div>
       )}
 
-      {/* Controls bar */}
+      {/* Fix 2 + 3: Tap surface — covers entire video, sits below controls */}
+      <div
+        className="absolute inset-0 z-20 cursor-pointer"
+        onClick={(e) => onSurfaceTap(e.clientX, (e.currentTarget as HTMLElement).getBoundingClientRect())}
+      />
+
+      {/* Controls bar — Fix 4 + Fix 5. Always visible on mobile, auto-hide on desktop. */}
       {started && (
         <div
-          className={`absolute bottom-0 left-0 right-0 z-30 transition-opacity duration-300 ${showControls || !playing ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          className={`absolute bottom-0 left-0 right-0 z-30 transition-opacity duration-300 ${
+            showControls || !playing ? "md:opacity-100" : "md:opacity-0 md:pointer-events-none"
+          } opacity-100`}
           onClick={(e) => e.stopPropagation()}
-          style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.8))" }}
+          style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.85))" }}
         >
-          {/* Progress bar */}
+          {/* Progress bar (Fix 4) */}
           <div
-            className="h-[5px] mx-4 mt-2 cursor-pointer relative group/bar rounded-full"
-            onClick={handleProgressClick}
+            className="h-1 mx-3 mt-3 cursor-pointer relative group/bar rounded-full transition-[height] hover:h-1.5"
+            onPointerDown={handleProgressPointerDown}
           >
-            <div className="absolute inset-0 rounded-full bg-white/10" />
-            <div className="absolute inset-y-0 left-0 rounded-full bg-white/20 transition-[width] duration-200" style={{ width: `${bufferedPct}%` }} />
+            <div className="absolute inset-0 rounded-full bg-white/15" />
+            <div className="absolute inset-y-0 left-0 rounded-full bg-white/30 transition-[width] duration-200" style={{ width: `${bufferedPct}%` }} />
             {!allowSeek && (
-              <div
-                className="absolute inset-y-0 rounded-r-full bg-white/[0.03]"
-                style={{ left: `${maxWatchedPct}%`, right: 0 }}
-              />
+              <div className="absolute inset-y-0 rounded-r-full bg-white/[0.04]" style={{ left: `${maxWatchedPct}%`, right: 0 }} />
             )}
-            <div className="absolute inset-y-0 left-0 rounded-full bg-primary transition-[width] duration-100" style={{ width: `${watchedPct}%` }} />
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-primary ring-2 ring-white/90 shadow-lg opacity-0 group-hover/bar:opacity-100 transition-opacity"
-              style={{ left: `calc(${watchedPct}% - 7px)` }}
+              className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-100"
+              style={{ width: `${watchedPct}%`, background: allowSeek ? "#ef4444" : "hsl(var(--primary))" }}
+            />
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ring-2 ring-white shadow-lg opacity-0 group-hover/bar:opacity-100 transition-opacity"
+              style={{ left: `calc(${watchedPct}% - 6px)`, background: allowSeek ? "#ef4444" : "hsl(var(--primary))" }}
             />
           </div>
 
-          {/* Buttons row */}
-          <div className="flex items-center gap-1.5 px-4 py-2.5 text-white">
-            <button onClick={togglePlay} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+          {/* Buttons row (Fix 5 — full controls in replay/seek-allowed mode) */}
+          <div className="flex items-center gap-1 px-3 py-2 text-white">
+            <button onClick={togglePlay} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors" aria-label={playing ? "Pause" : "Play"}>
               {playing ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
             </button>
 
-            <span className="tabular-nums text-white/60 text-[12px] font-medium ml-1">
-              {fmt(currentTime)}<span className="text-white/30 mx-1">/</span>{fmt(duration)}
+            <button onClick={() => seekBy(-10)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors hidden sm:inline-flex" title="Rewind 10s" aria-label="Rewind 10 seconds">
+              <span className="text-[11px] font-bold tracking-tight">«10</span>
+            </button>
+
+            {allowSeek && (
+              <button onClick={() => seekBy(10)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors hidden sm:inline-flex" title="Forward 10s" aria-label="Forward 10 seconds">
+                <span className="text-[11px] font-bold tracking-tight">10»</span>
+              </button>
+            )}
+
+            <span className="tabular-nums text-white text-[12px] font-medium ml-1" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.8)" }}>
+              {fmt(currentTime)}<span className="text-white/60 mx-1">/</span>{fmt(duration)}
             </span>
 
             <div className="flex-1" />
 
-            <button
-              onClick={() => { setMuted((p) => { if (videoRef.current) videoRef.current.muted = !p; return !p; }); setAutoplayMuted(false); }}
-              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              {muted ? <VolumeX size={17} className="text-white/70" /> : <Volume2 size={17} className="text-white/70" />}
-            </button>
+            <div className="flex items-center gap-1 group/vol">
+              <button
+                onClick={() => { setMuted((p) => { if (videoRef.current) videoRef.current.muted = !p; return !p; }); setAutoplayMuted(false); }}
+                className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                aria-label={muted ? "Unmute" : "Mute"}
+              >
+                {muted || volume === 0 ? <VolumeX size={17} className="text-white" /> : <Volume2 size={17} className="text-white" />}
+              </button>
+              <input
+                type="range"
+                min={0} max={1} step={0.05}
+                value={muted ? 0 : volume}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  setVolume(v);
+                  if (videoRef.current) {
+                    videoRef.current.volume = v;
+                    videoRef.current.muted = v === 0;
+                  }
+                  setMuted(v === 0);
+                }}
+                className="hidden sm:block w-0 group-hover/vol:w-20 transition-[width] duration-200 accent-white"
+                aria-label="Volume"
+              />
+            </div>
 
             {allowSpeed && (
-              <SpeedControl currentSpeed={speed} onSpeedChange={handleSpeedChange} />
+              <button
+                onClick={cycleSpeed}
+                className="px-2 py-1 hover:bg-white/10 rounded-lg transition-colors text-[11px] font-bold tabular-nums min-w-[40px]"
+                title="Playback speed"
+                aria-label="Playback speed"
+              >
+                {speed}x
+              </button>
             )}
 
-            <button onClick={toggleFullscreen} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-              {isFullscreen ? <Minimize size={17} className="text-white/70" /> : <Maximize size={17} className="text-white/70" />}
+            <button onClick={toggleFullscreen} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors" aria-label="Fullscreen">
+              {isFullscreen ? <Minimize size={17} className="text-white" /> : <Maximize size={17} className="text-white" />}
             </button>
           </div>
         </div>
       )}
+
+      {/* Local animations */}
+      <style>{`
+        .nf-center-flash { animation: nfCenterFlash 600ms ease-out forwards; }
+        @keyframes nfCenterFlash {
+          0%   { opacity: 0; transform: scale(0.7); }
+          30%  { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(1.3); }
+        }
+        .nf-ripple { animation: nfRipple 600ms ease-out forwards; }
+        @keyframes nfRipple {
+          0%   { opacity: 0; transform: scale(0.6); }
+          25%  { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(1.4); }
+        }
+      `}</style>
     </div>
   );
 };
