@@ -13,11 +13,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
   Radio, Plus, Calendar, Users, Clock, Eye, Copy, Trash2, Video, Globe, IndianRupee, X,
-  Layers, ExternalLink, ChevronLeft, ChevronRight, Trash, MessageCircle
+  Layers, ExternalLink, ChevronLeft, ChevronRight, Trash, MessageCircle, Pencil,
+  Play, RotateCcw, CalendarRange, ListChecks, Repeat
 } from "lucide-react";
-import { format, formatDistanceToNow, isFuture } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { computeSessionSlots, currentLiveSlot, nextSlot as nextSlotFn, sessionDurationSec } from "@/lib/liveSession";
 
 const generateSlug = (title: string) =>
   title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 60) || "my-session";
@@ -28,25 +30,35 @@ const TIMEZONES = [
 ];
 
 type SessionType = "funnel_video" | "external_link";
+type RepeatType = "once" | "daily" | "interval" | "custom";
 
 interface FormState {
   title: string;
   description: string;
   session_type: SessionType;
-  // Funnel video
   funnel_id: string | null;
   video_asset_id: string | null;
   video_duration_seconds: number | null;
-  // External link
   platform: string;
   meeting_url: string;
   // Schedule
   scheduled_times: string[]; // datetime-local strings
   timezone: string;
   duration_minutes: number;
-  // Settings
+  // Repeat
+  repeat_type: RepeatType;
+  repeat_interval_hours: number;
+  repeat_window_start: string; // "HH:MM"
+  repeat_window_end: string;
+  repeat_end_date: string; // YYYY-MM-DD or ""
+  // Replay
   replay_enabled: boolean;
-  replay_available_after_minutes: number;
+  replay_delay_minutes: number;
+  replay_expires_hours: number | null;
+  replay_per_slot: boolean;
+  // Publish
+  is_published: boolean;
+  // Misc
   max_attendees: number | null;
   // Access
   access_type: string;
@@ -59,15 +71,32 @@ interface FormState {
   payment_instructions: string;
 }
 
+const defaultDateTime = () => {
+  const d = new Date();
+  d.setMinutes(0, 0, 0);
+  d.setHours(d.getHours() + 1);
+  // datetime-local string YYYY-MM-DDTHH:mm
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
 const emptyForm = (): FormState => ({
   title: "", description: "", session_type: "funnel_video",
   funnel_id: null, video_asset_id: null, video_duration_seconds: null,
   platform: "zoom", meeting_url: "",
-  scheduled_times: [""],
+  scheduled_times: [defaultDateTime()],
   timezone: "Asia/Kolkata",
   duration_minutes: 60,
+  repeat_type: "once",
+  repeat_interval_hours: 4,
+  repeat_window_start: "09:00",
+  repeat_window_end: "21:00",
+  repeat_end_date: "",
   replay_enabled: true,
-  replay_available_after_minutes: 30,
+  replay_delay_minutes: 0,
+  replay_expires_hours: null,
+  replay_per_slot: true,
+  is_published: true,
   max_attendees: null,
   access_type: "public",
   show_name: true, show_phone: true, show_email: true, show_city: false,
@@ -83,17 +112,21 @@ const formatDuration = (sec: number | null | undefined) => {
   return `${m}m ${s}s`;
 };
 
+const isoToDatetimeLocal = (iso: string) => {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
 const SessionStatusBadge = ({ session }: { session: any }) => {
-  // Compute live state from scheduled_times for funnel_video sessions
-  const now = Date.now();
+  if (session.status === "cancelled") {
+    return <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 line-through">CANCELLED</span>;
+  }
+  if (session.is_published === false) {
+    return <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">UNPUBLISHED</span>;
+  }
   if (session.session_type === "funnel_video") {
-    const slots: number[] = (Array.isArray(session.scheduled_times) ? session.scheduled_times : [])
-      .map((t: string) => new Date(t).getTime())
-      .filter((n: number) => !isNaN(n))
-      .sort((a: number, b: number) => a - b);
-    const dur = (session.video_duration_seconds || session.duration_minutes * 60 || 3600) * 1000;
-    const live = slots.find((s) => now >= s && now <= s + dur);
-    if (live) {
+    if (currentLiveSlot(session)) {
       return (
         <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-500/15 text-red-500 inline-flex items-center gap-1">
           <span className="relative flex h-1.5 w-1.5">
@@ -104,20 +137,14 @@ const SessionStatusBadge = ({ session }: { session: any }) => {
         </span>
       );
     }
-    const next = slots.find((s) => s > now);
-    if (next) {
-      return (
-        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-500">
-          SCHEDULED
-        </span>
-      );
+    if (nextSlotFn(session)) {
+      return <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-500">SCHEDULED</span>;
     }
     if (session.replay_enabled) {
       return <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500">REPLAY</span>;
     }
     return <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">ENDED</span>;
   }
-  // external_link — fall back to status field
   const cls: Record<string, string> = {
     draft: "bg-muted text-muted-foreground",
     scheduled: "bg-blue-500/15 text-blue-500",
@@ -131,32 +158,41 @@ const SessionStatusBadge = ({ session }: { session: any }) => {
   );
 };
 
+const RepeatBadge = ({ session }: { session: any }) => {
+  const t = session.repeat_type || "once";
+  if (t === "once") return null;
+  const label =
+    t === "daily" ? "Daily" :
+    t === "interval" ? `Every ${session.repeat_interval_hours || 4}h` :
+    "Custom";
+  return (
+    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-secondary/40 text-foreground/80 inline-flex items-center gap-1">
+      <Repeat size={10} /> {label}
+    </span>
+  );
+};
+
 const NextSlotLine = ({ session }: { session: any }) => {
   const [, force] = useState(0);
   useEffect(() => {
     const i = setInterval(() => force((x) => x + 1), 60_000);
     return () => clearInterval(i);
   }, []);
-  const now = Date.now();
   if (session.session_type === "funnel_video") {
-    const slots: number[] = (Array.isArray(session.scheduled_times) ? session.scheduled_times : [])
-      .map((t: string) => new Date(t).getTime())
-      .filter((n: number) => !isNaN(n))
-      .sort((a: number, b: number) => a - b);
-    const dur = (session.video_duration_seconds || session.duration_minutes * 60 || 3600) * 1000;
-    const liveSlot = slots.find((s) => now >= s && now <= s + dur);
-    if (liveSlot) {
-      return <>Started {formatDistanceToNow(new Date(liveSlot))} ago</>;
-    }
-    const next = slots.find((s) => s > now);
-    if (next) return <>Next: {format(new Date(next), "MMM d, h:mm a")} (in {formatDistanceToNow(new Date(next))})</>;
-    if (slots.length) return <>Last aired {formatDistanceToNow(new Date(slots[slots.length - 1]))} ago</>;
+    const live = currentLiveSlot(session);
+    if (live) return <>Started {formatDistanceToNow(new Date(live))} ago — currently live</>;
+    const nxt = nextSlotFn(session);
+    if (nxt) return <>Next: {format(new Date(nxt), "MMM d, h:mm a")} (in {formatDistanceToNow(new Date(nxt))})</>;
+    const slots = computeSessionSlots(session);
+    if (slots.length) return <>Last played {formatDistanceToNow(new Date(slots[slots.length - 1]))} ago</>;
     return <>No times scheduled</>;
   }
-  if (session.scheduled_at && isFuture(new Date(session.scheduled_at))) {
-    return <>Starts in {formatDistanceToNow(new Date(session.scheduled_at))}</>;
+  if (session.scheduled_at) {
+    const d = new Date(session.scheduled_at);
+    if (d.getTime() > Date.now()) return <>Starts in {formatDistanceToNow(d)}</>;
+    return <>{format(d, "MMM d, h:mm a")}</>;
   }
-  return <>{session.scheduled_at ? format(new Date(session.scheduled_at), "MMM d, h:mm a") : "Not scheduled"}</>;
+  return <>Not scheduled</>;
 };
 
 const LivePage = () => {
@@ -164,6 +200,7 @@ const LivePage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [modalOpen, setModalOpen] = useState(false);
@@ -173,7 +210,6 @@ const LivePage = () => {
   const upd = <K extends keyof FormState>(key: K, val: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: val }));
 
-  // Sessions list
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ["live-sessions", user?.id],
     queryFn: async () => {
@@ -188,7 +224,6 @@ const LivePage = () => {
     enabled: !!user,
   });
 
-  // User's funnels (for funnel_video selector) — only published with a video
   const { data: funnels = [] } = useQuery({
     queryKey: ["live-funnel-options", user?.id],
     queryFn: async () => {
@@ -234,66 +269,99 @@ const LivePage = () => {
     [funnels, form.funnel_id]
   );
 
-  const createMutation = useMutation({
+  // Live session live indicator (warns user when editing a live session)
+  const editingSession = useMemo(
+    () => editingId ? sessions.find((s: any) => s.id === editingId) : null,
+    [editingId, sessions]
+  );
+  const isEditingLive = editingSession && currentLiveSlot(editingSession) !== null;
+
+  const buildPayload = () => {
+    const isFunnel = form.session_type === "funnel_video";
+    const scheduled_times = form.scheduled_times
+      .filter((t) => !!t)
+      .map((t) => new Date(t).toISOString());
+    const firstSlot = scheduled_times[0] || null;
+
+    const payload: Record<string, unknown> = {
+      title: form.title,
+      description: form.description || null,
+      session_type: form.session_type,
+      access_type: form.access_type,
+      max_attendees: form.max_attendees,
+      replay_enabled: form.replay_enabled,
+      replay_delay_minutes: form.replay_delay_minutes,
+      replay_expires_hours: form.replay_expires_hours,
+      replay_per_slot: form.replay_per_slot,
+      is_published: form.is_published,
+      timezone: form.timezone,
+      scheduled_times,
+      scheduled_at: firstSlot,
+      status: scheduled_times.length ? "scheduled" : "draft",
+      show_name: form.show_name, show_phone: form.show_phone,
+      show_email: form.show_email, show_city: form.show_city,
+      repeat_type: form.repeat_type,
+      repeat_interval_hours: form.repeat_type === "interval" ? form.repeat_interval_hours : null,
+      repeat_window_start: form.repeat_type === "interval" ? form.repeat_window_start + ":00" : null,
+      repeat_window_end: form.repeat_type === "interval" ? form.repeat_window_end + ":00" : null,
+      repeat_end_date: (form.repeat_type === "daily" || form.repeat_type === "interval") && form.repeat_end_date ? form.repeat_end_date : null,
+    };
+
+    if (isFunnel) {
+      payload.funnel_id = form.funnel_id;
+      payload.video_asset_id = form.video_asset_id;
+      payload.video_duration_seconds = form.video_duration_seconds;
+      payload.duration_minutes = form.video_duration_seconds
+        ? Math.max(1, Math.ceil(form.video_duration_seconds / 60))
+        : form.duration_minutes;
+    } else {
+      payload.platform = form.platform;
+      payload.meeting_url = form.meeting_url || null;
+      payload.duration_minutes = form.duration_minutes;
+    }
+
+    if (form.access_type === "paid") {
+      payload.payment_amount = form.payment_amount;
+      payload.upi_id = form.upi_id || null;
+      payload.payment_instructions = form.payment_instructions || null;
+    }
+
+    return payload;
+  };
+
+  const saveMutation = useMutation({
     mutationFn: async () => {
-      const slug = generateSlug(form.title) + "-" + Math.random().toString(36).slice(2, 7);
-      const isFunnel = form.session_type === "funnel_video";
-      // Convert scheduled_times to ISO; assume the local datetime-local matches the chosen tz (best-effort: use as-is)
-      const scheduled_times = form.scheduled_times
-        .filter((t) => !!t)
-        .map((t) => new Date(t).toISOString());
-      const firstSlot = scheduled_times[0] || null;
-
-      const payload: Record<string, unknown> = {
-        owner_id: user!.id,
-        title: form.title,
-        description: form.description || null,
-        slug,
-        session_type: form.session_type,
-        access_type: form.access_type,
-        max_attendees: form.max_attendees,
-        replay_enabled: form.replay_enabled,
-        timezone: form.timezone,
-        scheduled_times,
-        scheduled_at: firstSlot,
-        status: scheduled_times.length ? "scheduled" : "draft",
-        show_name: form.show_name, show_phone: form.show_phone,
-        show_email: form.show_email, show_city: form.show_city,
-      };
-
-      if (isFunnel) {
+      if (form.session_type === "funnel_video") {
         if (!form.funnel_id) throw new Error("Please select a funnel first");
-        if (!scheduled_times.length) throw new Error("Please add at least one scheduled time");
-        payload.funnel_id = form.funnel_id;
-        payload.video_asset_id = form.video_asset_id;
-        payload.video_duration_seconds = form.video_duration_seconds;
-        payload.replay_available_after_minutes = form.replay_available_after_minutes;
-        payload.duration_minutes = form.video_duration_seconds
-          ? Math.max(1, Math.ceil(form.video_duration_seconds / 60))
-          : form.duration_minutes;
+        if (!form.scheduled_times.some(Boolean)) throw new Error("Please add at least one scheduled time");
+      } else if (!form.meeting_url) {
+        throw new Error("Please add a meeting URL");
+      }
+
+      const payload = buildPayload();
+
+      if (editingId) {
+        const { error } = await supabase.from("live_sessions").update(payload as any).eq("id", editingId);
+        if (error) throw error;
       } else {
-        payload.platform = form.platform;
-        payload.meeting_url = form.meeting_url || null;
-        payload.duration_minutes = form.duration_minutes;
+        const slug = generateSlug(form.title) + "-" + Math.random().toString(36).slice(2, 7);
+        const { error } = await supabase.from("live_sessions").insert({
+          ...payload,
+          slug,
+          owner_id: user!.id,
+        } as any);
+        if (error) throw error;
       }
-
-      if (form.access_type === "paid") {
-        payload.payment_amount = form.payment_amount;
-        payload.upi_id = form.upi_id || null;
-        payload.payment_instructions = form.payment_instructions || null;
-      }
-
-      const { error } = await supabase.from("live_sessions").insert(payload as any);
-      if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Session created!");
+      toast.success(editingId ? "Session updated!" : "Session created!");
       queryClient.invalidateQueries({ queryKey: ["live-sessions"] });
       setCreating(false);
+      setEditingId(null);
       setStep(1);
       setForm(emptyForm());
     },
-    onError: (e: any) => toast.error(e?.message || "Failed to create session"),
+    onError: (e: any) => toast.error(e?.message || "Failed to save session"),
   });
 
   const deleteMutation = useMutation({
@@ -310,10 +378,62 @@ const LivePage = () => {
   const startCreate = () => {
     if (isFree) { setModalType("upgrade"); setModalOpen(true); return; }
     if (!canCreateLive) { setModalType("limit"); setModalOpen(true); return; }
+    setEditingId(null);
     setForm(emptyForm());
     setStep(1);
     setCreating(true);
   };
+
+  const startEdit = (s: any) => {
+    const initial: FormState = {
+      ...emptyForm(),
+      title: s.title || "",
+      description: s.description || "",
+      session_type: (s.session_type as SessionType) || "funnel_video",
+      funnel_id: s.funnel_id || null,
+      video_asset_id: s.video_asset_id || null,
+      video_duration_seconds: s.video_duration_seconds || null,
+      platform: s.platform || "zoom",
+      meeting_url: s.meeting_url || "",
+      scheduled_times: Array.isArray(s.scheduled_times) && s.scheduled_times.length
+        ? s.scheduled_times.map(isoToDatetimeLocal)
+        : [defaultDateTime()],
+      timezone: s.timezone || "Asia/Kolkata",
+      duration_minutes: s.duration_minutes || 60,
+      repeat_type: (s.repeat_type as RepeatType) || "once",
+      repeat_interval_hours: s.repeat_interval_hours || 4,
+      repeat_window_start: (s.repeat_window_start || "09:00:00").slice(0, 5),
+      repeat_window_end: (s.repeat_window_end || "21:00:00").slice(0, 5),
+      repeat_end_date: s.repeat_end_date || "",
+      replay_enabled: s.replay_enabled !== false,
+      replay_delay_minutes: s.replay_delay_minutes ?? s.replay_available_after_minutes ?? 0,
+      replay_expires_hours: s.replay_expires_hours ?? null,
+      replay_per_slot: s.replay_per_slot !== false,
+      is_published: s.is_published !== false,
+      max_attendees: s.max_attendees || null,
+      access_type: s.access_type || "public",
+      show_name: !!s.show_name, show_phone: !!s.show_phone,
+      show_email: !!s.show_email, show_city: !!s.show_city,
+      payment_amount: s.payment_amount || 0,
+      upi_id: s.upi_id || "",
+      payment_instructions: s.payment_instructions || "",
+    };
+    setForm(initial);
+    setEditingId(s.id);
+    setStep(1);
+    setCreating(true);
+  };
+
+  const togglePublishMutation = useMutation({
+    mutationFn: async ({ id, val }: { id: string; val: boolean }) => {
+      const { error } = await supabase.from("live_sessions").update({ is_published: val } as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Updated");
+      queryClient.invalidateQueries({ queryKey: ["live-sessions"] });
+    },
+  });
 
   const shareUrl = (slug: string) => `${window.location.origin}/s/${slug}`;
   const copyLink = (slug: string) => {
@@ -324,8 +444,8 @@ const LivePage = () => {
     const url = shareUrl(s.slug);
     let when = "";
     if (s.session_type === "funnel_video") {
-      const next = (s.scheduled_times || []).map((t: string) => new Date(t)).find((d: Date) => d.getTime() > Date.now());
-      if (next) when = ` — starts at ${format(next, "MMM d, h:mm a")}`;
+      const next = nextSlotFn(s);
+      if (next) when = ` — starts at ${format(new Date(next), "MMM d, h:mm a")}`;
     } else if (s.scheduled_at) {
       when = ` — starts at ${format(new Date(s.scheduled_at), "MMM d, h:mm a")}`;
     }
@@ -333,8 +453,19 @@ const LivePage = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
-  // ---------- Wizard steps ----------
-  const totalSteps = form.session_type === "funnel_video" ? 4 : 4;
+  // Stats bar
+  const stats = useMemo(() => {
+    let live = 0, totalViews = 0, totalRegs = 0;
+    for (const s of sessions as any[]) {
+      if (currentLiveSlot(s)) live++;
+      totalViews += s.total_views || 0;
+      totalRegs += s.registration_count || 0;
+    }
+    return { total: sessions.length, live, totalViews, totalRegs };
+  }, [sessions]);
+
+  // Wizard control
+  const totalSteps = 4;
   const canNextFromStep1 = !!form.session_type;
   const canNextFromStep2 =
     form.session_type === "funnel_video"
@@ -343,7 +474,7 @@ const LivePage = () => {
   const canNextFromStep3 =
     form.session_type === "funnel_video"
       ? form.scheduled_times.some((t) => !!t)
-      : !!form.meeting_url; // external_link uses URL on step 3
+      : !!form.meeting_url;
   const finalCanSubmit =
     form.session_type === "funnel_video"
       ? !!form.title.trim() && !!form.funnel_id && form.scheduled_times.some(Boolean)
@@ -372,23 +503,34 @@ const LivePage = () => {
           </Button>
         </div>
 
+        {/* Stats bar */}
+        {sessions.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            <div className="glass-card p-3"><p className="text-[10px] uppercase tracking-wider text-muted-foreground">Total</p><p className="text-lg font-bold">{stats.total}</p></div>
+            <div className="glass-card p-3"><p className="text-[10px] uppercase tracking-wider text-muted-foreground">Live now</p><p className="text-lg font-bold text-red-500">{stats.live}</p></div>
+            <div className="glass-card p-3"><p className="text-[10px] uppercase tracking-wider text-muted-foreground">Views</p><p className="text-lg font-bold">{stats.totalViews}</p></div>
+            <div className="glass-card p-3"><p className="text-[10px] uppercase tracking-wider text-muted-foreground">Registered</p><p className="text-lg font-bold">{stats.totalRegs}</p></div>
+          </div>
+        )}
+
         {/* Wizard modal */}
         {creating && (
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center overflow-y-auto pt-8 pb-8 px-4">
             <div className="glass-card w-full max-w-2xl p-6 space-y-5 relative">
-              <button onClick={() => setCreating(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+              <button onClick={() => { setCreating(false); setEditingId(null); }} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
                 <X size={18} />
               </button>
 
-              {/* Header + progress */}
               <div>
-                <h2 className="text-lg font-heading font-bold">Create Live Session</h2>
+                <h2 className="text-lg font-heading font-bold">{editingId ? "Edit Live Session" : "Create Live Session"}</h2>
+                {isEditingLive && (
+                  <div className="mt-2 p-2.5 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-xs text-yellow-200">
+                    ⚠ This session is currently <strong>live</strong>. Edits will only affect future scheduled slots — the current slot won't be interrupted.
+                  </div>
+                )}
                 <div className="flex items-center gap-1.5 mt-3">
                   {Array.from({ length: totalSteps }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={`h-1 flex-1 rounded-full transition-colors ${i + 1 <= step ? "bg-primary" : "bg-muted"}`}
-                    />
+                    <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i + 1 <= step ? "bg-primary" : "bg-muted"}`} />
                   ))}
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-1.5">Step {step} of {totalSteps}</p>
@@ -401,9 +543,9 @@ const LivePage = () => {
                     <h3 className="font-semibold mb-1">How will this session be delivered?</h3>
                     <p className="text-xs text-muted-foreground">Pick how viewers will join.</p>
                   </div>
-                  <button
-                    onClick={() => upd("session_type", "funnel_video")}
+                  <button onClick={() => upd("session_type", "funnel_video")}
                     className={`w-full text-left p-4 rounded-xl border-2 transition-all ${form.session_type === "funnel_video" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/40"}`}
+                    disabled={!!editingId}
                   >
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -415,14 +557,14 @@ const LivePage = () => {
                           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/15 text-primary">RECOMMENDED</span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Pick a funnel you already created. The video plays automatically at your scheduled time — viewers see it like a real live stream.
+                          Your funnel video plays automatically at scheduled times — viewers see it like a real live stream.
                         </p>
                       </div>
                     </div>
                   </button>
-                  <button
-                    onClick={() => upd("session_type", "external_link")}
+                  <button onClick={() => upd("session_type", "external_link")}
                     className={`w-full text-left p-4 rounded-xl border-2 transition-all ${form.session_type === "external_link" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/40"}`}
+                    disabled={!!editingId}
                   >
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
@@ -430,12 +572,11 @@ const LivePage = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm">External Meeting Link</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Zoom, Google Meet, or any other live meeting link.
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">Zoom, Google Meet, or any other live meeting link.</p>
                       </div>
                     </div>
                   </button>
+                  {editingId && <p className="text-[11px] text-muted-foreground">Session type can't be changed after creation.</p>}
                 </div>
               )}
 
@@ -455,14 +596,10 @@ const LivePage = () => {
                     <div>
                       <Label className="text-sm font-medium">Select Funnel *</Label>
                       <Select value={form.funnel_id ?? "__none__"} onValueChange={(v) => upd("funnel_id", v === "__none__" ? null : v)}>
-                        <SelectTrigger className="mt-1 bg-muted border-border">
-                          <SelectValue placeholder="Choose a funnel..." />
-                        </SelectTrigger>
+                        <SelectTrigger className="mt-1 bg-muted border-border"><SelectValue placeholder="Choose a funnel..." /></SelectTrigger>
                         <SelectContent>
                           {funnels.length === 0 && <SelectItem value="__none__" disabled>No funnels with video found</SelectItem>}
-                          {funnels.map((f: any) => (
-                            <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>
-                          ))}
+                          {funnels.map((f: any) => (<SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>))}
                         </SelectContent>
                       </Select>
                       {selectedFunnel && (
@@ -470,15 +607,11 @@ const LivePage = () => {
                           {selectedFunnel.thumbnail_url ? (
                             <img src={selectedFunnel.thumbnail_url} alt="" className="w-16 h-12 rounded object-cover" />
                           ) : (
-                            <div className="w-16 h-12 rounded bg-muted flex items-center justify-center">
-                              <Video size={16} className="text-muted-foreground" />
-                            </div>
+                            <div className="w-16 h-12 rounded bg-muted flex items-center justify-center"><Video size={16} className="text-muted-foreground" /></div>
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold truncate">{selectedFunnel.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Video duration: {formatDuration(form.video_duration_seconds)}
-                            </p>
+                            <p className="text-xs text-muted-foreground">Video duration: {formatDuration(form.video_duration_seconds)}</p>
                           </div>
                         </div>
                       )}
@@ -508,96 +641,6 @@ const LivePage = () => {
                       </div>
                     </div>
                   )}
-                </div>
-              )}
-
-              {/* Step 3 — Schedule (funnel) OR Meeting URL + schedule (external) */}
-              {step === 3 && (
-                <div className="space-y-4">
-                  {form.session_type === "external_link" && (
-                    <div>
-                      <Label className="text-sm font-medium">Meeting URL *</Label>
-                      <Input value={form.meeting_url} onChange={(e) => upd("meeting_url", e.target.value)} placeholder="https://zoom.us/j/..." className="mt-1 bg-muted border-border" />
-                    </div>
-                  )}
-
-                  <div>
-                    <Label className="text-sm font-medium">When should this play?</Label>
-                    <p className="text-[11px] text-muted-foreground">
-                      Your session will play automatically at each scheduled time.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    {form.scheduled_times.map((t, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <Input
-                          type="datetime-local"
-                          value={t}
-                          onChange={(e) => {
-                            const arr = [...form.scheduled_times];
-                            arr[idx] = e.target.value;
-                            upd("scheduled_times", arr);
-                          }}
-                          className="bg-muted border-border flex-1"
-                        />
-                        {form.scheduled_times.length > 1 && (
-                          <Button
-                            variant="ghost" size="icon" className="h-9 w-9 text-destructive shrink-0"
-                            onClick={() => upd("scheduled_times", form.scheduled_times.filter((_, i) => i !== idx))}
-                          >
-                            <Trash size={14} />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                    {form.scheduled_times.length < 10 && (
-                      <Button
-                        variant="outline" size="sm" type="button"
-                        onClick={() => upd("scheduled_times", [...form.scheduled_times, ""])}
-                      >
-                        <Plus size={14} /> Add another time
-                      </Button>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-medium">Timezone</Label>
-                    <Select value={form.timezone} onValueChange={(v) => upd("timezone", v)}>
-                      <SelectTrigger className="mt-1 bg-muted border-border"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {TIMEZONES.map((tz) => <SelectItem key={tz} value={tz}>{tz}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 4 — Settings + Access */}
-              {step === 4 && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-muted/40 rounded-xl">
-                    <div>
-                      <Label className="text-sm font-medium">Allow Replay</Label>
-                      <p className="text-[11px] text-muted-foreground">Viewers can rewatch after session ends</p>
-                    </div>
-                    <Switch checked={form.replay_enabled} onCheckedChange={(v) => upd("replay_enabled", v)} />
-                  </div>
-                  {form.replay_enabled && form.session_type === "funnel_video" && (
-                    <div>
-                      <Label className="text-xs">Replay available after (minutes)</Label>
-                      <Input type="number" value={form.replay_available_after_minutes} min={0}
-                        onChange={(e) => upd("replay_available_after_minutes", parseInt(e.target.value) || 0)}
-                        className="mt-1 bg-muted border-border" />
-                    </div>
-                  )}
-
-                  <div>
-                    <Label className="text-sm font-medium">Max Attendees (optional)</Label>
-                    <Input type="number" value={form.max_attendees ?? ""}
-                      onChange={(e) => upd("max_attendees", e.target.value ? parseInt(e.target.value) : null)}
-                      placeholder="Unlimited" className="mt-1 bg-muted border-border" />
-                  </div>
 
                   <div>
                     <Label className="text-sm font-medium">Access Type</Label>
@@ -610,8 +653,7 @@ const LivePage = () => {
                         <button key={opt.val} onClick={() => upd("access_type", opt.val)}
                           className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-center transition-all ${
                             form.access_type === opt.val ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground/40"
-                          }`}
-                        >
+                          }`}>
                           <opt.icon size={18} />
                           <span className="text-xs font-semibold">{opt.label}</span>
                           <span className="text-[10px] text-muted-foreground">{opt.desc}</span>
@@ -661,30 +703,221 @@ const LivePage = () => {
                 </div>
               )}
 
+              {/* Step 3 — Date / Time / Repeat */}
+              {step === 3 && (
+                <div className="space-y-4">
+                  {form.session_type === "external_link" && (
+                    <div>
+                      <Label className="text-sm font-medium">Meeting URL *</Label>
+                      <Input value={form.meeting_url} onChange={(e) => upd("meeting_url", e.target.value)} placeholder="https://zoom.us/j/..." className="mt-1 bg-muted border-border" />
+                    </div>
+                  )}
+
+                  <div>
+                    <Label className="text-sm font-medium">Base date & time *</Label>
+                    <p className="text-[11px] text-muted-foreground mb-1.5">When the first session plays. Repeat options below.</p>
+                    <Input
+                      type="datetime-local"
+                      value={form.scheduled_times[0] || ""}
+                      onChange={(e) => {
+                        const arr = [...form.scheduled_times];
+                        arr[0] = e.target.value;
+                        upd("scheduled_times", arr);
+                      }}
+                      className="bg-muted border-border"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium">Timezone</Label>
+                    <Select value={form.timezone} onValueChange={(v) => upd("timezone", v)}>
+                      <SelectTrigger className="mt-1 bg-muted border-border"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {TIMEZONES.map((tz) => <SelectItem key={tz} value={tz}>{tz}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium">How often should it play?</Label>
+                    <div className="grid sm:grid-cols-2 gap-2 mt-2">
+                      {[
+                        { val: "once", label: "Play Once", desc: "Plays one time at the scheduled time", icon: Play },
+                        { val: "daily", label: "Repeat Daily", desc: "Plays every day at the same time", icon: CalendarRange },
+                        { val: "interval", label: "Every Few Hours", desc: "Plays multiple times per day", icon: RotateCcw },
+                        { val: "custom", label: "Custom Schedule", desc: "Pick specific dates and times", icon: ListChecks },
+                      ].map((opt) => (
+                        <button key={opt.val} onClick={() => upd("repeat_type", opt.val as RepeatType)}
+                          className={`text-left p-3 rounded-xl border-2 transition-all ${form.repeat_type === opt.val ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/40"}`}>
+                          <div className="flex items-start gap-2">
+                            <opt.icon size={16} className={form.repeat_type === opt.val ? "text-primary mt-0.5" : "text-muted-foreground mt-0.5"} />
+                            <div>
+                              <p className="text-sm font-semibold">{opt.label}</p>
+                              <p className="text-[11px] text-muted-foreground mt-0.5">{opt.desc}</p>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {(form.repeat_type === "daily" || form.repeat_type === "interval") && (
+                    <div className="space-y-3 p-3 rounded-xl bg-muted/40 border border-border">
+                      {form.repeat_type === "interval" && (
+                        <>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <Label className="text-xs">Every</Label>
+                              <Select value={String(form.repeat_interval_hours)} onValueChange={(v) => upd("repeat_interval_hours", parseInt(v))}>
+                                <SelectTrigger className="mt-1 bg-background border-border"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {[2, 3, 4, 6, 8, 12].map((h) => <SelectItem key={h} value={String(h)}>{h} hours</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label className="text-xs">From</Label>
+                              <Input type="time" value={form.repeat_window_start} onChange={(e) => upd("repeat_window_start", e.target.value)} className="mt-1 bg-background border-border" />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Until</Label>
+                              <Input type="time" value={form.repeat_window_end} onChange={(e) => upd("repeat_window_end", e.target.value)} className="mt-1 bg-background border-border" />
+                            </div>
+                          </div>
+                          <div className="text-[11px] text-blue-300 bg-blue-500/10 border border-blue-500/30 rounded-lg p-2.5">
+                            ℹ Replay between slots only works if "Replay per slot" is enabled in the next step.
+                            Otherwise replay shows after the final slot of the day.
+                          </div>
+                        </>
+                      )}
+                      <div>
+                        <Label className="text-xs">Stop repeating after (optional)</Label>
+                        <Input type="date" value={form.repeat_end_date} onChange={(e) => upd("repeat_end_date", e.target.value)} className="mt-1 bg-background border-border" />
+                      </div>
+                    </div>
+                  )}
+
+                  {form.repeat_type === "custom" && (
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Add up to 20 specific times. The first one above is included.</Label>
+                      {form.scheduled_times.slice(1).map((t, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <Input type="datetime-local" value={t} onChange={(e) => {
+                            const arr = [...form.scheduled_times];
+                            arr[idx + 1] = e.target.value;
+                            upd("scheduled_times", arr);
+                          }} className="bg-muted border-border flex-1" />
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive shrink-0"
+                            onClick={() => upd("scheduled_times", form.scheduled_times.filter((_, i) => i !== idx + 1))}>
+                            <Trash size={14} />
+                          </Button>
+                        </div>
+                      ))}
+                      {form.scheduled_times.length < 20 && (
+                        <Button variant="outline" size="sm" type="button"
+                          onClick={() => upd("scheduled_times", [...form.scheduled_times, ""])}>
+                          <Plus size={14} /> Add another time
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 4 — Replay + Publish */}
+              {step === 4 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-muted/40 rounded-xl">
+                    <div>
+                      <Label className="text-sm font-medium">Enable Replay</Label>
+                      <p className="text-[11px] text-muted-foreground">Let viewers rewatch after session ends</p>
+                    </div>
+                    <Switch checked={form.replay_enabled} onCheckedChange={(v) => upd("replay_enabled", v)} />
+                  </div>
+
+                  {form.replay_enabled && form.session_type === "funnel_video" && (
+                    <div className="space-y-3 p-3 rounded-xl bg-muted/40 border border-border">
+                      <div>
+                        <Label className="text-xs">When should replay become available?</Label>
+                        <Select
+                          value={String(form.replay_delay_minutes)}
+                          onValueChange={(v) => upd("replay_delay_minutes", parseInt(v))}
+                        >
+                          <SelectTrigger className="mt-1 bg-background border-border"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">Immediately when session ends</SelectItem>
+                            <SelectItem value="30">After 30 minutes</SelectItem>
+                            <SelectItem value="60">After 1 hour</SelectItem>
+                            <SelectItem value="1440">After 24 hours</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">How long should replay stay available?</Label>
+                        <Select
+                          value={form.replay_expires_hours === null ? "forever" : String(form.replay_expires_hours)}
+                          onValueChange={(v) => upd("replay_expires_hours", v === "forever" ? null : parseInt(v))}
+                        >
+                          <SelectTrigger className="mt-1 bg-background border-border"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="forever">Forever</SelectItem>
+                            <SelectItem value="24">24 hours</SelectItem>
+                            <SelectItem value="48">48 hours</SelectItem>
+                            <SelectItem value="168">7 days</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {(form.repeat_type === "daily" || form.repeat_type === "interval" || form.repeat_type === "custom") && (
+                        <div>
+                          <Label className="text-xs">Replay per slot or after all slots?</Label>
+                          <div className="grid sm:grid-cols-2 gap-2 mt-1.5">
+                            <button onClick={() => upd("replay_per_slot", true)}
+                              className={`text-left text-xs p-2.5 rounded-lg border ${form.replay_per_slot ? "border-primary bg-primary/5" : "border-border"}`}>
+                              <p className="font-semibold">Per slot</p>
+                              <p className="text-muted-foreground text-[11px] mt-0.5">Replay shows after each slot ends</p>
+                            </button>
+                            <button onClick={() => upd("replay_per_slot", false)}
+                              className={`text-left text-xs p-2.5 rounded-lg border ${!form.replay_per_slot ? "border-primary bg-primary/5" : "border-border"}`}>
+                              <p className="font-semibold">After all slots</p>
+                              <p className="text-muted-foreground text-[11px] mt-0.5">Only after the final slot of the day</p>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between p-3 bg-muted/40 rounded-xl">
+                    <div>
+                      <Label className="text-sm font-medium">Publish this session</Label>
+                      <p className="text-[11px] text-muted-foreground">Unpublished sessions show "Not available" to viewers</p>
+                    </div>
+                    <Switch checked={form.is_published} onCheckedChange={(v) => upd("is_published", v)} />
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium">Max Attendees (optional)</Label>
+                    <Input type="number" value={form.max_attendees ?? ""}
+                      onChange={(e) => upd("max_attendees", e.target.value ? parseInt(e.target.value) : null)}
+                      placeholder="Unlimited" className="mt-1 bg-muted border-border" />
+                  </div>
+                </div>
+              )}
+
               {/* Footer nav */}
               <div className="flex items-center justify-between pt-2">
                 <Button variant="outline" size="sm" disabled={step === 1} onClick={() => setStep((s) => Math.max(1, s - 1))}>
                   <ChevronLeft size={14} /> Back
                 </Button>
                 {step < totalSteps ? (
-                  <Button
-                    variant="hero" size="sm"
-                    disabled={
-                      (step === 1 && !canNextFromStep1) ||
-                      (step === 2 && !canNextFromStep2) ||
-                      (step === 3 && !canNextFromStep3)
-                    }
-                    onClick={() => setStep((s) => s + 1)}
-                  >
+                  <Button variant="hero" size="sm"
+                    disabled={(step === 1 && !canNextFromStep1) || (step === 2 && !canNextFromStep2) || (step === 3 && !canNextFromStep3)}
+                    onClick={() => setStep((s) => s + 1)}>
                     Next <ChevronRight size={14} />
                   </Button>
                 ) : (
-                  <Button
-                    variant="hero" size="sm"
-                    disabled={!finalCanSubmit || createMutation.isPending}
-                    onClick={() => createMutation.mutate()}
-                  >
-                    {createMutation.isPending ? "Scheduling..." : "Schedule Session"}
+                  <Button variant="hero" size="sm" disabled={!finalCanSubmit || saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+                    {saveMutation.isPending ? "Saving..." : editingId ? "Save Changes" : "Schedule Session"}
                   </Button>
                 )}
               </div>
@@ -694,19 +927,15 @@ const LivePage = () => {
 
         {/* Sessions List */}
         {isLoading ? (
-          <div className="glass-card p-12 text-center">
-            <p className="text-sm text-muted-foreground">Loading sessions...</p>
-          </div>
+          <div className="glass-card p-12 text-center"><p className="text-sm text-muted-foreground">Loading sessions...</p></div>
         ) : sessions.length === 0 ? (
           <div className="glass-card p-12 text-center">
             <Radio size={40} className="text-muted-foreground mx-auto mb-4" />
             <h3 className="font-heading font-semibold mb-2">No live sessions yet</h3>
             <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-              Schedule a funnel video to play at specific times — viewers see it like a real live stream.
+              Create your first session to start reaching your audience live.
             </p>
-            <Button variant="hero" onClick={startCreate}>
-              <Plus size={16} /> Create Your First Session
-            </Button>
+            <Button variant="hero" onClick={startCreate}><Plus size={16} /> Create Your First Session</Button>
           </div>
         ) : (
           <div className="grid gap-3">
@@ -721,6 +950,7 @@ const LivePage = () => {
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <h3 className="font-heading font-semibold text-sm truncate">{s.title}</h3>
                         <SessionStatusBadge session={s} />
+                        <RepeatBadge session={s} />
                         {s.session_type === "funnel_video" ? (
                           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary inline-flex items-center gap-1">
                             <Layers size={10} /> Funnel video
@@ -733,21 +963,11 @@ const LivePage = () => {
                       </div>
                       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                         {linkedFunnelTitle && (
-                          <span className="flex items-center gap-1 truncate max-w-[200px]">
-                            <Layers size={12} /> {linkedFunnelTitle}
-                          </span>
+                          <span className="flex items-center gap-1 truncate max-w-[200px]"><Layers size={12} /> {linkedFunnelTitle}</span>
                         )}
-                        <span className="flex items-center gap-1">
-                          <Calendar size={12} /> <NextSlotLine session={s} />
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Users size={12} /> {s.registration_count || 0} registered
-                        </span>
-                        {s.session_type === "funnel_video" && Array.isArray(s.scheduled_times) && s.scheduled_times.length > 1 && (
-                          <span className="flex items-center gap-1">
-                            <Clock size={12} /> {s.scheduled_times.length} slots
-                          </span>
-                        )}
+                        <span className="flex items-center gap-1"><Calendar size={12} /> <NextSlotLine session={s} /></span>
+                        <span className="flex items-center gap-1"><Users size={12} /> {s.registration_count || 0} registered</span>
+                        <span className="flex items-center gap-1"><Eye size={12} /> {s.total_views || 0} views</span>
                       </div>
                     </div>
 
@@ -758,11 +978,18 @@ const LivePage = () => {
                       <Button variant="ghost" size="icon" className="h-8 w-8" title="Share on WhatsApp" onClick={() => shareWhatsApp(s)}>
                         <MessageCircle size={14} />
                       </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit" onClick={() => startEdit(s)}>
+                        <Pencil size={14} />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" title="View" onClick={() => navigate(`/live/${s.id}`)}>
                         <Eye size={14} />
                       </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title={s.is_published === false ? "Publish" : "Unpublish"}
+                        onClick={() => togglePublishMutation.mutate({ id: s.id, val: s.is_published === false })}>
+                        <Globe size={14} className={s.is_published === false ? "opacity-40" : ""} />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="Delete" onClick={() => {
-                        if (confirm("Delete this session?")) deleteMutation.mutate(s.id);
+                        if (confirm("Delete this session? This action cannot be undone.")) deleteMutation.mutate(s.id);
                       }}>
                         <Trash2 size={14} />
                       </Button>
