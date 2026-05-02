@@ -127,13 +127,13 @@ Deno.serve(async (req: Request) => {
         const subject = `${labelMap[w]} — ${s.title}`;
         const whenLabel = fmtIST(slotIso);
 
-        // Idempotency check: look in email_send_log if exists
+        // Idempotency check via email_send_log
         const dedupeTemplate = `live_reminder_${w}_${s.id}`;
         const { data: alreadySent } = await svc
           .from("email_send_log")
-          .select("recipient")
-          .eq("template", dedupeTemplate);
-        const sentSet = new Set((alreadySent || []).map((r: any) => (r.recipient || "").toLowerCase()));
+          .select("recipient_email")
+          .eq("template_name", dedupeTemplate);
+        const sentSet = new Set((alreadySent || []).map((r: any) => (r.recipient_email || "").toLowerCase()));
 
         for (const r of regs) {
           const email = (r.email || "").toLowerCase().trim();
