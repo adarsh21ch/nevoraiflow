@@ -4,7 +4,7 @@ export type RepeatType = "once" | "daily" | "interval" | "custom";
 export type LiveStatus = "draft" | "scheduled" | "live" | "ended" | "cancelled";
 
 export interface LiveSessionLike {
-  scheduled_times?: string[] | null;
+  scheduled_times?: unknown;
   repeat_type?: RepeatType | null;
   repeat_interval_hours?: number | null;
   repeat_window_start?: string | null; // "HH:MM[:SS]"
