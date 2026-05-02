@@ -222,7 +222,30 @@ const LivePage = () => {
       return data || [];
     },
     enabled: !!user,
+    refetchInterval: 60_000,
   });
+
+  // Section 12 — Creator notifications: detect when a session crosses into "live"
+  const liveStateRef = useState<Record<string, boolean>>({})[0];
+  useEffect(() => {
+    for (const s of sessions as any[]) {
+      const isLive = currentLiveSlot(s) !== null;
+      const wasLive = liveStateRef[s.id];
+      if (wasLive === undefined) { liveStateRef[s.id] = isLive; continue; }
+      if (!wasLive && isLive) {
+        toast.success(`"${s.title}" is now live`, {
+          description: `${s.registration_count || 0} registered viewers can join now`,
+          action: { label: "View", onClick: () => navigate(`/live/${s.id}`) },
+        });
+      } else if (wasLive && !isLive) {
+        toast(`"${s.title}" has ended`, {
+          description: s.replay_enabled ? "Replay is being prepared" : "Session is closed",
+        });
+      }
+      liveStateRef[s.id] = isLive;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessions]);
 
   const { data: funnels = [] } = useQuery({
     queryKey: ["live-funnel-options", user?.id],
