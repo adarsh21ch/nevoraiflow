@@ -1,19 +1,25 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft, Calendar, Clock, Users, Globe, IndianRupee, Copy,
-  ExternalLink, Radio, Eye, Check, X, Pencil
+  ArrowLeft, Calendar, Users, Copy,
+  ExternalLink, Radio, Eye, Check, X, Pencil,
+  Square, Ban, CalendarPlus, MessageCircle, Share2, Repeat, Globe,
 } from "lucide-react";
-import { format, formatDistanceToNow, isFuture } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
+import {
+  computeSessionSlots, currentLiveSlot, nextSlot as nextSlotFn,
+  sessionDurationSec, googleCalendarUrl, buildICS, downloadICS,
+} from "@/lib/liveSession";
 
 const LiveDetailPage = () => {
   const { id } = useParams();
@@ -22,8 +28,6 @@ const LiveDetailPage = () => {
   const queryClient = useQueryClient();
   const [editingUrl, setEditingUrl] = useState(false);
   const [meetingUrl, setMeetingUrl] = useState("");
-  const [editingReplay, setEditingReplay] = useState(false);
-  const [replayUrl, setReplayUrl] = useState("");
 
   const { data: session, isLoading } = useQuery({
     queryKey: ["live-session", id],
@@ -35,10 +39,10 @@ const LiveDetailPage = () => {
         .single();
       if (error) throw error;
       setMeetingUrl(data.meeting_url || "");
-      setReplayUrl(data.replay_url || "");
       return data;
     },
     enabled: !!id,
+    refetchInterval: 30_000,
   });
 
   const { data: registrations = [] } = useQuery({
@@ -79,6 +83,7 @@ const LiveDetailPage = () => {
       queryClient.invalidateQueries({ queryKey: ["live-session", id] });
       toast.success("Updated");
     },
+    onError: (e: any) => toast.error(e?.message || "Update failed"),
   });
 
   const updateReg = useMutation({
@@ -91,6 +96,16 @@ const LiveDetailPage = () => {
     },
   });
 
+  // Computed slots
+  const upcomingSlots = useMemo(() => {
+    if (!session) return [] as number[];
+    const now = Date.now();
+    return computeSessionSlots(session as any).filter((s) => s > now).slice(0, 8);
+  }, [session]);
+
+  const liveNow = useMemo(() => session ? currentLiveSlot(session as any) : null, [session]);
+  const nextOne = useMemo(() => session ? nextSlotFn(session as any) : null, [session]);
+
   if (isLoading || !session) {
     return (
       <DashboardLayout>
@@ -101,61 +116,116 @@ const LiveDetailPage = () => {
     );
   }
 
-  const isLive = session.status === "live";
-  const isScheduled = session.status === "scheduled";
-  const isEnded = session.status === "ended";
+  const isFunnel = session.session_type === "funnel_video";
+  const isCancelled = session.status === "cancelled";
   const publicUrl = `${window.location.origin}/s/${session.slug}`;
+  const totalWatchMin = analytics.reduce((acc: number, a: any) => acc + Math.floor((a.total_watch_seconds || 0) / 60), 0);
+  const totalUnique = analytics.reduce((acc: number, a: any) => acc + (a.unique_viewers || 0), 0);
+
+  const repeatLabel =
+    session.repeat_type === "daily" ? "Repeats daily" :
+    session.repeat_type === "interval" ? `Every ${session.repeat_interval_hours || 4} hours` :
+    session.repeat_type === "custom" ? "Custom schedule" :
+    "Plays once";
+
+  const addToCalendar = (kind: "google" | "ics", iso: string) => {
+    const start = new Date(iso);
+    const end = new Date(start.getTime() + sessionDurationSec(session as any) * 1000);
+    if (kind === "google") {
+      window.open(googleCalendarUrl({ title: session.title, description: session.description || "", start, end, url: publicUrl }), "_blank");
+    } else {
+      const ics = buildICS({ title: session.title, description: session.description || "", start, end, url: publicUrl, uid: `${session.id}-${start.getTime()}` });
+      downloadICS(`${session.slug}-${start.getTime()}.ics`, ics);
+    }
+  };
+
+  const shareWhatsApp = () => {
+    const next = nextOne ? ` — starts ${format(new Date(nextOne), "MMM d, h:mm a")}` : "";
+    const text = `Join my live session "${session.title}"${next}.\n${publicUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  };
 
   return (
     <DashboardLayout>
-      <div className="max-w-3xl space-y-5">
+      <div className="max-w-4xl space-y-5">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/live")} className="h-8 w-8">
-            <ArrowLeft size={16} />
-          </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-heading font-bold truncate">{session.title}</h1>
-            <p className="text-xs text-muted-foreground">{session.description}</p>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/live")} className="h-8 w-8 shrink-0">
+              <ArrowLeft size={16} />
+            </Button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl font-heading font-bold truncate">{session.title}</h1>
+                {liveNow && (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-red-500/15 text-red-500 inline-flex items-center gap-1">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />
+                    </span>
+                    LIVE
+                  </span>
+                )}
+                {isCancelled && <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-red-500/10 text-red-500">CANCELLED</span>}
+                {session.is_published === false && <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-muted text-muted-foreground">UNPUBLISHED</span>}
+                {session.repeat_type !== "once" && (
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-secondary/40 text-foreground/80 inline-flex items-center gap-1">
+                    <Repeat size={10} /> {repeatLabel}
+                  </span>
+                )}
+              </div>
+              {session.description && <p className="text-xs text-muted-foreground truncate">{session.description}</p>}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {isScheduled && (
-              <Button variant="hero" size="sm" onClick={() => updateSession.mutate({ status: "live" })}>
-                <Radio size={14} /> Go Live
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Button variant="outline" size="sm" onClick={() => window.open(publicUrl, "_blank")}>
+              <Eye size={14} /> View public
+            </Button>
+            {!isCancelled && liveNow && (
+              <Button variant="outline" size="sm"
+                onClick={() => { if (confirm("Stop the current live slot now? Viewers will be moved to the ended/replay screen.")) updateSession.mutate({ status: "ended" }); }}>
+                <Square size={14} /> Stop now
               </Button>
             )}
-            {isLive && (
-              <Button variant="outline" size="sm" onClick={() => updateSession.mutate({ status: "ended" })}>
-                End Session
+            {!isCancelled && (
+              <Button variant="outline" size="sm" className="text-destructive"
+                onClick={() => { if (confirm("Cancel this entire session? All future repeats will stop and viewers will see a 'cancelled' message.")) updateSession.mutate({ status: "cancelled" }); }}>
+                <Ban size={14} /> Cancel
+              </Button>
+            )}
+            {isCancelled && (
+              <Button variant="outline" size="sm" onClick={() => updateSession.mutate({ status: "scheduled" })}>
+                Reactivate
               </Button>
             )}
           </div>
         </div>
 
-        {/* Status & Info Cards */}
-        <div className="grid sm:grid-cols-3 gap-3">
+        {/* Stat cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="glass-card p-4 text-center">
-            <p className="text-xs text-muted-foreground mb-1">Status</p>
-            <p className={`text-lg font-bold ${isLive ? "text-emerald-500" : isScheduled ? "text-blue-500" : "text-muted-foreground"}`}>
-              {isLive ? "🔴 LIVE" : session.status.toUpperCase()}
-            </p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Registered</p>
+            <p className="text-xl font-bold">{registrations.length}</p>
           </div>
           <div className="glass-card p-4 text-center">
-            <p className="text-xs text-muted-foreground mb-1">Registrations</p>
-            <p className="text-lg font-bold">{registrations.length}</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Total viewers</p>
+            <p className="text-xl font-bold">{totalUnique}</p>
           </div>
           <div className="glass-card p-4 text-center">
-            <p className="text-xs text-muted-foreground mb-1">Scheduled</p>
-            <p className="text-sm font-semibold">
-              {session.scheduled_at ? format(new Date(session.scheduled_at), "MMM d, h:mm a") : "Not set"}
-            </p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Watch time</p>
+            <p className="text-xl font-bold">{totalWatchMin}m</p>
+          </div>
+          <div className="glass-card p-4 text-center">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Slots</p>
+            <p className="text-xl font-bold">{computeSessionSlots(session as any).length}</p>
           </div>
         </div>
 
-        {/* Public Link */}
-        <div className="glass-card p-4">
+        {/* Public link & share */}
+        <div className="glass-card p-4 space-y-3">
           <Label className="text-xs text-muted-foreground">Public Session Link</Label>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2">
             <code className="text-sm text-primary flex-1 truncate">{publicUrl}</code>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { navigator.clipboard.writeText(publicUrl); toast.success("Copied!"); }}>
               <Copy size={14} />
@@ -164,50 +234,120 @@ const LiveDetailPage = () => {
               <ExternalLink size={14} />
             </Button>
           </div>
-        </div>
-
-        {/* Meeting URL */}
-        <div className="glass-card p-4">
-          <div className="flex items-center justify-between mb-2">
-            <Label className="text-sm font-medium">Meeting URL</Label>
-            {!editingUrl ? (
-              <Button variant="ghost" size="sm" onClick={() => setEditingUrl(true)}><Pencil size={12} className="mr-1" /> Edit</Button>
-            ) : (
-              <div className="flex gap-1">
-                <Button variant="ghost" size="sm" onClick={() => { updateSession.mutate({ meeting_url: meetingUrl }); setEditingUrl(false); }}>
-                  <Check size={12} />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setEditingUrl(false)}><X size={12} /></Button>
-              </div>
+          <div className="flex items-center gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={shareWhatsApp} className="text-emerald-500"><MessageCircle size={14} /> WhatsApp</Button>
+            {nextOne && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => addToCalendar("google", new Date(nextOne).toISOString())}><CalendarPlus size={14} /> Google</Button>
+                <Button variant="outline" size="sm" onClick={() => addToCalendar("ics", new Date(nextOne).toISOString())}><CalendarPlus size={14} /> .ics</Button>
+              </>
             )}
+            <div className="ml-auto flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground">Published</Label>
+              <Switch checked={session.is_published !== false} onCheckedChange={(v) => updateSession.mutate({ is_published: v })} />
+            </div>
           </div>
-          {editingUrl ? (
-            <Input value={meetingUrl} onChange={(e) => setMeetingUrl(e.target.value)} className="bg-muted border-border" />
-          ) : (
-            <p className="text-sm text-muted-foreground">{session.meeting_url || "No URL added yet"}</p>
-          )}
         </div>
 
-        {/* Replay URL */}
-        {session.replay_enabled && (
+        {/* Upcoming slots */}
+        {isFunnel && upcomingSlots.length > 0 && (
+          <div className="glass-card p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-heading font-semibold text-sm">Upcoming slots</h3>
+              <span className="text-[11px] text-muted-foreground">{repeatLabel}</span>
+            </div>
+            <div className="space-y-1.5">
+              {upcomingSlots.map((ms) => (
+                <div key={ms} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/50 text-xs">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={12} className="text-muted-foreground" />
+                    <span className="font-medium">{format(new Date(ms), "EEE, MMM d 'at' h:mm a")}</span>
+                    <span className="text-muted-foreground">· in {formatDistanceToNow(new Date(ms))}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => addToCalendar("google", new Date(ms).toISOString())} className="text-muted-foreground hover:text-foreground p-1" title="Add to Google Calendar">
+                      <CalendarPlus size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* External meeting URL */}
+        {!isFunnel && (
           <div className="glass-card p-4">
             <div className="flex items-center justify-between mb-2">
-              <Label className="text-sm font-medium">Replay URL</Label>
-              {!editingReplay ? (
-                <Button variant="ghost" size="sm" onClick={() => setEditingReplay(true)}><Pencil size={12} className="mr-1" /> Edit</Button>
+              <Label className="text-sm font-medium">Meeting URL</Label>
+              {!editingUrl ? (
+                <Button variant="ghost" size="sm" onClick={() => setEditingUrl(true)}><Pencil size={12} className="mr-1" /> Edit</Button>
               ) : (
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => { updateSession.mutate({ replay_url: replayUrl }); setEditingReplay(false); }}>
+                  <Button variant="ghost" size="sm" onClick={() => { updateSession.mutate({ meeting_url: meetingUrl }); setEditingUrl(false); }}>
                     <Check size={12} />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setEditingReplay(false)}><X size={12} /></Button>
+                  <Button variant="ghost" size="sm" onClick={() => setEditingUrl(false)}><X size={12} /></Button>
                 </div>
               )}
             </div>
-            {editingReplay ? (
-              <Input value={replayUrl} onChange={(e) => setReplayUrl(e.target.value)} className="bg-muted border-border" placeholder="Add replay URL after session ends" />
+            {editingUrl ? (
+              <Input value={meetingUrl} onChange={(e) => setMeetingUrl(e.target.value)} className="bg-muted border-border" />
             ) : (
-              <p className="text-sm text-muted-foreground">{session.replay_url || "No replay URL yet"}</p>
+              <p className="text-sm text-muted-foreground">{session.meeting_url || "No URL added yet"}</p>
+            )}
+          </div>
+        )}
+
+        {/* Replay settings (inline editor) */}
+        {isFunnel && (
+          <div className="glass-card p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-heading font-semibold text-sm">Replay settings</h3>
+              <Switch checked={session.replay_enabled !== false} onCheckedChange={(v) => updateSession.mutate({ replay_enabled: v })} />
+            </div>
+            {session.replay_enabled !== false && (
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-xs">Available after</Label>
+                  <Select value={String(session.replay_delay_minutes ?? 0)} onValueChange={(v) => updateSession.mutate({ replay_delay_minutes: parseInt(v) })}>
+                    <SelectTrigger className="mt-1 bg-muted border-border"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Immediately</SelectItem>
+                      <SelectItem value="30">30 minutes</SelectItem>
+                      <SelectItem value="60">1 hour</SelectItem>
+                      <SelectItem value="1440">24 hours</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Stays available</Label>
+                  <Select
+                    value={session.replay_expires_hours == null ? "forever" : String(session.replay_expires_hours)}
+                    onValueChange={(v) => updateSession.mutate({ replay_expires_hours: v === "forever" ? null : parseInt(v) })}
+                  >
+                    <SelectTrigger className="mt-1 bg-muted border-border"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="forever">Forever</SelectItem>
+                      <SelectItem value="24">24 hours</SelectItem>
+                      <SelectItem value="48">48 hours</SelectItem>
+                      <SelectItem value="168">7 days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {session.repeat_type !== "once" && (
+                  <div>
+                    <Label className="text-xs">Replay timing</Label>
+                    <Select value={session.replay_per_slot !== false ? "per" : "after"} onValueChange={(v) => updateSession.mutate({ replay_per_slot: v === "per" })}>
+                      <SelectTrigger className="mt-1 bg-muted border-border"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="per">After each slot</SelectItem>
+                        <SelectItem value="after">After final slot</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -215,7 +355,7 @@ const LiveDetailPage = () => {
         {/* Analytics */}
         {analytics.length > 0 && (
           <div className="glass-card p-4">
-            <h3 className="font-heading font-semibold text-sm mb-3">Live Analytics</h3>
+            <h3 className="font-heading font-semibold text-sm mb-3">Per-slot analytics</h3>
             <div className="space-y-2">
               {analytics.map((a: any) => {
                 const mins = Math.floor((a.total_watch_seconds || 0) / 60);
@@ -265,7 +405,7 @@ const LiveDetailPage = () => {
                     )}
                     {r.attended ? (
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">Attended</span>
-                    ) : isLive ? (
+                    ) : liveNow ? (
                       <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => updateReg.mutate({ regId: r.id, updates: { attended: true, attended_at: new Date().toISOString() } })}>
                         Mark Attended
                       </Button>

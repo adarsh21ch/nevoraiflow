@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -222,7 +222,30 @@ const LivePage = () => {
       return data || [];
     },
     enabled: !!user,
+    refetchInterval: 60_000,
   });
+
+  // Section 12 — Creator notifications: detect when a session crosses into "live"
+  const liveStateRef = useRef<Record<string, boolean>>({});
+  useEffect(() => {
+    for (const s of sessions as any[]) {
+      const isLive = currentLiveSlot(s) !== null;
+      const wasLive = liveStateRef.current[s.id];
+      if (wasLive === undefined) { liveStateRef.current[s.id] = isLive; continue; }
+      if (!wasLive && isLive) {
+        toast.success(`"${s.title}" is now live`, {
+          description: `${s.registration_count || 0} registered viewers can join now`,
+          action: { label: "View", onClick: () => navigate(`/live/${s.id}`) },
+        });
+      } else if (wasLive && !isLive) {
+        toast(`"${s.title}" has ended`, {
+          description: s.replay_enabled ? "Replay is being prepared" : "Session is closed",
+        });
+      }
+      liveStateRef.current[s.id] = isLive;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessions]);
 
   const { data: funnels = [] } = useQuery({
     queryKey: ["live-funnel-options", user?.id],
