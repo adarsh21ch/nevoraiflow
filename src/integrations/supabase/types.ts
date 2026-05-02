@@ -1668,6 +1668,44 @@ export type Database = {
           },
         ]
       }
+      live_session_heartbeats: {
+        Row: {
+          created_at: string
+          id: string
+          last_seen_at: string
+          session_id: string
+          session_slot: string
+          viewer_token: string
+          watch_seconds: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          session_id: string
+          session_slot: string
+          viewer_token: string
+          watch_seconds?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          session_id?: string
+          session_slot?: string
+          viewer_token?: string
+          watch_seconds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_session_heartbeats_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       live_sessions: {
         Row: {
           access_type: string
@@ -2982,6 +3020,15 @@ export type Database = {
       }
       record_auth_attempt: {
         Args: { _email: string; _ip: string; _success: boolean }
+        Returns: undefined
+      }
+      record_live_heartbeat: {
+        Args: {
+          _delta_seconds?: number
+          _session_id: string
+          _session_slot: string
+          _viewer_token: string
+        }
         Returns: undefined
       }
     }

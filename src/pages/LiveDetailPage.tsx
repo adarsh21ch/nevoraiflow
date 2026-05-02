@@ -55,6 +55,21 @@ const LiveDetailPage = () => {
     enabled: !!id,
   });
 
+  const { data: analytics = [] } = useQuery({
+    queryKey: ["live-analytics", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("live_session_analytics")
+        .select("*")
+        .eq("session_id", id!)
+        .order("session_slot", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!id,
+    refetchInterval: 30_000,
+  });
+
   const updateSession = useMutation({
     mutationFn: async (updates: Record<string, any>) => {
       const { error } = await supabase.from("live_sessions").update(updates as any).eq("id", id!);
@@ -194,6 +209,30 @@ const LiveDetailPage = () => {
             ) : (
               <p className="text-sm text-muted-foreground">{session.replay_url || "No replay URL yet"}</p>
             )}
+          </div>
+        )}
+
+        {/* Analytics */}
+        {analytics.length > 0 && (
+          <div className="glass-card p-4">
+            <h3 className="font-heading font-semibold text-sm mb-3">Live Analytics</h3>
+            <div className="space-y-2">
+              {analytics.map((a: any) => {
+                const mins = Math.floor((a.total_watch_seconds || 0) / 60);
+                return (
+                  <div key={a.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-xl text-xs">
+                    <div className="font-medium text-foreground">
+                      {format(new Date(a.session_slot), "MMM d, h:mm a")}
+                    </div>
+                    <div className="flex items-center gap-4 text-muted-foreground">
+                      <span><span className="text-foreground font-semibold">{a.unique_viewers}</span> viewers</span>
+                      <span><span className="text-foreground font-semibold">{a.peak_concurrent}</span> peak</span>
+                      <span><span className="text-foreground font-semibold">{mins}m</span> watched</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
