@@ -1630,6 +1630,44 @@ export type Database = {
           },
         ]
       }
+      live_session_analytics: {
+        Row: {
+          created_at: string
+          id: string
+          peak_concurrent: number
+          session_id: string
+          session_slot: string
+          total_watch_seconds: number
+          unique_viewers: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          peak_concurrent?: number
+          session_id: string
+          session_slot: string
+          total_watch_seconds?: number
+          unique_viewers?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          peak_concurrent?: number
+          session_id?: string
+          session_slot?: string
+          total_watch_seconds?: number
+          unique_viewers?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_session_analytics_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       live_sessions: {
         Row: {
           access_type: string
@@ -1638,6 +1676,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           duration_minutes: number | null
+          funnel_id: string | null
           id: string
           lead_form_enabled: boolean | null
           max_attendees: number | null
@@ -1647,10 +1686,13 @@ export type Database = {
           payment_instructions: string | null
           qr_code_url: string | null
           registration_count: number | null
+          reminder_sent: boolean
+          replay_available_after_minutes: number
           replay_enabled: boolean | null
           replay_expires_at: string | null
           replay_url: string | null
           scheduled_at: string | null
+          scheduled_times: Json
           session_type: string
           show_city: boolean | null
           show_email: boolean | null
@@ -1659,9 +1701,12 @@ export type Database = {
           slug: string
           status: string
           thumbnail_url: string | null
+          timezone: string
           title: string
           updated_at: string | null
           upi_id: string | null
+          video_asset_id: string | null
+          video_duration_seconds: number | null
         }
         Insert: {
           access_type?: string
@@ -1670,6 +1715,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           duration_minutes?: number | null
+          funnel_id?: string | null
           id?: string
           lead_form_enabled?: boolean | null
           max_attendees?: number | null
@@ -1679,10 +1725,13 @@ export type Database = {
           payment_instructions?: string | null
           qr_code_url?: string | null
           registration_count?: number | null
+          reminder_sent?: boolean
+          replay_available_after_minutes?: number
           replay_enabled?: boolean | null
           replay_expires_at?: string | null
           replay_url?: string | null
           scheduled_at?: string | null
+          scheduled_times?: Json
           session_type?: string
           show_city?: boolean | null
           show_email?: boolean | null
@@ -1691,9 +1740,12 @@ export type Database = {
           slug: string
           status?: string
           thumbnail_url?: string | null
+          timezone?: string
           title: string
           updated_at?: string | null
           upi_id?: string | null
+          video_asset_id?: string | null
+          video_duration_seconds?: number | null
         }
         Update: {
           access_type?: string
@@ -1702,6 +1754,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           duration_minutes?: number | null
+          funnel_id?: string | null
           id?: string
           lead_form_enabled?: boolean | null
           max_attendees?: number | null
@@ -1711,10 +1764,13 @@ export type Database = {
           payment_instructions?: string | null
           qr_code_url?: string | null
           registration_count?: number | null
+          reminder_sent?: boolean
+          replay_available_after_minutes?: number
           replay_enabled?: boolean | null
           replay_expires_at?: string | null
           replay_url?: string | null
           scheduled_at?: string | null
+          scheduled_times?: Json
           session_type?: string
           show_city?: boolean | null
           show_email?: boolean | null
@@ -1723,9 +1779,12 @@ export type Database = {
           slug?: string
           status?: string
           thumbnail_url?: string | null
+          timezone?: string
           title?: string
           updated_at?: string | null
           upi_id?: string | null
+          video_asset_id?: string | null
+          video_duration_seconds?: number | null
         }
         Relationships: [
           {
