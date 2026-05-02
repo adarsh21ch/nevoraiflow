@@ -55,6 +55,21 @@ const LiveDetailPage = () => {
     enabled: !!id,
   });
 
+  const { data: analytics = [] } = useQuery({
+    queryKey: ["live-analytics", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("live_session_analytics")
+        .select("*")
+        .eq("session_id", id!)
+        .order("session_slot", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!id,
+    refetchInterval: 30_000,
+  });
+
   const updateSession = useMutation({
     mutationFn: async (updates: Record<string, any>) => {
       const { error } = await supabase.from("live_sessions").update(updates as any).eq("id", id!);
