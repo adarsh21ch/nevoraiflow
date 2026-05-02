@@ -5,7 +5,7 @@ export type LiveStatus = "draft" | "scheduled" | "live" | "ended" | "cancelled";
 
 export interface LiveSessionLike {
   scheduled_times?: unknown;
-  repeat_type?: RepeatType | null;
+  repeat_type?: string | null;
   repeat_interval_hours?: number | null;
   repeat_window_start?: string | null; // "HH:MM[:SS]"
   repeat_window_end?: string | null;
@@ -29,8 +29,9 @@ export const sessionDurationSec = (s: LiveSessionLike) =>
  */
 export function computeSessionSlots(session: LiveSessionLike): number[] {
   const repeat = (session.repeat_type as RepeatType) || "once";
-  const baseTimes = (session.scheduled_times || [])
-    .map((t) => new Date(t).getTime())
+  const rawTimes = Array.isArray(session.scheduled_times) ? (session.scheduled_times as unknown[]) : [];
+  const baseTimes = rawTimes
+    .map((t) => new Date(String(t)).getTime())
     .filter((t) => !isNaN(t));
 
   if (repeat === "once" || repeat === "custom") return [...baseTimes].sort((a, b) => a - b);
