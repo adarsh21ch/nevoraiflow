@@ -1716,18 +1716,28 @@ export type Database = {
           duration_minutes: number | null
           funnel_id: string | null
           id: string
+          is_published: boolean
           lead_form_enabled: boolean | null
           max_attendees: number | null
           meeting_url: string | null
           owner_id: string
           payment_amount: number | null
           payment_instructions: string | null
+          peak_concurrent: number
           qr_code_url: string | null
           registration_count: number | null
           reminder_sent: boolean
+          repeat_end_date: string | null
+          repeat_interval_hours: number | null
+          repeat_type: string
+          repeat_window_end: string | null
+          repeat_window_start: string | null
           replay_available_after_minutes: number
+          replay_delay_minutes: number
           replay_enabled: boolean | null
           replay_expires_at: string | null
+          replay_expires_hours: number | null
+          replay_per_slot: boolean
           replay_url: string | null
           scheduled_at: string | null
           scheduled_times: Json
@@ -1741,6 +1751,7 @@ export type Database = {
           thumbnail_url: string | null
           timezone: string
           title: string
+          total_views: number
           updated_at: string | null
           upi_id: string | null
           video_asset_id: string | null
@@ -1755,18 +1766,28 @@ export type Database = {
           duration_minutes?: number | null
           funnel_id?: string | null
           id?: string
+          is_published?: boolean
           lead_form_enabled?: boolean | null
           max_attendees?: number | null
           meeting_url?: string | null
           owner_id: string
           payment_amount?: number | null
           payment_instructions?: string | null
+          peak_concurrent?: number
           qr_code_url?: string | null
           registration_count?: number | null
           reminder_sent?: boolean
+          repeat_end_date?: string | null
+          repeat_interval_hours?: number | null
+          repeat_type?: string
+          repeat_window_end?: string | null
+          repeat_window_start?: string | null
           replay_available_after_minutes?: number
+          replay_delay_minutes?: number
           replay_enabled?: boolean | null
           replay_expires_at?: string | null
+          replay_expires_hours?: number | null
+          replay_per_slot?: boolean
           replay_url?: string | null
           scheduled_at?: string | null
           scheduled_times?: Json
@@ -1780,6 +1801,7 @@ export type Database = {
           thumbnail_url?: string | null
           timezone?: string
           title: string
+          total_views?: number
           updated_at?: string | null
           upi_id?: string | null
           video_asset_id?: string | null
@@ -1794,18 +1816,28 @@ export type Database = {
           duration_minutes?: number | null
           funnel_id?: string | null
           id?: string
+          is_published?: boolean
           lead_form_enabled?: boolean | null
           max_attendees?: number | null
           meeting_url?: string | null
           owner_id?: string
           payment_amount?: number | null
           payment_instructions?: string | null
+          peak_concurrent?: number
           qr_code_url?: string | null
           registration_count?: number | null
           reminder_sent?: boolean
+          repeat_end_date?: string | null
+          repeat_interval_hours?: number | null
+          repeat_type?: string
+          repeat_window_end?: string | null
+          repeat_window_start?: string | null
           replay_available_after_minutes?: number
+          replay_delay_minutes?: number
           replay_enabled?: boolean | null
           replay_expires_at?: string | null
+          replay_expires_hours?: number | null
+          replay_per_slot?: boolean
           replay_url?: string | null
           scheduled_at?: string | null
           scheduled_times?: Json
@@ -1819,6 +1851,7 @@ export type Database = {
           thumbnail_url?: string | null
           timezone?: string
           title?: string
+          total_views?: number
           updated_at?: string | null
           upi_id?: string | null
           video_asset_id?: string | null
