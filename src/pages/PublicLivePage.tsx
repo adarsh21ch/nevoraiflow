@@ -66,6 +66,43 @@ const PublicLivePage = () => {
   const [muted, setMuted] = useState(true); // start muted to allow autoplay
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const lastSeekRef = useRef<number>(0);
+  const viewerTokenRef = useRef<string>("");
+
+  // Stable opaque viewer token (per browser, per session) — no PII
+  useEffect(() => {
+    if (!slug) return;
+    const key = `nflow_viewer_${slug}`;
+    let t = localStorage.getItem(key);
+    if (!t) {
+      t = (crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`) + "-" + Math.random().toString(36).slice(2);
+      localStorage.setItem(key, t);
+    }
+    viewerTokenRef.current = t;
+  }, [slug]);
+
+  // Heartbeat every 15s while video is actually playing (live or replay)
+  useEffect(() => {
+    if (!stateData) return;
+    const slot = stateData.current_slot_start || (stateData.all_slots?.length ? stateData.all_slots[stateData.all_slots.length - 1] : null);
+    if (!slot || !stateData.session?.id) return;
+    if (stateData.state !== "live" && stateData.state !== "replay") return;
+
+    const send = async () => {
+      const v = videoRef.current;
+      if (v && v.paused) return; // don't count when paused
+      try {
+        await supabase.rpc("record_live_heartbeat" as any, {
+          _session_id: stateData.session.id,
+          _session_slot: slot,
+          _viewer_token: viewerTokenRef.current,
+          _delta_seconds: 15,
+        });
+      } catch (e) { /* ignore */ }
+    };
+    send();
+    const i = setInterval(send, 15_000);
+    return () => clearInterval(i);
+  }, [stateData?.state, stateData?.session?.id, stateData?.current_slot_start]);
 
   // Fetch state from edge function
   const fetchState = useCallback(async () => {
