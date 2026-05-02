@@ -226,12 +226,12 @@ const LivePage = () => {
   });
 
   // Section 12 — Creator notifications: detect when a session crosses into "live"
-  const liveStateRef = useState<Record<string, boolean>>({})[0];
+  const liveStateRef = useRef<Record<string, boolean>>({});
   useEffect(() => {
     for (const s of sessions as any[]) {
       const isLive = currentLiveSlot(s) !== null;
-      const wasLive = liveStateRef[s.id];
-      if (wasLive === undefined) { liveStateRef[s.id] = isLive; continue; }
+      const wasLive = liveStateRef.current[s.id];
+      if (wasLive === undefined) { liveStateRef.current[s.id] = isLive; continue; }
       if (!wasLive && isLive) {
         toast.success(`"${s.title}" is now live`, {
           description: `${s.registration_count || 0} registered viewers can join now`,
@@ -242,7 +242,7 @@ const LivePage = () => {
           description: s.replay_enabled ? "Replay is being prepared" : "Session is closed",
         });
       }
-      liveStateRef[s.id] = isLive;
+      liveStateRef.current[s.id] = isLive;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessions]);
